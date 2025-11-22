@@ -1,0 +1,131 @@
+# Copyright (c) 2025 CityLens Contributors
+# Licensed under the MIT License
+
+version: '3.8'
+
+services:
+  # PostgreSQL với PostGIS
+  postgres:
+    image: postgis/postgis:15-3.4
+    container_name: citylens-postgres
+    environment:
+      POSTGRES_USER: citylens
+      POSTGRES_PASSWORD: citylens_password
+      POSTGRES_DB: citylens_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - citylens-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U citylens"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB
+  mongodb:
+    image: mongo:7.0
+    container_name: citylens-mongodb
+    environment:
+      MONGO_INITDB_DATABASE: citylens_realtime
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - citylens-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis
+  redis:
+    image: redis:7.2-alpine
+    container_name: citylens-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - citylens-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # GraphDB (Apache Jena Fuseki)
+  graphdb:
+    image: stain/jena-fuseki:latest
+    container_name: citylens-graphdb
+    environment:
+      ADMIN_PASSWORD: admin
+    ports:
+      - "7200:3030"
+    volumes:
+      - graphdb_data:/fuseki
+    networks:
+      - citylens-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3030/$/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: citylens-backend
+    environment:
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_USER=citylens
+      - POSTGRES_PASSWORD=citylens_password
+      - POSTGRES_DB=citylens_db
+      - MONGODB_URL=mongodb://mongodb:27017
+      - REDIS_HOST=redis
+      - GRAPHDB_URL=http://graphdb:3030
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - backend_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - citylens-network
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # Web Dashboard
+  web-dashboard:
+    build:
+      context: ./web-dashboard
+      dockerfile: Dockerfile
+    container_name: citylens-web
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - citylens-network
+
+volumes:
+  postgres_data:
+  mongodb_data:
+  redis_data:
+  graphdb_data:
+  backend_uploads:
+
+networks:
+  citylens-network:
+    driver: bridge
