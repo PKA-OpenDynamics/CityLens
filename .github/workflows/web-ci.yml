@@ -1,0 +1,59 @@
+# Copyright (c) 2025 CityLens Contributors
+# Licensed under the MIT License
+
+name: Web Dashboard CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'web-dashboard/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'web-dashboard/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './web-dashboard/package-lock.json'
+      
+      - name: Install dependencies
+        working-directory: ./web-dashboard
+        run: npm ci
+      
+      - name: Run linter
+        working-directory: ./web-dashboard
+        run: npm run lint
+      
+      - name: Build
+        working-directory: ./web-dashboard
+        run: npm run build
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: web-dashboard-build
+          path: ./web-dashboard/dist
+
+  build-docker:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build Docker image
+        working-directory: ./web-dashboard
+        run: |
+          docker build -t citylens-web:${{ github.sha }} .
