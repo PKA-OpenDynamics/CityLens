@@ -5,9 +5,10 @@
 Cấu hình ứng dụng CityLens Backend
 """
 
-from typing import List, Optional
-from pydantic_settings import BaseSettings
+from typing import List, Optional, Union
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import AnyHttpUrl, field_validator
+import json
 
 
 class Settings(BaseSettings):
@@ -20,27 +21,39 @@ class Settings(BaseSettings):
     DESCRIPTION: str = "Hệ thống thành phố thông minh sử dụng Linked Open Data"
     
     # Bảo mật
-    SECRET_KEY: str = "change-this-secret-key-in-production"
+    SECRET_KEY: str  # Must be set in .env file
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 ngày
     
     # CORS
-    BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
+    BACKEND_CORS_ORIGINS: Union[str, List[AnyHttpUrl]] = ""
     
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: str | List[str]) -> List[str] | str:
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, (list, str)):
+    def parse_cors_origins(cls, v: Union[str, List]) -> List[str]:
+        """Parse CORS origins from various formats"""
+        if isinstance(v, str):
+            if not v or v.strip() == "":
+                return []
+            # Try JSON parse first (for backward compatibility)
+            if v.strip().startswith("["):
+                try:
+                    parsed = json.loads(v)
+                    if isinstance(parsed, list):
+                        return parsed
+                except json.JSONDecodeError:
+                    pass
+            # Parse comma-separated string (recommended)
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        elif isinstance(v, list):
             return v
-        raise ValueError(v)
+        return []
     
     # PostgreSQL + PostGIS
     POSTGRES_SERVER: str = "localhost"
-    POSTGRES_USER: str = "citylens"
-    POSTGRES_PASSWORD: str = "citylens_password"
-    POSTGRES_DB: str = "citylens_db"
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
     POSTGRES_PORT: int = 5432
     
     @property
@@ -86,9 +99,12 @@ class Settings(BaseSettings):
     POINTS_PER_VERIFICATION: int = 5
     REPUTATION_THRESHOLD_TRUSTED: float = 0.8
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        env_parse_none_str="null",
+        extra="ignore",
+    )
 
 
 settings = Settings()
