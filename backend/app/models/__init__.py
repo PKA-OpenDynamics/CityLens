@@ -2,5 +2,5 @@
 # Licensed under the MIT License
 
 from app.models.user import User
-from app.models.report import Report, IncidentType, ReportStatus
+from app.models.report import Report, ReportStatus
 from app.models.incident import Incident, AlertLevel
