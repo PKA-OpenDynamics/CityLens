@@ -136,19 +136,19 @@ def upload_to_fuseki(graph: Graph):
         response = requests.post(url, data=ttl_data, headers=headers, timeout=30)
         response.raise_for_status()
         
-        print(f"✅ Uploaded {len(graph)} triples to Fuseki")
+        print(f"Uploaded {len(graph)} triples to Fuseki")
         return True
     except requests.exceptions.ConnectionError:
-        print("❌ Cannot connect to Fuseki. Is it running?")
+        print("Cannot connect to Fuseki. Is it running?")
         print(f"   Start Fuseki: docker run -p 3030:3030 stain/jena-fuseki")
         return False
     except Exception as e:
-        print(f"❌ Error uploading to Fuseki: {e}")
+        print(f"Error uploading to Fuseki: {e}")
         return False
 
 
 if __name__ == "__main__":
-    print("🔄 Syncing PostgreSQL → GraphDB...\n")
+    print("Syncing PostgreSQL → GraphDB...\n")
     
     print("1. Syncing districts...")
     g_districts = sync_districts()
@@ -161,18 +161,18 @@ if __name__ == "__main__":
     combined += g_districts
     combined += g_reports
     
-    print(f"\n📊 Total: {len(combined)} RDF triples")
+    print(f"\nTotal: {len(combined)} RDF triples")
     
     print("\n3. Uploading to Fuseki...")
     success = upload_to_fuseki(combined)
     
     if success:
-        print("\n✅ Sync completed!")
+        print("\nSync completed!")
         print(f"   Query endpoint: {FUSEKI_URL}/{DATASET}/sparql")
         print("\n   Example SPARQL query:")
         print("   SELECT * WHERE { ?s a citylens:Report } LIMIT 10")
     else:
-        print("\n⚠️ Fuseki upload failed. RDF graph generated but not uploaded.")
+        print("\nFuseki upload failed. RDF graph generated but not uploaded.")
         print("   You can save it manually:")
         print("   with open('citylens.ttl', 'w') as f:")
         print("       f.write(combined.serialize(format='turtle'))")
