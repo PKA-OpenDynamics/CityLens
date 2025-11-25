@@ -1,0 +1,69 @@
+{
+  "@context": {
+    "cl": "http://citylens.io/ontology#",
+    "sosa": "http://www.w3.org/ns/sosa/",
+    "ssn": "http://www.w3.org/ns/ssn/",
+    "geo": "http://www.opengis.net/ont/geosparql#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "schema": "http://schema.org/",
+    
+    "CitizenReport": "cl:CitizenReport",
+    "CitizenSensor": "cl:CitizenSensor",
+    "AQIObservation": "cl:AQIObservation",
+    "TrafficObservation": "cl:TrafficObservation",
+    "ParkingObservation": "cl:ParkingObservation",
+    
+    "hasCategory": {
+      "@id": "cl:hasCategory",
+      "@type": "xsd:string"
+    },
+    "hasSeverity": {
+      "@id": "cl:hasSeverity",
+      "@type": "xsd:string"
+    },
+    "hasStatus": {
+      "@id": "cl:hasStatus",
+      "@type": "xsd:string"
+    },
+    "hasConfidenceScore": {
+      "@id": "cl:hasConfidenceScore",
+      "@type": "xsd:float"
+    },
+    "locatedIn": {
+      "@id": "cl:locatedIn",
+      "@type": "@id"
+    },
+    "concernsStreet": {
+      "@id": "cl:concernsStreet",
+      "@type": "@id"
+    },
+    "reportedByUser": {
+      "@id": "cl:reportedByUser",
+      "@type": "@id"
+    },
+    
+    "madeBySensor": {
+      "@id": "sosa:madeBySensor",
+      "@type": "@id"
+    },
+    "hasFeatureOfInterest": {
+      "@id": "sosa:hasFeatureOfInterest",
+      "@type": "@id"
+    },
+    "observedProperty": {
+      "@id": "sosa:observedProperty",
+      "@type": "@id"
+    },
+    "hasSimpleResult": "sosa:hasSimpleResult",
+    "resultTime": {
+      "@id": "sosa:resultTime",
+      "@type": "xsd:dateTime"
+    },
+    "hasGeometry": {
+      "@id": "geo:hasGeometry",
+      "@type": "geo:wktLiteral"
+    }
+  }
+}
+
