@@ -85,6 +85,12 @@ mobile-app/.env.*
 *.sqlite
 *.sqlite3
 
+# OSM Data files (large binary files)
+*.osm.pbf
+*.geojson
+backend/data/osm/*.osm.pbf
+backend/data/osm/*.geojson
+
 # Uploads
 uploads/
 media/
