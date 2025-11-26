@@ -39,7 +39,7 @@ class NGSILDGeoQuery(BaseModel):
     Example:
         georel=near;maxDistance==5000
         geometry=Point
-        coordinates=[106.6927,10.7769]
+        coordinates=[105.8542,21.0285]
     """
     georel: str = Field(
         ...,
@@ -53,7 +53,7 @@ class NGSILDGeoQuery(BaseModel):
     coordinates: str = Field(
         ...,
         description="Coordinates as string (format depends on geometry)",
-        examples=["[106.6927,10.7769]", "[[106.6,10.7],[106.7,10.8]]"]
+        examples=["[105.8542,21.0285]", "[[105.8,21.0],[105.9,21.1]]"]
     )
     geoproperty: str = Field(
         default="location",

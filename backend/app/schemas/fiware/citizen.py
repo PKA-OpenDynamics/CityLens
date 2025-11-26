@@ -177,7 +177,7 @@ class CitizenReport(NGSILDEntity):
                     "type": "GeoProperty",
                     "value": {
                         "type": "Point",
-                        "coordinates": [106.660172, 10.762622]
+                        "coordinates": [105.8542, 21.0285]
                     }
                 },
                 "category": {
@@ -218,7 +218,7 @@ class CitizenReport(NGSILDEntity):
                 },
                 "address": {
                     "type": "Property",
-                    "value": "Nguyen Hue Street, District 1, Ho Chi Minh City"
+                    "value": "Trang Tien Street, Hoan Kiem District, Hanoi"
                 },
                 "reportedBy": {
                     "type": "Relationship",

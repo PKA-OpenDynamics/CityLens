@@ -123,7 +123,7 @@ class OffStreetParking(NGSILDEntity):
                     "type": "GeoProperty",
                     "value": {
                         "type": "Point",
-                        "coordinates": [106.6986, 10.7717]
+                        "coordinates": [105.8345, 21.0368]
                     }
                 },
                 "totalSpotNumber": {
@@ -225,7 +225,7 @@ class ParkingSpot(NGSILDEntity):
                     "type": "GeoProperty",
                     "value": {
                         "type": "Point",
-                        "coordinates": [106.6986, 10.7717]
+                        "coordinates": [105.8345, 21.0368]
                     }
                 },
                 "status": {

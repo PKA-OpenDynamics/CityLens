@@ -100,14 +100,14 @@ class AirQualityObserved(NGSILDEntity):
                     "type": "GeoProperty",
                     "value": {
                         "type": "Point",
-                        "coordinates": [106.6927, 10.7769]
+                        "coordinates": [105.8345, 21.0368]
                     }
                 },
                 "address": {
                     "type": "Property",
                     "value": {
                         "addressCountry": "VN",
-                        "addressLocality": "Ho Chi Minh City",
+                        "addressLocality": "Hanoi",
                         "streetAddress": "District 1"
                     }
                 },
@@ -229,7 +229,7 @@ class WeatherObserved(NGSILDEntity):
                     "type": "GeoProperty",
                     "value": {
                         "type": "Point",
-                        "coordinates": [106.6297, 10.8231]
+                        "coordinates": [105.8252, 21.0078]
                     }
                 },
                 "temperature": {

@@ -55,7 +55,7 @@ class SOSAService:
                     "user_id": 456,
                     "category": "infrastructure",
                     "description": "Road damage",
-                    "location": {"lat": 10.762622, "lon": 106.660172},
+                    "location": {"lat": 21.0285, "lon": 105.8542},
                     "created_at": "2025-11-25T14:30:00Z",
                     "related_street_id": 789
                 }

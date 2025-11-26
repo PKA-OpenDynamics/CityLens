@@ -66,7 +66,7 @@ def sync_reports():
         # Location (extract lat/lon from PostGIS)
         if report.location:
             # Simplified - in production use PostGIS ST_AsText
-            # Example: POINT(106.660172 10.762622)
+            # Example: POINT(105.8542 21.0285)
             coords = str(report.location).replace("SRID=4326;POINT(", "").replace(")", "")
             try:
                 lon, lat = coords.split()

@@ -313,7 +313,7 @@ def import_osm_data(osm_file: str):
 
 
 if __name__ == "__main__":
-    osm_file = "data/osm/hcmc.osm.pbf"
+    osm_file = "data/osm/hanoi.osm.pbf"
     
     if len(sys.argv) > 1:
         osm_file = sys.argv[1]

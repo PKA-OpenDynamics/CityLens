@@ -21,15 +21,15 @@ from datetime import datetime
 WAQI_API_KEY = os.getenv("WAQI_API_KEY", "demo")  # demo key cho testing
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "")
 
-# Ho Chi Minh City coordinates
-HCMC_LAT = 10.8231
-HCMC_LON = 106.6297
+# Hanoi coordinates
+HANOI_LAT = 21.0285
+HANOI_LON = 105.8542
 
 
 def fetch_air_quality():
     """Fetch AQI data từ WAQI"""
     try:
-        url = f"https://api.waqi.info/feed/geo:{HCMC_LAT};{HCMC_LON}/?token={WAQI_API_KEY}"
+        url = f"https://api.waqi.info/feed/geo:{HANOI_LAT};{HANOI_LON}/?token={WAQI_API_KEY}"
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         
@@ -77,7 +77,7 @@ def fetch_weather():
         return None
     
     try:
-        url = f"https://api.openweathermap.org/data/2.5/weather?lat={HCMC_LAT}&lon={HCMC_LON}&appid={OPENWEATHER_API_KEY}&units=metric"
+        url = f"https://api.openweathermap.org/data/2.5/weather?lat={HANOI_LAT}&lon={HANOI_LON}&appid={OPENWEATHER_API_KEY}&units=metric"
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         
@@ -115,7 +115,7 @@ def fetch_weather():
 
 
 if __name__ == "__main__":
-    print("🌍 Fetching external data for Ho Chi Minh City...\n")
+    print("🌍 Fetching external data for Hanoi...\n")
     
     print("1. Fetching Air Quality Index (AQI)...")
     aqi = fetch_air_quality()

@@ -96,7 +96,7 @@ class TrafficFlowObserved(NGSILDEntity):
                     "type": "GeoProperty",
                     "value": {
                         "type": "Point",
-                        "coordinates": [106.660172, 10.762622]
+                        "coordinates": [105.8542, 21.0285]
                     }
                 },
                 "intensity": {
@@ -219,7 +219,7 @@ class RoadAccident(NGSILDEntity):
                     "type": "GeoProperty",
                     "value": {
                         "type": "Point",
-                        "coordinates": [106.6805, 10.7626]
+                        "coordinates": [105.8412, 21.0245]
                     }
                 },
                 "accidentType": {
