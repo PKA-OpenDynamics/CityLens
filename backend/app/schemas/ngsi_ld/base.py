@@ -122,7 +122,7 @@ class NGSILDGeoProperty(BaseModel):
                 "type": "GeoProperty",
                 "value": {
                     "type": "Point",
-                    "coordinates": [106.660172, 10.762622]
+                    "coordinates": [105.8542, 21.0285]
                 }
             }
         }

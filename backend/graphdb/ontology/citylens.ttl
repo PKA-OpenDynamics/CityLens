@@ -25,7 +25,7 @@ citylens: rdf:type owl:Ontology ;
 citylens:AdministrativeBoundary rdf:type owl:Class ;
     rdfs:label "Administrative Boundary"@en ;
     rdfs:label "Ranh giới hành chính"@vi ;
-    rdfs:comment "Districts, wards of Ho Chi Minh City"@en .
+    rdfs:comment "Districts, wards of Hanoi"@en .
 
 citylens:Street rdf:type owl:Class ;
     rdfs:label "Street"@en ;

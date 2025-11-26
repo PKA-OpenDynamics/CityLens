@@ -1,0 +1,253 @@
+/* Custom Map Styles for CityLens */
+
+/* Marker animations */
+@keyframes markerPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.6;
+  }
+}
+
+@keyframes markerBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes markerGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(33, 150, 243, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(33, 150, 243, 0.8);
+  }
+}
+
+/* Enhanced marker styling */
+.custom-marker-enhanced {
+  transition: all 0.3s ease;
+}
+
+.custom-marker-enhanced:hover {
+  z-index: 1000 !important;
+  transform: scale(1.2);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+/* Cluster styling */
+.marker-cluster-custom {
+  animation: clusterPulse 2s ease-in-out infinite;
+}
+
+@keyframes clusterPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* District labels */
+.district-label {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.district-label::before {
+  display: none !important;
+}
+
+/* Popup customization */
+.leaflet-popup-content-wrapper {
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.98) !important;
+}
+
+.leaflet-popup-content {
+  margin: 16px !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+.leaflet-popup-tip {
+  background: rgba(255, 255, 255, 0.98) !important;
+}
+
+/* Tooltip styling */
+.leaflet-tooltip {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(33, 150, 243, 0.3) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  padding: 6px 12px !important;
+  font-weight: 600 !important;
+  backdrop-filter: blur(4px);
+}
+
+.leaflet-tooltip::before {
+  border-top-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Control styling */
+.leaflet-control {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Map container */
+.leaflet-container {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: #f5f5f5 !important;
+}
+
+/* Zoom control */
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-control-zoom a {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.2s ease;
+}
+
+.leaflet-control-zoom a:hover {
+  background-color: rgba(33, 150, 243, 0.1) !important;
+  color: #2196f3 !important;
+}
+
+/* Attribution */
+.leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(4px);
+  border-radius: 4px !important;
+  padding: 4px 8px !important;
+  font-size: 10px !important;
+}
+
+/* Circle marker animations */
+.leaflet-interactive {
+  transition: all 0.3s ease;
+}
+
+.leaflet-interactive:hover {
+  stroke-width: 4px !important;
+  stroke-opacity: 1 !important;
+  fill-opacity: 0.4 !important;
+}
+
+/* Loading indicator */
+.leaflet-tile-container {
+  transition: opacity 0.3s ease;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .leaflet-popup-content-wrapper {
+    max-width: 250px !important;
+  }
+  
+  .custom-marker-enhanced {
+    transform: scale(0.8);
+  }
+}
+
+/* High DPI screens */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .custom-marker-enhanced {
+    image-rendering: -webkit-optimize-contrast;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .leaflet-popup-content-wrapper {
+    background: rgba(33, 33, 33, 0.95) !important;
+    color: #fff;
+  }
+  
+  .leaflet-popup-tip {
+    background: rgba(33, 33, 33, 0.95) !important;
+  }
+  
+  .leaflet-tooltip {
+    background-color: rgba(33, 33, 33, 0.95) !important;
+    color: #fff !important;
+    border-color: rgba(33, 150, 243, 0.5) !important;
+  }
+}
+
+/* Performance optimizations */
+.leaflet-zoom-animated {
+  will-change: transform;
+}
+
+.leaflet-marker-icon {
+  will-change: transform;
+}
+
+/* Custom marker cluster styles */
+.marker-cluster-small {
+  background-color: rgba(33, 150, 243, 0.6);
+}
+
+.marker-cluster-small div {
+  background-color: rgba(33, 150, 243, 0.8);
+}
+
+.marker-cluster-medium {
+  background-color: rgba(255, 152, 0, 0.6);
+}
+
+.marker-cluster-medium div {
+  background-color: rgba(255, 152, 0, 0.8);
+}
+
+.marker-cluster-large {
+  background-color: rgba(244, 67, 54, 0.6);
+}
+
+.marker-cluster-large div {
+  background-color: rgba(244, 67, 54, 0.8);
+}
+
+/* Smooth transitions */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Accessibility */
+.leaflet-marker-icon:focus,
+.leaflet-interactive:focus {
+  outline: 2px solid #2196f3;
+  outline-offset: 2px;
+}
+
+/* Print styles */
+@media print {
+  .leaflet-control-container {
+    display: none !important;
+  }
+  
+  .custom-marker-enhanced {
+    page-break-inside: avoid;
+  }
+}
+

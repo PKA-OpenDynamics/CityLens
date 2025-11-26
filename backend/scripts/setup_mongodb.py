@@ -65,7 +65,7 @@ def setup_collections():
         "district_id": 1,
         "category": "giao_thong",
         "priority": "high",
-        "location": {"lat": 10.762622, "lon": 106.660172},
+        "location": {"lat": 21.0285, "lon": 105.8542},
         "data": {
             "title": "Đường Lê Lợi có ổ gà lớn",
             "status": "pending"

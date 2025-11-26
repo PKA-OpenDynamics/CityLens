@@ -61,7 +61,7 @@ async def create_entity(
         "type": "GeoProperty",
         "value": {
           "type": "Point",
-          "coordinates": [106.6927, 10.7769]
+          "coordinates": [105.8345, 21.0368]
         }
       },
       "@context": [
@@ -258,7 +258,7 @@ async def query_entities(
     
     2. **Geo-query - find entities near a point:**
     ```
-    GET /ngsi-ld/v1/entities?type=CitizenReport&georel=near;maxDistance==1000&geometry=Point&coordinates=[106.6927,10.7769]
+    GET /ngsi-ld/v1/entities?type=CitizenReport&georel=near;maxDistance==1000&geometry=Point&coordinates=[105.8345,21.0368]
     ```
     
     3. **Property query:**
