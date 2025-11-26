@@ -1,5 +1,5 @@
 // Copyright (c) 2025 CityLens Contributors
-// Licensed under the MIT License
+// Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
 import { useEffect, useState, useMemo } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap, CircleMarker, Tooltip, Circle, Polygon } from 'react-leaflet';
@@ -198,6 +198,11 @@ const MAP_LAYERS = [
     name: 'Esri World',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
     attribution: 'Tiles &copy; Esri'
+  },
+  {
+    name: 'Vệ tinh (Esri)',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community'
   },
 ];
 

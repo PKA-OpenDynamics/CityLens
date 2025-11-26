@@ -1,5 +1,5 @@
 // Copyright (c) 2025 CityLens Contributors
-// Licensed under the MIT License
+// Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
