@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2025 CityLens Contributors
-# Licensed under the MIT License
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
 """
 Seed sample users và test reports
@@ -107,20 +107,20 @@ def seed_sample_reports():
         print("❌ No users found. Run seed_users() first!")
         return
     
-    # Sample locations in Ho Chi Minh City
+    # Sample locations in Hanoi
     sample_locations = [
-        {"lat": 10.762622, "lon": 106.660172, "address": "Đường Lê Lợi, Quận 1", "district_id": 1},
-        {"lat": 10.776889, "lon": 106.695801, "address": "Đường Lê Văn Việt, Quận 9", "district_id": 9},
-        {"lat": 10.771420, "lon": 106.697800, "address": "Đường Phạm Văn Đồng, Thủ Đức", "district_id": 2},
-        {"lat": 10.729360, "lon": 106.691654, "address": "Đường Nguyễn Văn Linh, Quận 7", "district_id": 7},
-        {"lat": 10.801953, "lon": 106.663841, "address": "Đường Hồng Bàng, Quận 11", "district_id": 11},
+        {"lat": 21.0285, "lon": 105.8542, "address": "Phố Tràng Tiền, Hoàn Kiếm", "district_id": 1},
+        {"lat": 21.0245, "lon": 105.8412, "address": "Phố Hàng Bạc, Hoàn Kiếm", "district_id": 1},
+        {"lat": 21.0368, "lon": 105.8345, "address": "Đường Láng, Đống Đa", "district_id": 2},
+        {"lat": 21.0078, "lon": 105.8252, "address": "Đường Nguyễn Trãi, Thanh Xuân", "district_id": 3},
+        {"lat": 21.0533, "lon": 105.8344, "address": "Đường Nguyễn Văn Cừ, Long Biên", "district_id": 4},
     ]
     
     sample_reports = [
         {
             "category": "giao_thong",
             "subcategory": "duong_hong",
-            "title": "Đường Lê Lợi có ổ gà lớn",
+            "title": "Phố Tràng Tiền có ổ gà lớn",
             "description": "Ổ gà sâu khoảng 20cm, rộng 50cm, gây nguy hiểm cho phương tiện. Cần sửa chữa gấp!",
             "priority": ReportPriority.HIGH
         },
