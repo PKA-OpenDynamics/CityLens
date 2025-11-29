@@ -11,23 +11,6 @@ from pydantic import BaseModel, Field, field_validator
 from bson import ObjectId
 
 
-class PyObjectId(ObjectId):
-    """Custom ObjectId type for Pydantic"""
-    @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
-
-    @classmethod
-    def validate(cls, v):
-        if not ObjectId.is_valid(v):
-            raise ValueError("Invalid ObjectId")
-        return ObjectId(v)
-
-    @classmethod
-    def __get_pydantic_json_schema__(cls, field_schema):
-        field_schema.update(type="string")
-
-
 class GeoLocation(BaseModel):
     """GeoJSON Point"""
     type: str = "Point"
@@ -81,7 +64,7 @@ class AirQualityData(BaseModel):
 
 class WeatherRaw(BaseModel):
     """Raw weather & air quality data (7-day retention)"""
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    id: Optional[str] = Field(alias="_id", default=None)
     location: GeoLocation
     location_name: str
     location_id: str = Field(..., description="Standard location identifier")
@@ -97,7 +80,6 @@ class WeatherRaw(BaseModel):
     
     class Config:
         populate_by_name = True
-        json_encoders = {ObjectId: str}
 
 
 # === Hourly Aggregated Data ===
@@ -145,7 +127,7 @@ class AirQualityHourlyStats(BaseModel):
 
 class WeatherHourly(BaseModel):
     """Hourly aggregated weather data (90-day retention)"""
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    id: Optional[str] = Field(alias="_id", default=None)
     location_id: str
     location_name: str
     location: GeoLocation
@@ -160,7 +142,6 @@ class WeatherHourly(BaseModel):
     
     class Config:
         populate_by_name = True
-        json_encoders = {ObjectId: str}
 
 
 # === Daily Aggregated Data ===
@@ -214,7 +195,7 @@ class AirQualityDailyStats(BaseModel):
 
 class WeatherDaily(BaseModel):
     """Daily aggregated weather data (2-year retention)"""
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    id: Optional[str] = Field(alias="_id", default=None)
     location_id: str
     location_name: str
     location: GeoLocation
@@ -229,7 +210,6 @@ class WeatherDaily(BaseModel):
     
     class Config:
         populate_by_name = True
-        json_encoders = {ObjectId: str}
 
 
 # === Weekly Aggregated Data ===
@@ -274,7 +254,7 @@ class AirQualityWeeklyStats(BaseModel):
 
 class WeatherWeekly(BaseModel):
     """Weekly aggregated weather data (6-month retention)"""
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    id: Optional[str] = Field(alias="_id", default=None)
     location_id: str
     location_name: str
     location: GeoLocation
@@ -292,7 +272,6 @@ class WeatherWeekly(BaseModel):
     
     class Config:
         populate_by_name = True
-        json_encoders = {ObjectId: str}
 
 
 # === Monthly Aggregated Data ===
@@ -337,7 +316,7 @@ class AirQualityMonthlyStats(BaseModel):
 
 class WeatherMonthly(BaseModel):
     """Monthly aggregated weather data (permanent)"""
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    id: Optional[str] = Field(alias="_id", default=None)
     location_id: str
     location_name: str
     location: GeoLocation
@@ -354,7 +333,6 @@ class WeatherMonthly(BaseModel):
     
     class Config:
         populate_by_name = True
-        json_encoders = {ObjectId: str}
 
 
 # === Location Metadata ===
@@ -389,7 +367,7 @@ class LocationStats(BaseModel):
 
 class WeatherLocation(BaseModel):
     """Monitoring location metadata"""
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    id: Optional[str] = Field(alias="_id", default=None)
     location_id: str = Field(..., description="Unique location identifier")
     
     name: str
@@ -415,6 +393,78 @@ class WeatherLocation(BaseModel):
     
     class Config:
         populate_by_name = True
-        json_encoders = {ObjectId: str}
+
+
+# === Forecast Data ===
+
+class WeatherForecastPoint(BaseModel):
+    """Single forecast point (3-hour interval)"""
+    timestamp: datetime
+    temp: Optional[float] = None
+    temp_min: Optional[float] = None
+    temp_max: Optional[float] = None
+    humidity: Optional[int] = None
+    pressure: Optional[int] = None
+    wind_speed: Optional[float] = None
+    wind_deg: Optional[int] = None
+    clouds: Optional[int] = None
+    rain_3h: Optional[float] = None
+    condition: Optional[str] = None
+    visibility: Optional[int] = None
+
+
+class AirQualityForecastPoint(BaseModel):
+    """Single air quality forecast point"""
+    timestamp: datetime
+    aqi: Optional[int] = None
+    pm2_5: Optional[float] = None
+    pm10: Optional[float] = None
+    co: Optional[float] = None
+    no2: Optional[float] = None
+    o3: Optional[float] = None
+    so2: Optional[float] = None
+
+
+class WeatherForecast(BaseModel):
+    """5-day weather and air quality forecast for a location"""
+    id: Optional[str] = Field(alias="_id", default=None)
+    location_id: str
+    location_name: str
+    location: GeoLocation
+    
+    # Forecast points (3-hour intervals, up to 5 days = ~40 points)
+    weather_forecasts: List[WeatherForecastPoint] = Field(default_factory=list)
+    air_quality_forecasts: List[AirQualityForecastPoint] = Field(default_factory=list)
+    
+    # Metadata
+    generated_at: datetime = Field(default_factory=datetime.utcnow)
+    valid_until: datetime = Field(..., description="Forecast validity end time")
+    
+    class Config:
+        populate_by_name = True
+
+
+# === Real-time Response Models ===
+
+class RealtimeWeatherResponse(BaseModel):
+    """Optimized real-time weather response for mobile/web"""
+    location_id: str
+    location_name: str
+    timestamp: datetime
+    
+    weather: Optional[WeatherData] = None
+    air_quality: Optional[AirQualityData] = None
+    
+    # Status indicators
+    data_age_seconds: Optional[int] = Field(None, description="Age of data in seconds")
+    is_fresh: bool = Field(True, description="Whether data is fresh (< 10 minutes)")
+    sources: List[str] = Field(default_factory=list, description="Data sources used")
+
+
+class RealtimeWeatherSummaryResponse(BaseModel):
+    """Summary of real-time data for multiple locations"""
+    locations: List[RealtimeWeatherResponse]
+    generated_at: datetime
+    total_locations: int
 
 

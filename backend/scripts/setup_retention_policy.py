@@ -91,8 +91,8 @@ class RetentionPolicySetup:
         print("  🕐 TTL index: created_at (24 hours)")
         print("  → Data auto-deleted after 24 hours\n")
         
-        # === HOURLY COLLECTION: 1 day TTL ===
-        print("2️⃣  weather_hourly - 1 day retention")
+        # === HOURLY COLLECTION: 25 hours TTL ===
+        print("2️⃣  weather_hourly - 25 hours retention")
         hourly_col = self.db["weather_hourly"]
         
         await hourly_col.create_index("location_id")
@@ -102,14 +102,14 @@ class RetentionPolicySetup:
         
         await hourly_col.create_index(
             [("created_at", 1)],
-            expireAfterSeconds=86400,  # 1 day
-            name="ttl_1d"
+            expireAfterSeconds=90000,  # 25 hours (24h + buffer)
+            name="ttl_25h"
         )
-        print("  🕐 TTL index: created_at (1 day)")
-        print("  → Data auto-deleted after 1 day (đã có daily)\n")
+        print("  🕐 TTL index: created_at (25 hours)")
+        print("  → Data auto-deleted sau 25 giờ (buffer 1h để chắc chắn aggregate daily)\n")
         
-        # === DAILY COLLECTION: 60 days TTL ===
-        print("3️⃣  weather_daily - 60 days retention")
+        # === DAILY COLLECTION: 32 days TTL ===
+        print("3️⃣  weather_daily - 32 days retention")
         daily_col = self.db["weather_daily"]
         
         await daily_col.create_index("location_id")
@@ -119,11 +119,11 @@ class RetentionPolicySetup:
         
         await daily_col.create_index(
             [("created_at", 1)],
-            expireAfterSeconds=5184000,  # 60 days
-            name="ttl_60d"
+            expireAfterSeconds=2764800,  # 32 days (30d + buffer)
+            name="ttl_32d"
         )
-        print("  🕐 TTL index: created_at (60 days)")
-        print("  → Data auto-deleted after 60 days (đã có monthly)\n")
+        print("  🕐 TTL index: created_at (32 days)")
+        print("  → Data auto-deleted sau 32 ngày (buffer 2 ngày để aggregate monthly)\n")
         
         # === WEEKLY COLLECTION: 60 days TTL ===
         print("4️⃣  weather_weekly - 60 days retention")
@@ -142,15 +142,22 @@ class RetentionPolicySetup:
         print("  🕐 TTL index: created_at (60 days)")
         print("  → Data auto-deleted after 60 days (đã có monthly)\n")
         
-        # === MONTHLY COLLECTION: PERMANENT (no TTL) ===
-        print("5️⃣  weather_monthly - PERMANENT (no TTL)")
+        # === MONTHLY COLLECTION: 1 year TTL ===
+        print("5️⃣  weather_monthly - 1 year retention")
         monthly_col = self.db["weather_monthly"]
         
         await monthly_col.create_index("location_id")
         await monthly_col.create_index([("year", 1), ("month", 1)])
         await monthly_col.create_index([("location_id", 1), ("year", -1), ("month", -1)])
         print("  ✅ Indexes: location_id, year+month, compound")
-        print("  🌟 No TTL - data kept forever for LOD\n")
+        
+        await monthly_col.create_index(
+            [("created_at", 1)],
+            expireAfterSeconds=31536000,  # 1 year (365 days)
+            name="ttl_1y"
+        )
+        print("  🕐 TTL index: created_at (1 year)")
+        print("  → Data auto-deleted after 1 year (đủ để phân tích xu hướng)\n")
         
         # === LOCATIONS COLLECTION ===
         print("6️⃣  weather_locations - metadata")
@@ -168,10 +175,10 @@ class RetentionPolicySetup:
         
         collections = {
             "weather_raw": ["location_id", "timestamp", "ttl_24h"],
-            "weather_hourly": ["location_id", "hour", "ttl_7d"],
-            "weather_daily": ["location_id", "date", "ttl_30d"],
-            "weather_weekly": ["location_id", "ttl_180d"],
-            "weather_monthly": ["location_id"],
+            "weather_hourly": ["location_id", "hour", "ttl_25h"],
+            "weather_daily": ["location_id", "date", "ttl_32d"],
+            "weather_weekly": ["location_id", "ttl_60d"],
+            "weather_monthly": ["location_id", "ttl_1y"],
             "weather_locations": ["location_id"]
         }
         
@@ -206,11 +213,11 @@ class RetentionPolicySetup:
         print()
         print("Collection         | Retention | TTL (seconds) | Purpose")
         print("-" * 70)
-        print("weather_raw        | 24 hours  | 86,400        | Real-time data")
-        print("weather_hourly     | 7 days    | 604,800       | Recent trends")
-        print("weather_daily      | 30 days   | 2,592,000     | Monthly stats")
-        print("weather_weekly     | 6 months  | 15,552,000    | Seasonal trends")
-        print("weather_monthly    | PERMANENT | -             | LOD export")
+        print("weather_raw        | 24 hours  | 86,400        | Real-time data → aggregate hourly")
+        print("weather_hourly     | 25 hours  | 90,000        | Aggregate daily → delete after daily")
+        print("weather_daily      | 32 days   | 2,764,800     | Aggregate monthly → delete after monthly")
+        print("weather_weekly     | 60 days   | 5,184,000     | Seasonal trends")
+        print("weather_monthly    | 1 year    | 31,536,000    | Long-term analysis")
         print("weather_locations  | PERMANENT | -             | Metadata")
         print("=" * 70)
         print()
@@ -220,9 +227,16 @@ class RetentionPolicySetup:
         print("  - Automatic cleanup, no manual intervention needed")
         print()
         print("💾 Storage Savings:")
-        print("  - Without retention: ~6.3 GB/year (12 quận)")
-        print("  - With retention:    ~18 MB/year (12 quận)")
-        print("  - Savings:           99.7%")
+        print("  - Without retention: ~6.3 GB/year (12 locations)")
+        print("  - With retention:    ~27 MB/year (12 locations)")
+        print("  - Savings:           99.6%")
+        print()
+        print("📊 Data Flow:")
+        print("  Raw (24h) → Hourly (25h) → Daily (32d) → Monthly (1y)")
+        print("  - Raw: Aggregate mỗi giờ thành hourly")
+        print("  - Hourly (TTL 25h): Buffer 1h trước khi bị xoá, đủ thời gian aggregate daily")
+        print("  - Daily (TTL 32d): Buffer 2 ngày trước khi bị xoá, đủ thời gian aggregate monthly")
+        print("  - Monthly: Giữ 1 năm cho phân tích dài hạn")
         print()
         print("💡 Next Steps:")
         print("  1. Seed historical data:")
