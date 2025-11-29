@@ -1,9 +1,10 @@
 // Copyright (c) 2025 CityLens Contributors
-// Licensed under the MIT License
+// Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Box } from '@mui/material';
 import Dashboard from './pages/Dashboard';
+import MapPage from './pages/MapPage';
 import Login from './pages/Login';
 import Sidebar from './components/common/Sidebar';
 import Header from './components/common/Header';
@@ -41,7 +42,7 @@ function App() {
         >
           <Routes>
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/map" element={<Dashboard />} />
+            <Route path="/map" element={<MapPage />} />
             <Route path="/reports" element={<Dashboard />} />
             <Route path="/analytics" element={<Dashboard />} />
             <Route path="/users" element={<Dashboard />} />

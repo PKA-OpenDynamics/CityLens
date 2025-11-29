@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Copyright (c) 2025 CityLens Contributors
-# Licensed under the MIT License
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
 """
 Import OSM data vào PostgreSQL + PostGIS
@@ -313,7 +313,7 @@ def import_osm_data(osm_file: str):
 
 
 if __name__ == "__main__":
-    osm_file = "data/osm/hcmc.osm.pbf"
+    osm_file = "data/osm/hanoi.osm.pbf"
     
     if len(sys.argv) > 1:
         osm_file = sys.argv[1]
