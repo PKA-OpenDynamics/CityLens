@@ -1,35 +1,30 @@
-# Copyright (c) 2025 CityLens Contributors
-# Licensed under the MIT License
-
+# Python 3.11 Slim - Lightweight and fast
 FROM python:3.11-slim
 
-LABEL maintainer="CityLens Team"
-LABEL description="CityLens Backend API Server"
-
-# Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies for PostGIS/GeoAlchemy and OSM processing
 RUN apt-get update && apt-get install -y \
-    gcc \
-    postgresql-client \
-    libpq-dev \
+    libpq-dev gcc g++ \
+    wget \
+    osmium-tool \
+    cmake \
+    libboost-dev \
+    libbz2-dev \
+    zlib1g-dev \
+    libexpat1-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY requirements.txt .
-
 # Install Python dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY ./app ./app
-
-# Create uploads directory
-RUN mkdir -p /app/uploads
+COPY . .
 
 # Expose port
 EXPOSE 8000
 
-# Run application
+# Run command
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
