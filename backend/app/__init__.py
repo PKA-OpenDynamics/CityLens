@@ -1,2 +1,2 @@
-# Copyright (c) 2025 CityLens Contributors
-# Licensed under the MIT License
+__version__ = "0.1.0"
+
