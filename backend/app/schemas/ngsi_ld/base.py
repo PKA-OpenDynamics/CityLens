@@ -7,7 +7,7 @@ Implements ETSI GS CIM 009 V1.6.1 standard
 """
 
 from pydantic import BaseModel, Field, field_validator, ConfigDict
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, Literal
 from datetime import datetime
 from enum import Enum
 
@@ -28,7 +28,7 @@ class NGSILDProperty(BaseModel):
     """
     model_config = ConfigDict(populate_by_name=True)
     
-    type: str = Field(default="Property", const=True)
+    type: Literal["Property"] = Field(default="Property")
     value: Any = Field(..., description="The actual value of the property")
     observedAt: Optional[datetime] = Field(
         None,
@@ -58,7 +58,7 @@ class NGSILDProperty(BaseModel):
 
 class GeoJSONPoint(BaseModel):
     """GeoJSON Point geometry"""
-    type: str = Field(default="Point", const=True)
+    type: Literal["Point"] = Field(default="Point")
     coordinates: List[float] = Field(
         ...,
         description="[longitude, latitude] or [longitude, latitude, altitude]",
@@ -82,7 +82,7 @@ class GeoJSONPoint(BaseModel):
 
 class GeoJSONPolygon(BaseModel):
     """GeoJSON Polygon geometry"""
-    type: str = Field(default="Polygon", const=True)
+    type: Literal["Polygon"] = Field(default="Polygon")
     coordinates: List[List[List[float]]] = Field(
         ...,
         description="Array of linear ring coordinate arrays"
@@ -91,7 +91,7 @@ class GeoJSONPolygon(BaseModel):
 
 class GeoJSONLineString(BaseModel):
     """GeoJSON LineString geometry"""
-    type: str = Field(default="LineString", const=True)
+    type: Literal["LineString"] = Field(default="LineString")
     coordinates: List[List[float]] = Field(
         ...,
         description="Array of positions"
@@ -109,7 +109,7 @@ class NGSILDGeoProperty(BaseModel):
     """
     model_config = ConfigDict(populate_by_name=True)
     
-    type: str = Field(default="GeoProperty", const=True)
+    type: Literal["GeoProperty"] = Field(default="GeoProperty")
     value: GeoJSONGeometry = Field(
         ...,
         description="GeoJSON geometry object"
@@ -137,7 +137,7 @@ class NGSILDRelationship(BaseModel):
     """
     model_config = ConfigDict(populate_by_name=True)
     
-    type: str = Field(default="Relationship", const=True)
+    type: Literal["Relationship"] = Field(default="Relationship")
     object: str = Field(
         ...,
         description="URI of the target entity",

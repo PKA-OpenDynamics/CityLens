@@ -8,5 +8,5 @@ from app.schemas.report import (
     ReportCreate, ReportUpdate, ReportResponse, ReportVerify, ReportStats
 )
 from app.schemas.ngsi_ld import (
-    NGSILDEntity, FloodSensor, TrafficSensor, AQISensor
+    NGSILDEntity
 )

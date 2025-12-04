@@ -1,3 +1,6 @@
+# Copyright (c) 2025 CityLens Contributors
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
+
 from sqlalchemy import Column, String, Integer, DateTime, func
 from sqlalchemy.dialects.postgresql import JSONB
 from geoalchemy2 import Geometry

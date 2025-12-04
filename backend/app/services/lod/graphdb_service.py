@@ -27,10 +27,24 @@ NGSI_LD = Namespace("https://uri.etsi.org/ngsi-ld/")
 
 
 class GraphDBService:
-    """Service for interacting with GraphDB (Apache Jena Fuseki)"""
+    """Service for interacting with GraphDB (Apache Jena Fuseki)
+    
+    Gracefully degrades when GraphDB is not available (production deployment).
+    """
     
     def __init__(self):
-        self.base_url = settings.GRAPHDB_URL or "http://localhost:7200"
+        self.enabled = bool(settings.GRAPHDB_URL)
+        
+        if not self.enabled:
+            logger.warning("GraphDB is DISABLED (GRAPHDB_URL not set). LOD features will be unavailable.")
+            self.base_url = None
+            self.repository = None
+            self.endpoint = None
+            self.sparql = None
+            self.graph = None
+            return
+        
+        self.base_url = settings.GRAPHDB_URL
         self.repository = settings.GRAPHDB_REPOSITORY or "citylens"
         self.endpoint = f"{self.base_url}/{self.repository}"
         
@@ -64,6 +78,10 @@ class GraphDBService:
         Returns:
             Success boolean
         """
+        if not self.enabled:
+            logger.debug("GraphDB disabled - skipping RDF insert")
+            return False
+            
         try:
             headers = {
                 "Content-Type": f"text/{format}"
@@ -76,15 +94,13 @@ class GraphDBService:
                     headers=headers,
                     timeout=30.0
                 )
-                
+            
             if response.status_code in [200, 201, 204]:
                 logger.info(f"Successfully inserted RDF triples into GraphDB")
                 return True
             else:
                 logger.error(f"Failed to insert RDF: {response.status_code} - {response.text}")
-                return False
-                
-        except Exception as e:
+                return False        except Exception as e:
             logger.error(f"Error inserting RDF triples: {e}")
             return False
     
@@ -98,6 +114,10 @@ class GraphDBService:
         Returns:
             List of result bindings
         """
+        if not self.enabled:
+            logger.debug("GraphDB disabled - skipping SPARQL query")
+            return []
+            
         try:
             self.sparql.setQuery(query)
             self.sparql.setMethod(GET)
@@ -131,6 +151,10 @@ class GraphDBService:
         Returns:
             Success boolean
         """
+        if not self.enabled:
+            logger.debug("GraphDB disabled - skipping SPARQL update")
+            return False
+            
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.post(

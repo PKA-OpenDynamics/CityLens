@@ -7,7 +7,7 @@ Spec: https://github.com/smart-data-models/dataModel.Parking
 """
 
 from pydantic import Field, ConfigDict
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 from app.schemas.ngsi_ld.base import (
     NGSILDEntity,
@@ -26,7 +26,7 @@ class OffStreetParking(NGSILDEntity):
     Spec: https://github.com/smart-data-models/dataModel.Parking/blob/master/OffStreetParking/doc/spec.md
     """
     
-    type: str = Field(default="OffStreetParking", const=True)
+    type: Literal["OffStreetParking"] = Field(default="OffStreetParking")
     
     # Required
     name: NGSILDProperty = Field(
@@ -176,7 +176,7 @@ class ParkingSpot(NGSILDEntity):
     Represents an individual parking spot.
     """
     
-    type: str = Field(default="ParkingSpot", const=True)
+    type: Literal["ParkingSpot"] = Field(default="ParkingSpot")
     
     # Required
     location: NGSILDGeoProperty = Field(

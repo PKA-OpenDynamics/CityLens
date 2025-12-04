@@ -7,7 +7,7 @@ Spec: https://github.com/smart-data-models/dataModel.Transportation
 """
 
 from pydantic import Field, ConfigDict
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
 
 from app.schemas.ngsi_ld.base import (
@@ -27,7 +27,7 @@ class TrafficFlowObserved(NGSILDEntity):
     Spec: https://github.com/smart-data-models/dataModel.Transportation/blob/master/TrafficFlowObserved/doc/spec.md
     """
     
-    type: str = Field(default="TrafficFlowObserved", const=True)
+    type: Literal["TrafficFlowObserved"] = Field(default="TrafficFlowObserved")
     
     # Required
     dateObserved: NGSILDProperty = Field(
@@ -140,7 +140,7 @@ class RoadAccident(NGSILDEntity):
     Spec: https://github.com/smart-data-models/dataModel.Transportation/blob/master/RoadAccident/doc/spec.md
     """
     
-    type: str = Field(default="RoadAccident", const=True)
+    type: Literal["RoadAccident"] = Field(default="RoadAccident")
     
     # Required
     dateObserved: NGSILDProperty = Field(

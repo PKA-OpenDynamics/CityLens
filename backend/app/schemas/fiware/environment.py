@@ -7,7 +7,7 @@ Spec: https://github.com/smart-data-models/dataModel.Environment
 """
 
 from pydantic import Field, ConfigDict
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime
 
 from app.schemas.ngsi_ld.base import (
@@ -27,7 +27,7 @@ class AirQualityObserved(NGSILDEntity):
     Spec: https://github.com/smart-data-models/dataModel.Environment/blob/master/AirQualityObserved/doc/spec.md
     """
     
-    type: str = Field(default="AirQualityObserved", const=True)
+    type: Literal["AirQualityObserved"] = Field(default="AirQualityObserved")
     
     # Required attributes
     dateObserved: NGSILDProperty = Field(
@@ -148,7 +148,7 @@ class WeatherObserved(NGSILDEntity):
     Spec: https://github.com/smart-data-models/dataModel.Environment/blob/master/WeatherObserved/doc/spec.md
     """
     
-    type: str = Field(default="WeatherObserved", const=True)
+    type: Literal["WeatherObserved"] = Field(default="WeatherObserved")
     
     # Required
     dateObserved: NGSILDProperty = Field(

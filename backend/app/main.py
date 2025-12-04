@@ -1,3 +1,6 @@
+# Copyright (c) 2025 CityLens Contributors
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
@@ -29,5 +32,6 @@ def root():
         "docs": "/docs"
     }
 
-from app.api.api_v1.api import api_router
-app.include_router(api_router)
+# Use the new API v1 router with all endpoints
+from app.api.v1.api import api_router
+app.include_router(api_router, prefix=settings.API_V1_STR)

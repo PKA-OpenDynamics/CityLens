@@ -7,7 +7,7 @@ For filtering and querying entities
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Literal
 from enum import Enum
 
 

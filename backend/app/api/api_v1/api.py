@@ -1,3 +1,6 @@
+# Copyright (c) 2025 CityLens Contributors
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
+
 from fastapi import APIRouter
 from app.api.api_v1.endpoints import entities, hanoi_data, osm_management, stats, osm_query
 

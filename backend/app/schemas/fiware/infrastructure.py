@@ -7,7 +7,7 @@ Spec: https://github.com/smart-data-models/dataModel.UrbanMobility
 """
 
 from pydantic import Field, ConfigDict
-from typing import Optional
+from typing import Optional, Literal
 
 from app.schemas.ngsi_ld.base import (
     NGSILDEntity,
@@ -26,7 +26,7 @@ class StreetLight(NGSILDEntity):
     Spec: https://github.com/smart-data-models/dataModel.Streetlighting/blob/master/Streetlight/doc/spec.md
     """
     
-    type: str = Field(default="Streetlight", const=True)
+    type: Literal["Streetlight"] = Field(default="Streetlight")
     
     # Required
     location: NGSILDGeoProperty = Field(
@@ -154,7 +154,7 @@ class WaterQualityObserved(NGSILDEntity):
     Spec: https://github.com/smart-data-models/dataModel.Environment/blob/master/WaterQualityObserved/doc/spec.md
     """
     
-    type: str = Field(default="WaterQualityObserved", const=True)
+    type: Literal["WaterQualityObserved"] = Field(default="WaterQualityObserved")
     
     # Required
     dateObserved: NGSILDProperty = Field(

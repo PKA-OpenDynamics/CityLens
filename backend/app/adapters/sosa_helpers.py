@@ -1,3 +1,6 @@
+# Copyright (c) 2025 CityLens Contributors
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
+
 """
 SOSA/SSN Helper Functions
 
@@ -277,47 +280,91 @@ def create_aqi_observations_from_aqicn(
     """
     Create SOSA observations from AQICN API response.
     
+    AQICN Response Structure:
+    {
+        "aqi": 71,
+        "idx": 7397,
+        "time": {"s": "2016-12-10 19:00:00", "tz": "-06:00", "v": 1481396400},
+        "city": {"name": "Chicago, Illinois", "geo": [41.9136, -87.7239]},
+        "iaqi": {
+            "pm25": {"v": 71},
+            "pm10": {"v": 45},
+            "o3": {"v": 30},
+            "no2": {"v": 15},
+            "so2": {"v": 5},
+            "co": {"v": 0.3}
+        },
+        "forecast": {
+            "daily": {
+                "pm25": [{"avg": 154, "day": "2020-06-13", "max": 157, "min": 131}]
+            }
+        }
+    }
+    
     Args:
         aqi_data: Raw AQICN API response data
         city: City name (default: hanoi)
     
     Returns:
-        List of SOSA Observation entities
+        List of SOSA Observation entities for all available pollutants
     """
-    observations = []
-    result_time = aqi_data.get("time", {}).get("iso")
-    location = None
+    # Extract timestamp
+    time_info = aqi_data.get("time", {})
+    time_str = time_info.get("s", "")
+    tz = time_info.get("tz", "+00:00")
     
+    if time_str:
+        try:
+            # Convert "2016-12-10 19:00:00" to ISO 8601
+            dt = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
+            result_time = dt.isoformat() + tz
+        except:
+            result_time = datetime.utcnow().isoformat() + "Z"
+    else:
+        result_time = datetime.utcnow().isoformat() + "Z"
+    
+    # Extract location
+    location = None
     if "city" in aqi_data and "geo" in aqi_data["city"]:
         geo = aqi_data["city"]["geo"]
-        location = {
-            "type": "Point",
-            "coordinates": [geo[1], geo[0]]  # lon, lat
-        }
+        if len(geo) >= 2:
+            location = {
+                "type": "Point",
+                "coordinates": [float(geo[1]), float(geo[0])]  # lon, lat
+            }
     
-    # Extract individual pollutants
+    # Extract individual pollutants from iaqi
     iaqi = aqi_data.get("iaqi", {})
     
+    # Mapping: (Property Name, iaqi key, unit code)
     pollutants = [
-        ("PM2.5", "pm25", "GQ"),
-        ("PM10", "pm10", "GQ"),
-        ("NO2", "no2", "GQ"),
-        ("SO2", "so2", "GQ"),
-        ("CO", "co", "GP"),
-        ("O3", "o3", "GQ")
+        ("PM2.5", "pm25", "GQ"),  # µg/m³
+        ("PM10", "pm10", "GQ"),   # µg/m³
+        ("NO2", "no2", "GQ"),     # µg/m³
+        ("SO2", "so2", "GQ"),     # µg/m³
+        ("CO", "co", "GP"),       # mg/m³
+        ("O3", "o3", "GQ")        # µg/m³
     ]
     
     obs_list = []
     for prop_name, iaqi_key, unit in pollutants:
-        if iaqi_key in iaqi and "v" in iaqi[iaqi_key]:
-            obs_list.append({
-                "observable_property": prop_name,
-                "value": iaqi[iaqi_key]["v"],
-                "unit_code": unit
-            })
+        if iaqi_key in iaqi:
+            value_data = iaqi[iaqi_key]
+            if isinstance(value_data, dict) and "v" in value_data:
+                value = value_data["v"]
+                # Handle numeric values
+                if isinstance(value, (int, float)) and value >= 0:
+                    obs_list.append({
+                        "observable_property": prop_name,
+                        "value": float(value),
+                        "unit_code": unit
+                    })
     
     # Note: Overall AQI is derived from individual pollutants, not a separate sensor measurement
     # So we don't create a separate SOSA Observation for it
+    
+    if not obs_list:
+        print(f"Warning: No pollutant data found in AQICN response for {city}")
     
     return create_multiple_sosa_observations(
         observations=obs_list,
