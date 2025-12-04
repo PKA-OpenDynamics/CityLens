@@ -5,7 +5,7 @@
 Schema cho NGSI-LD entities
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
 from datetime import datetime
 from pydantic import BaseModel, Field
 

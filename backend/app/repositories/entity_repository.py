@@ -1,3 +1,6 @@
+# Copyright (c) 2025 CityLens Contributors
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
+
 from typing import List, Optional, Dict, Any, Union
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func

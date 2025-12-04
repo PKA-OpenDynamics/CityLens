@@ -7,7 +7,7 @@ Custom model for citizen-generated reports, compatible with NGSI-LD
 """
 
 from pydantic import Field, ConfigDict
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 from app.schemas.ngsi_ld.base import (
     NGSILDEntity,
@@ -28,7 +28,7 @@ class CitizenReport(NGSILDEntity):
     made by a human sensor.
     """
     
-    type: str = Field(default="CitizenReport", const=True)
+    type: Literal["CitizenReport"] = Field(default="CitizenReport")
     
     # Required
     dateReported: NGSILDProperty = Field(

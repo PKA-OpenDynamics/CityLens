@@ -1,3 +1,6 @@
+# Copyright (c) 2025 CityLens Contributors
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
+
 from typing import AsyncGenerator
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import declarative_base

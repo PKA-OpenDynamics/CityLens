@@ -1,0 +1,110 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# OSM Data (large files)
+data/*.osm.pbf
+data/*.osm
+data/*.geojson
+
+# Uploads (media files)
+uploads/*
+!uploads/.gitkeep
+
+# Alembic
+alembic/versions/__pycache__/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Documentation build
+docs/_build/
+
+# Scripts output
+scripts/*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Docker
+docker-compose.yml
+docker-compose.*.yml
+Dockerfile
+!Dockerfile.production
+
+# Project specific
+README.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+LICENSE
+CHANGELOG.md
+*.md
+!DEPLOYMENT_RAILWAY.md
+
+# Tests
+tests/
+test_*.py
+*_test.py
