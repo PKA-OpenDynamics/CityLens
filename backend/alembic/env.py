@@ -28,12 +28,7 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Override sqlalchemy.url with environment variable
-# Use synchronous driver for migrations if needed, or async if using async engine.
-# Here we use the async driver string but we might need to process it if alembic strictly needs sync.
-# However, modern Alembic supports async via run_migrations_online.
-# Escape % characters to avoid ConfigParser interpolation errors
-db_url = settings.SQLALCHEMY_DATABASE_URI.replace('%', '%%')
-config.set_main_option("sqlalchemy.url", db_url)
+config.set_main_option("sqlalchemy.url", settings.SQLALCHEMY_DATABASE_URI)
 
 target_metadata = Base.metadata
 
