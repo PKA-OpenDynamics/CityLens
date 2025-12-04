@@ -25,7 +25,8 @@ class Settings(BaseSettings):
     # CORS
     BACKEND_CORS_ORIGINS: List[Union[str, AnyHttpUrl]] = ["http://localhost:3000", "http://localhost:8000", "*"]
 
-    # Database
+    # Database - Railway will inject these or use DATABASE_URL
+    DATABASE_URL: Optional[str] = None  # Railway PostgreSQL connection string
     POSTGRES_SERVER: str = "db"
     POSTGRES_USER: str = "postgres"
     POSTGRES_PASSWORD: str = "citylens_secret"
@@ -53,6 +54,12 @@ class Settings(BaseSettings):
     
     @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
+        # Railway provides DATABASE_URL, use it if available
+        if self.DATABASE_URL:
+            # Railway format: postgresql://... 
+            # Convert to asyncpg: postgresql+asyncpg://...
+            return self.DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
+        # Fallback to manual construction
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
 settings = Settings()
