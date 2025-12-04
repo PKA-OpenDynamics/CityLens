@@ -49,14 +49,14 @@ COPY . .
 # Create uploads directory
 RUN mkdir -p /app/uploads && chmod 777 /app/uploads
 
-# Render/Railway provides PORT environment variable
+# Railway provides PORT environment variable
 ENV PORT=8000
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:${PORT}/ || exit 1
 
-# Expose port (Render/Railway will override this)
+# Expose port (Railway will override this)
 EXPOSE ${PORT}
 
 # Run database migrations and start server
