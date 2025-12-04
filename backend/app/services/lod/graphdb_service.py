@@ -82,7 +82,8 @@ class GraphDBService:
                 return True
             else:
                 logger.error(f"Failed to insert RDF: {response.status_code} - {response.text}")
-                return False        except Exception as e:
+                return False
+        except Exception as e:
             logger.error(f"Error inserting RDF triples: {e}")
             return False
     
