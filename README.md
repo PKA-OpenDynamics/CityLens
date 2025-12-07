@@ -91,38 +91,9 @@ CityLens là nền tảng thành phố thông minh sử dụng kiến trúc Link
 
 ### Kiến trúc 3 lớp dữ liệu (LOD Architecture)
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│  Layer 3: DỮ LIỆU CÔNG DÂN (Citizen Data Layer)                    │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  • Báo cáo sự cố (CivicIssue)                               │   │
-│  │  • Phản hồi và đánh giá                                     │   │
-│  │  • Sự kiện thời gian thực                                   │   │
-│  │  Storage: PostgreSQL + MongoDB                              │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              ▲                                      │
-│                              │                                      │
-│  Layer 2: HẠ TẦNG ĐÔ THỊ (Urban Infrastructure Layer)              │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  • Dữ liệu cảm biến IoT (AQI, nhiệt độ, độ ẩm)             │   │
-│  │  • Thông tin giao thông (TrafficFlowObserved)               │   │
-│  │  • Cơ sở tiện ích công cộng (POIs)                         │   │
-│  │  Storage: PostgreSQL + GraphDB (RDF)                        │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                              ▲                                      │
-│                              │                                      │
-│  Layer 1: NỀN TẢNG ĐỊA LÝ (Geographic Foundation Layer)           │
-│  ┌─────────────────────────────────────────────────────────────┐   │
-│  │  • Ranh giới hành chính (Quận/Huyện, Phường/Xã)            │   │
-│  │  • Mạng lưới đường phố                                      │   │
-│  │  • Tòa nhà và công trình                                    │   │
-│  │  Source: OpenStreetMap                                       │   │
-│  │  Storage: PostgreSQL + PostGIS                              │   │
-│  └─────────────────────────────────────────────────────────────┘   │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
-```
+<p align="center">
+  <img src="docs/assets/architecture/LOD_Architecture.png" alt="CityLens Logo" width="700">
+</p>
 
 ### Sơ đồ kiến trúc chi tiết
 
