@@ -112,3 +112,12 @@ coverage/
 .temp/
 *.bak
 *.tmp
+
+# Backend (excluded from git)
+backend/
+
+# Web Dashboard (excluded from git)
+web-dashboard/
+
+# Old citylens-app (replaced by web-app)
+citylens-app/
