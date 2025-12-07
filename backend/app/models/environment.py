@@ -9,7 +9,7 @@ Layer 2: Semi-dynamic data updated from external APIs
 from sqlalchemy import Column, Integer, String, DECIMAL, DateTime, func
 from sqlalchemy.dialects.postgresql import JSONB
 
-from app.db.base import Base
+from app.db.postgres import Base
 
 
 class EnvironmentalData(Base):
