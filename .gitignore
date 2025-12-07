@@ -112,3 +112,6 @@ coverage/
 .temp/
 *.bak
 *.tmp
+
+# Backend (excluded from git)
+backend/
