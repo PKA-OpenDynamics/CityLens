@@ -16,7 +16,19 @@ from alembic import context
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from app.core.config import settings
-from app.models.db_models import Base  # Ensure all models are imported via this Base
+from app.db.postgres import Base
+
+# Import all models so Alembic can detect them
+from app.models.user import User
+from app.models.report import Report, ReportCategory, ReportComment, ReportVote, ReportFollower, ReportActivity
+from app.models.geographic import AdministrativeBoundary, Street, Building
+from app.models.facility import PublicFacility, TransportFacility
+from app.models.environment import EnvironmentalData
+from app.models.db_models import EntityDB
+from app.models.assignment import Department, ReportAssignment, AssignmentHistory, DepartmentMember
+from app.models.notification import Notification, UserNotificationSettings, NotificationTemplate
+from app.models.media import MediaFile
+from app.models.incident import Incident
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
