@@ -5,10 +5,7 @@ from sqlalchemy import Column, String, Integer, DateTime, func
 from sqlalchemy.dialects.postgresql import JSONB
 from geoalchemy2 import Geometry
 from app.core.config import settings
-from sqlalchemy.orm import DeclarativeBase
-
-class Base(DeclarativeBase):
-    pass
+from app.db.postgres import Base
 
 class EntityDB(Base):
     """
