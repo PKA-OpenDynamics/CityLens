@@ -44,8 +44,8 @@ SPARQLWrapper==2.0.0
 shapely==2.0.2
 numpy==1.26.3
 
-# OSM Data Processing (Only needed for data import)
-# osmium==3.7.0
+# OSM Data Processing
+osmium==3.7.0
 
 # Python Environment
 python-dotenv==1.0.0
