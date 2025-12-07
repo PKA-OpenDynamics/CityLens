@@ -51,10 +51,6 @@ def get_weather_daily_collection():
     return database["weather_daily"]
 
 
-def get_weather_weekly_collection():
-    return database["weather_weekly"]
-
-
 def get_weather_monthly_collection():
     return database["weather_monthly"]
 
@@ -79,62 +75,90 @@ async def setup_indexes():
     Create indexes including TTL for data retention
     
     TTL Strategy:
-    - Raw: 24 hours
+    - Raw: 24 hours (realtime data, ~17,280 docs/day will auto-delete)
     - Hourly: 7 days
-    - Daily: 30 days
-    - Weekly: 180 days (6 months)
+    - Daily: 90 days (to keep historical data for analysis)
     - Monthly: permanent (no TTL)
     """
+    async def create_index_safe(collection, index_spec, **options):
+        """Safely create index, handling conflicts"""
+        try:
+            await collection.create_index(index_spec, **options)
+        except Exception as e:
+            # If index already exists with different name, drop old and create new
+            if "already exists with a different name" in str(e) or "IndexOptionsConflict" in str(e):
+                # Find and drop existing index with same keys
+                existing_indexes = await collection.list_indexes().to_list(length=100)
+                # Convert index_spec to dict format for comparison
+                if isinstance(index_spec, list):
+                    index_dict = dict(index_spec)
+                elif isinstance(index_spec, str):
+                    index_dict = {index_spec: 1}
+                else:
+                    index_dict = dict(index_spec)
+                
+                for idx in existing_indexes:
+                    if idx.get("key") == index_dict:
+                        await collection.drop_index(idx["name"])
+                        # Retry creating with new name
+                        await collection.create_index(index_spec, **options)
+                        break
+            elif "already exists" in str(e).lower():
+                # Index already exists with same name, skip
+                pass
+            else:
+                # For other errors, just log and continue
+                print(f"  ⚠️  Index creation warning: {e}")
+    
     # Raw collection - 24h TTL
+    # Note: For realtime data (1 min interval with 12 locations):
+    # - Documents per day: 12 × 60 × 24 = 17,280 docs/day
+    # - With TTL 24h: ~17,280 docs will be deleted each day (1 day's worth of data)
     raw_col = database["weather_raw"]
-    await raw_col.create_index("location_id")
-    await raw_col.create_index("timestamp")
-    await raw_col.create_index([("location_id", 1), ("timestamp", -1)])
-    await raw_col.create_index([("coordinates", "2dsphere")])
-    await raw_col.create_index(
+    await create_index_safe(raw_col, "location_id")
+    await create_index_safe(raw_col, "timestamp")
+    await create_index_safe(raw_col, [("location_id", 1), ("timestamp", -1)])
+    await create_index_safe(raw_col, [("coordinates", "2dsphere")])
+    await create_index_safe(
+        raw_col,
         [("created_at", 1)],
-        expireAfterSeconds=86400  # 24 hours
+        expireAfterSeconds=86400,  # 24 hours
+        name="ttl_24h"
     )
     
     # Hourly collection - 7 days TTL
     hourly_col = database["weather_hourly"]
-    await hourly_col.create_index("location_id")
-    await hourly_col.create_index("hour")
-    await hourly_col.create_index([("location_id", 1), ("hour", -1)])
-    await hourly_col.create_index(
+    await create_index_safe(hourly_col, "location_id")
+    await create_index_safe(hourly_col, "hour")
+    await create_index_safe(hourly_col, [("location_id", 1), ("hour", -1)])
+    await create_index_safe(
+        hourly_col,
         [("created_at", 1)],
-        expireAfterSeconds=604800  # 7 days
+        expireAfterSeconds=604800,  # 7 days
+        name="ttl_7d"
     )
     
-    # Daily collection - 30 days TTL
+    # Daily collection - 90 days TTL
     daily_col = database["weather_daily"]
-    await daily_col.create_index("location_id")
-    await daily_col.create_index("date")
-    await daily_col.create_index([("location_id", 1), ("date", -1)])
-    await daily_col.create_index(
+    await create_index_safe(daily_col, "location_id")
+    await create_index_safe(daily_col, "date")
+    await create_index_safe(daily_col, [("location_id", 1), ("date", -1)])
+    await create_index_safe(
+        daily_col,
         [("created_at", 1)],
-        expireAfterSeconds=2592000  # 30 days
-    )
-    
-    # Weekly collection - 180 days TTL (6 months)
-    weekly_col = database["weather_weekly"]
-    await weekly_col.create_index("location_id")
-    await weekly_col.create_index([("year", 1), ("week", 1)])
-    await weekly_col.create_index([("location_id", 1), ("year", -1), ("week", -1)])
-    await weekly_col.create_index(
-        [("created_at", 1)],
-        expireAfterSeconds=15552000  # 180 days
+        expireAfterSeconds=7776000,  # 90 days (90 * 24 * 60 * 60)
+        name="ttl_90d"
     )
     
     # Monthly collection - NO TTL (permanent for LOD)
     monthly_col = database["weather_monthly"]
-    await monthly_col.create_index("location_id")
-    await monthly_col.create_index([("year", 1), ("month", 1)])
-    await monthly_col.create_index([("location_id", 1), ("year", -1), ("month", -1)])
+    await create_index_safe(monthly_col, "location_id")
+    await create_index_safe(monthly_col, [("year", 1), ("month", 1)])
+    await create_index_safe(monthly_col, [("location_id", 1), ("year", -1), ("month", -1)])
     
     # Locations collection
     locations_col = database["weather_locations"]
-    await locations_col.create_index("location_id", unique=True)
-    await locations_col.create_index([("coordinates", "2dsphere")])
+    await create_index_safe(locations_col, "location_id", unique=True)
+    await create_index_safe(locations_col, [("coordinates", "2dsphere")])
     
     print("✅ MongoDB indexes created successfully")
