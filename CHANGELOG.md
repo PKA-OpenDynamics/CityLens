@@ -48,7 +48,7 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Scripts cài đặt tự động (setup.sh)
 
 ### Thay đổi
-- Thống nhất license thành GPL-3.0 cho tất cả components
+- Thống nhất license GPL-3.0 cho tất cả components
 - Dọn sạch code và scripts không dùng
 - Chuẩn hóa API client với hỗ trợ PATCH
 - Cập nhật cấu trúc tài liệu
@@ -113,5 +113,4 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 [Chưa phát hành]: https://github.com/PKA-Open-Dynamics/CityLens/compare/v1.0.0...HEAD
 [1.0.0]: https://github.com/PKA-Open-Dynamics/CityLens/compare/v0.2.0...v1.0.0
-[0.2.0]: https://github.com/PKA-Open-Dynamics/CityLens/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/PKA-Open-Dynamics/CityLens/releases/tag/v0.1.0
+
