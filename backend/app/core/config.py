@@ -52,7 +52,18 @@ class Settings(BaseSettings):
     AQICN_API_KEY: Optional[str] = None  # WAQI API token from https://aqicn.org/api/
     
     @property
+    def REDIS_URL(self) -> str:
+        """Redis URL for cache connections"""
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+    
+    @property
     def SQLALCHEMY_DATABASE_URI(self) -> str:
+        """Async database URI for AsyncSession"""
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+    
+    @property
+    def SQLALCHEMY_SYNC_DATABASE_URI(self) -> str:
+        """Sync database URI for legacy Session"""
+        return f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
 settings = Settings()
