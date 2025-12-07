@@ -1,3 +1,6 @@
+// Copyright (c) 2025 CityLens Contributors
+// Licensed under the GNU General Public License v3.0 (GPL-3.0)
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,414 +10,480 @@ import {
   AlertTriangle, 
   CheckCircle, 
   Clock,
-  Building,
-  BarChart3,
-  TrendingUp,
-  TrendingDown,
-  Eye,
-  MapPin
+  MapPin,
+  Wind,
+  Droplets,
+  Activity,
+  Map,
+  Building2,
+  Route,
+  Layers,
+  RefreshCw
 } from 'lucide-react';
-import { reportApi, facilityApi, healthApi, type ReportStatistics, type Report, type Facility } from '@/lib/api';
+import { 
+  reportApi, 
+  healthApi, 
+  realtimeApi,
+  geographicStatsApi,
+  type ReportStatistics,
+  type WeatherData,
+  type AirQualityData,
+  type TrafficHotspot,
+  type GeographicStatistics
+} from '@/lib/api';
+import { cn } from '@/lib/utils';
 
-// Stat card component
-function StatCard({ 
+// ============================================
+// Overview Card Component
+// ============================================
+function OverviewCard({ 
   title, 
-  value, 
-  icon: Icon, 
-  trend,
-  trendValue,
-  color = 'blue',
-  loading = false
+  children,
+  className,
+  loading = false,
+  headerAction
 }: { 
   title: string;
-  value: string | number;
-  icon: React.ElementType;
-  trend?: 'up' | 'down';
-  trendValue?: string;
-  color?: 'blue' | 'green' | 'yellow' | 'red' | 'purple';
+  children: React.ReactNode;
+  className?: string;
   loading?: boolean;
+  headerAction?: React.ReactNode;
 }) {
-  const colorClasses = {
-    blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
-    green: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-    yellow: 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
-    red: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-    purple: 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
-  };
-
-  if (loading) {
-    return (
-      <div className="bg-card rounded-xl shadow-sm border border-border p-6 animate-pulse">
-        <div className="flex items-center justify-between">
-          <div className="space-y-3">
-            <div className="h-4 bg-muted rounded w-24"></div>
-            <div className="h-8 bg-muted rounded w-16"></div>
-          </div>
-          <div className={`p-3 rounded-lg bg-muted`}>
-            <div className="w-6 h-6 bg-muted-foreground/20 rounded"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-card rounded-xl shadow-sm border border-border p-6 hover:shadow-md transition-shadow">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-2xl font-bold text-foreground mt-1">{value}</p>
-          {trend && trendValue && (
-            <div className="flex items-center mt-2">
-              {trend === 'up' ? (
-                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-              ) : (
-                <TrendingDown className="w-4 h-4 text-red-500 mr-1" />
-              )}
-              <span className={`text-sm ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-                {trendValue}
-              </span>
-            </div>
-          )}
+    <div className={cn(
+      "bg-card rounded-xl shadow-sm border border-border p-6",
+      "hover:shadow-md transition-shadow",
+      className
+    )}>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+        {headerAction}
+      </div>
+      {loading ? (
+        <div className="animate-pulse space-y-3">
+          <div className="h-4 bg-muted rounded w-3/4"></div>
+          <div className="h-4 bg-muted rounded w-1/2"></div>
+          <div className="h-4 bg-muted rounded w-2/3"></div>
         </div>
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
-          <Icon className="w-6 h-6" />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Report item component
-function ReportItem({ report }: { report: Report }) {
-  const statusColors: Record<string, string> = {
-    pending: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
-    verified: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    in_progress: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-    resolved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
-    rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-  };
-
-  const statusLabels: Record<string, string> = {
-    pending: 'Chờ xử lý',
-    verified: 'Đã xác nhận',
-    in_progress: 'Đang xử lý',
-    resolved: 'Đã giải quyết',
-    rejected: 'Từ chối'
-  };
-
-  const categoryLabels: Record<string, string> = {
-    infrastructure: 'Cơ sở hạ tầng',
-    environment: 'Môi trường',
-    traffic: 'Giao thông',
-    security: 'An ninh',
-    other: 'Khác'
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  return (
-    <div className="flex items-start space-x-4 p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
-      <div className="flex-shrink-0">
-        <MapPin className="w-5 h-5 text-muted-foreground" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">{report.title}</p>
-        <p className="text-sm text-muted-foreground truncate">{report.description}</p>
-        <div className="flex items-center mt-2 space-x-2">
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${statusColors[report.status] || statusColors.pending}`}>
-            {statusLabels[report.status] || report.status}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {categoryLabels[report.category] || report.category}
-          </span>
-        </div>
-      </div>
-      <div className="flex-shrink-0 text-xs text-muted-foreground">
-        {formatDate(report.created_at)}
-      </div>
-    </div>
-  );
-}
-
-// Facility item component
-function FacilityItem({ facility }: { facility: Facility }) {
-  const categoryLabels: Record<string, string> = {
-    hospital: 'Bệnh viện',
-    school: 'Trường học',
-    park: 'Công viên',
-    government: 'Cơ quan nhà nước',
-    health: 'Y tế',
-    education: 'Giáo dục',
-    recreation: 'Giải trí',
-    other: 'Khác'
-  };
-
-  return (
-    <div className="flex items-center space-x-4 p-4 bg-muted/50 rounded-lg hover:bg-muted transition-colors">
-      <div className="flex-shrink-0">
-        <Building className="w-5 h-5 text-accent" />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-foreground truncate">{facility.name}</p>
-        <p className="text-xs text-muted-foreground">{categoryLabels[facility.category] || facility.category}</p>
-      </div>
-      {facility.rating && (
-        <div className="flex items-center text-yellow-500">
-          <span className="text-sm font-medium">{facility.rating.toFixed(1)}</span>
-          <span className="ml-1">⭐</span>
-        </div>
+      ) : (
+        children
       )}
     </div>
   );
 }
 
+// ============================================
+// Stat Item Component
+// ============================================
+function StatItem({ 
+  label, 
+  value, 
+  unit,
+  color = 'default',
+  icon: Icon
+}: { 
+  label: string;
+  value: string | number;
+  unit?: string;
+  color?: 'default' | 'green' | 'yellow' | 'red' | 'blue' | 'purple';
+  icon?: React.ElementType;
+}) {
+  const colorClasses = {
+    default: 'text-foreground',
+    green: 'text-green-600 dark:text-green-400',
+    yellow: 'text-yellow-600 dark:text-yellow-400',
+    red: 'text-red-600 dark:text-red-400',
+    blue: 'text-blue-600 dark:text-blue-400',
+    purple: 'text-purple-600 dark:text-purple-400'
+  };
+
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+      <div className="flex items-center gap-2">
+        {Icon && <Icon className="w-4 h-4 text-muted-foreground" />}
+        <span className="text-sm text-muted-foreground">{label}</span>
+      </div>
+      <span className={cn("text-sm font-semibold", colorClasses[color])}>
+        {value}{unit && <span className="text-xs ml-1 text-muted-foreground">{unit}</span>}
+      </span>
+    </div>
+  );
+}
+
+// ============================================
+// AQI Color Helper
+// ============================================
+function getAQIColor(aqi: number): 'green' | 'yellow' | 'red' {
+  if (aqi <= 50) return 'green';
+  if (aqi <= 100) return 'yellow';
+  return 'red';
+}
+
+function getAQILabel(aqi: number): string {
+  if (aqi <= 50) return 'Tốt';
+  if (aqi <= 100) return 'Trung bình';
+  if (aqi <= 150) return 'Không tốt cho nhóm nhạy cảm';
+  if (aqi <= 200) return 'Không tốt';
+  if (aqi <= 300) return 'Rất không tốt';
+  return 'Nguy hiểm';
+}
+
+// ============================================
+// Traffic Congestion Color Helper
+// ============================================
+function getCongestionColor(level: string): 'green' | 'yellow' | 'red' {
+  if (level === 'free_flow' || level === 'light') return 'green';
+  if (level === 'moderate') return 'yellow';
+  return 'red';
+}
+
+function getCongestionLabel(level: string): string {
+  const labels: Record<string, string> = {
+    'free_flow': 'Thông thoáng',
+    'light': 'Nhẹ',
+    'moderate': 'Đông đúc',
+    'heavy': 'Ùn tắc',
+    'severe': 'Tắc nghẽn'
+  };
+  return labels[level] || level;
+}
+
+// ============================================
+// Main Dashboard Component
+// ============================================
 export default function DashboardPage() {
-  const [statistics, setStatistics] = useState<ReportStatistics | null>(null);
-  const [recentReports, setRecentReports] = useState<Report[]>([]);
-  const [facilities, setFacilities] = useState<Facility[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [apiStatus, setApiStatus] = useState<'online' | 'offline' | 'checking'>('checking');
+  
+  const [statistics, setStatistics] = useState<ReportStatistics | null>(null);
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
+  const [trafficHotspots, setTrafficHotspots] = useState<TrafficHotspot[]>([]);
+  const [geoStats, setGeoStats] = useState<GeographicStatistics | null>(null);
+
+  const fetchData = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+    
+    try {
+      await healthApi.check();
+      setApiStatus('online');
+    } catch {
+      setApiStatus('offline');
+    }
+
+    const [statsResult, weatherResult, aqiResult, trafficResult, geoResult] = await Promise.allSettled([
+      reportApi.getStatistics(),
+      realtimeApi.getWeather(),
+      realtimeApi.getAirQuality(),
+      realtimeApi.getTrafficHotspots(),
+      geographicStatsApi.getStatistics()
+    ]);
+
+    if (statsResult.status === 'fulfilled') setStatistics(statsResult.value);
+    if (weatherResult.status === 'fulfilled') setWeather(weatherResult.value);
+    if (aqiResult.status === 'fulfilled') setAirQuality(aqiResult.value);
+    if (trafficResult.status === 'fulfilled') setTrafficHotspots(trafficResult.value.hotspots || []);
+    if (geoResult.status === 'fulfilled') setGeoStats(geoResult.value);
+
+    setLoading(false);
+    setRefreshing(false);
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      
-      // Check API health
-      try {
-        await healthApi.check();
-        setApiStatus('online');
-      } catch {
-        setApiStatus('offline');
-      }
-
-      // Fetch statistics
-      try {
-        const stats = await reportApi.getStatistics();
-        setStatistics(stats);
-      } catch (error) {
-        console.error('Failed to fetch statistics:', error);
-        // Use fallback data
-        setStatistics({
-          total: 0,
-          pending: 0,
-          in_progress: 0,
-          resolved: 0,
-          verified: 0,
-          today: 0,
-          this_week: 0,
-          resolution_rate: 0
-        });
-      }
-
-      // Fetch recent reports
-      try {
-        const reportsResponse = await reportApi.getReports({ limit: 5 });
-        setRecentReports(reportsResponse.reports || []);
-      } catch (error) {
-        console.error('Failed to fetch reports:', error);
-        setRecentReports([]);
-      }
-
-      // Fetch facilities
-      try {
-        const facilitiesResponse = await facilityApi.getFacilities({ limit: 5 });
-        setFacilities(facilitiesResponse.facilities || []);
-      } catch (error) {
-        console.error('Failed to fetch facilities:', error);
-        setFacilities([]);
-      }
-
-      setLoading(false);
-    };
-
     fetchData();
+    const interval = setInterval(() => fetchData(true), 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Tổng quan</h1>
-          <p className="text-muted-foreground mt-1">Theo dõi tình hình đô thị Hà Nội</p>
+          <h1 className="text-2xl font-bold text-foreground">Tổng quan Hà Nội</h1>
+          <p className="text-muted-foreground mt-1">Theo dõi tình hình đô thị thời gian thực</p>
         </div>
-        <div className="flex items-center space-x-4">
-          <div className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            "flex items-center px-3 py-1.5 rounded-full text-sm font-medium",
             apiStatus === 'online' 
               ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
               : apiStatus === 'offline' 
                 ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
                 : 'bg-muted text-muted-foreground'
-          }`}>
-            <span className={`w-2 h-2 rounded-full mr-2 ${
-              apiStatus === 'online' 
-                ? 'bg-green-500' 
-                : apiStatus === 'offline' 
-                  ? 'bg-red-500'
-                  : 'bg-muted-foreground animate-pulse'
-            }`}></span>
-            {apiStatus === 'online' ? 'API Online' : apiStatus === 'offline' ? 'API Offline' : 'Checking...'}
+          )}>
+            <span className={cn(
+              "w-2 h-2 rounded-full mr-2",
+              apiStatus === 'online' ? 'bg-green-500' : apiStatus === 'offline' ? 'bg-red-500' : 'bg-muted-foreground animate-pulse'
+            )}></span>
+            {apiStatus === 'online' ? 'Đang hoạt động' : apiStatus === 'offline' ? 'Mất kết nối' : 'Đang kiểm tra...'}
           </div>
-          <Link
-            href="/analytics"
-            className="inline-flex items-center px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors"
+          
+          <button
+            onClick={() => fetchData(true)}
+            disabled={refreshing}
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-lg",
+              "bg-accent text-white hover:bg-accent/90 transition-colors",
+              "disabled:opacity-50 disabled:cursor-not-allowed"
+            )}
           >
-            <BarChart3 className="w-5 h-5 mr-2" />
-            Phân tích
-          </Link>
+            <RefreshCw className={cn("w-4 h-4", refreshing && "animate-spin")} />
+            <span className="hidden sm:inline">Làm mới</span>
+          </button>
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          title="Tổng báo cáo"
-          value={statistics?.total || 0}
-          icon={FileText}
-          color="blue"
-          loading={loading}
-        />
-        <StatCard
-          title="Chờ xử lý"
-          value={statistics?.pending || 0}
-          icon={Clock}
-          color="yellow"
-          loading={loading}
-        />
-        <StatCard
-          title="Đang xử lý"
-          value={statistics?.in_progress || 0}
-          icon={AlertTriangle}
-          color="purple"
-          loading={loading}
-        />
-        <StatCard
-          title="Đã giải quyết"
-          value={statistics?.resolved || 0}
-          icon={CheckCircle}
-          color="green"
-          loading={loading}
-        />
+      {/* Report Statistics Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-card rounded-xl border border-border p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-900/30">
+              <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Tổng báo cáo</p>
+              <p className="text-xl font-bold text-foreground">{loading ? '...' : statistics?.total || 0}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-card rounded-xl border border-border p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/30">
+              <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Chờ xử lý</p>
+              <p className="text-xl font-bold text-foreground">{loading ? '...' : statistics?.pending || 0}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-card rounded-xl border border-border p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/30">
+              <AlertTriangle className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Đang xử lý</p>
+              <p className="text-xl font-bold text-foreground">{loading ? '...' : statistics?.in_progress || 0}</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-card rounded-xl border border-border p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/30">
+              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Đã giải quyết</p>
+              <p className="text-xl font-bold text-foreground">{loading ? '...' : statistics?.resolved || 0}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Reports */}
-        <div className="bg-card rounded-xl shadow-sm border border-border p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-foreground">Báo cáo gần đây</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+        
+        {/* Weather Card */}
+        <OverviewCard title="Thời tiết Hà Nội" loading={loading}>
+          {weather ? (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="text-4xl font-bold text-foreground">{Math.round(weather.weather.temperature)}°C</p>
+                  <p className="text-sm text-muted-foreground capitalize">{weather.weather.description}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">Cảm giác như</p>
+                  <p className="text-lg font-semibold text-foreground">
+                    {weather.weather.feels_like ? Math.round(weather.weather.feels_like) : Math.round(weather.weather.temperature)}°C
+                  </p>
+                </div>
+              </div>
+              <StatItem label="Độ ẩm" value={weather.weather.humidity} unit="%" icon={Droplets} color="blue" />
+              <StatItem label="Tốc độ gió" value={weather.weather.wind_speed.toFixed(1)} unit="m/s" icon={Wind} />
+              <StatItem label="Áp suất" value={weather.weather.pressure} unit="hPa" />
+              <StatItem label="Tầm nhìn" value={weather.weather.visibility ? (weather.weather.visibility / 1000).toFixed(1) : 'N/A'} unit="km" />
+              <p className="text-xs text-muted-foreground mt-3 pt-2 border-t border-border/50">
+                Nguồn: {weather.source} • Cập nhật: {new Date(weather.timestamp).toLocaleTimeString('vi-VN')}
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Không có dữ liệu thời tiết</p>
+          )}
+        </OverviewCard>
+
+        {/* Air Quality Card */}
+        <OverviewCard title="Chất lượng không khí" loading={loading}>
+          {airQuality ? (
+            <div className="space-y-1">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className={cn(
+                    "text-4xl font-bold",
+                    getAQIColor(airQuality.aqi.value) === 'green' ? 'text-green-600 dark:text-green-400' :
+                    getAQIColor(airQuality.aqi.value) === 'yellow' ? 'text-yellow-600 dark:text-yellow-400' :
+                    'text-red-600 dark:text-red-400'
+                  )}>
+                    {airQuality.aqi.value}
+                  </p>
+                  <p className="text-sm text-muted-foreground">AQI - {airQuality.aqi.level}</p>
+                </div>
+                <div className={cn(
+                  "px-3 py-1 rounded-full text-sm font-medium",
+                  getAQIColor(airQuality.aqi.value) === 'green' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                  getAQIColor(airQuality.aqi.value) === 'yellow' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                  'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                )}>
+                  {getAQILabel(airQuality.aqi.value)}
+                </div>
+              </div>
+              <StatItem label="PM2.5" value={airQuality.pollutants.pm25.value ?? 'N/A'} unit="µg/m³" color={getAQIColor((airQuality.pollutants.pm25.value ?? 0) * 2)} />
+              <StatItem label="PM10" value={airQuality.pollutants.pm10.value ?? 'N/A'} unit="µg/m³" />
+              <StatItem label="O₃ (Ozone)" value={airQuality.pollutants.o3.value ?? 'N/A'} unit="µg/m³" />
+              <StatItem label="NO₂" value={airQuality.pollutants.no2.value ?? 'N/A'} unit="µg/m³" />
+              <p className="text-xs text-muted-foreground mt-3 pt-2 border-t border-border/50">
+                Trạm: {airQuality.location.station}
+              </p>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Không có dữ liệu chất lượng không khí</p>
+          )}
+        </OverviewCard>
+
+        {/* Traffic Card */}
+        <OverviewCard 
+          title="Giao thông" 
+          loading={loading}
+          headerAction={
+            <Link href="/geographic" className="text-sm text-accent hover:text-accent/80">
+              Xem bản đồ
+            </Link>
+          }
+        >
+          {trafficHotspots.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground mb-3">
+                {trafficHotspots.length} điểm nóng giao thông
+              </p>
+              {trafficHotspots.slice(0, 5).map((hotspot, index) => (
+                <div key={`traffic-${index}`} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <MapPin className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                    <span className="text-sm text-foreground truncate">{hotspot.name}</span>
+                  </div>
+                  <span className={cn(
+                    "text-xs px-2 py-1 rounded-full font-medium ml-2",
+                    getCongestionColor(hotspot.traffic.congestion_level) === 'green' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' :
+                    getCongestionColor(hotspot.traffic.congestion_level) === 'yellow' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' :
+                    'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                  )}>
+                    {getCongestionLabel(hotspot.traffic.congestion_level)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Không có dữ liệu giao thông</p>
+          )}
+        </OverviewCard>
+
+        {/* Geographic Statistics Card */}
+        <OverviewCard 
+          title="Dữ liệu địa lý Hà Nội" 
+          loading={loading}
+          className="lg:col-span-2 xl:col-span-2"
+          headerAction={
+            <Link href="/geographic" className="text-sm text-accent hover:text-accent/80">
+              Xem chi tiết
+            </Link>
+          }
+        >
+          {geoStats ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Layers className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <p className="text-2xl font-bold text-foreground">{(geoStats.administrative_boundaries?.total || 0).toLocaleString('vi-VN')}</p>
+                <p className="text-xs text-muted-foreground">Ranh giới hành chính</p>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Route className="w-5 h-5 text-green-600 dark:text-green-400" />
+                </div>
+                <p className="text-2xl font-bold text-foreground">{(geoStats.streets?.total || 0).toLocaleString('vi-VN')}</p>
+                <p className="text-xs text-muted-foreground">Đường phố</p>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Building2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <p className="text-2xl font-bold text-foreground">{(geoStats.buildings?.total || 0).toLocaleString('vi-VN')}</p>
+                <p className="text-xs text-muted-foreground">Công trình</p>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-muted/50">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Map className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <p className="text-2xl font-bold text-foreground">{(geoStats.pois?.total || 0).toLocaleString('vi-VN')}</p>
+                <p className="text-xs text-muted-foreground">Điểm quan tâm (POI)</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Không có dữ liệu địa lý</p>
+          )}
+          
+          {geoStats && (
+            <div className="mt-4 pt-4 border-t border-border/50">
+              <p className="text-sm text-muted-foreground">
+                Tổng cộng: <span className="font-semibold text-foreground">{(geoStats.summary?.total_features || 0).toLocaleString('vi-VN')}</span> đối tượng địa lý từ OpenStreetMap
+              </p>
+            </div>
+          )}
+        </OverviewCard>
+
+        {/* Quick Links Card */}
+        <OverviewCard title="Truy cập nhanh" className="xl:col-span-1">
+          <div className="space-y-2">
+            <Link 
+              href="/geographic" 
+              className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+            >
+              <Map className="w-5 h-5 text-accent" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Bản đồ địa lý</p>
+                <p className="text-xs text-muted-foreground">Xem ranh giới, đường phố, công trình</p>
+              </div>
+            </Link>
             <Link 
               href="/reports" 
-              className="text-sm text-accent hover:text-accent/80 flex items-center"
+              className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
             >
-              Xem tất cả
-              <Eye className="w-4 h-4 ml-1" />
-            </Link>
-          </div>
-          <div className="space-y-3">
-            {loading ? (
-              // Loading skeleton
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="animate-pulse p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-start space-x-4">
-                    <div className="w-5 h-5 bg-muted rounded"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-muted rounded w-3/4"></div>
-                      <div className="h-3 bg-muted rounded w-1/2"></div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : recentReports.length > 0 ? (
-              recentReports.map((report) => (
-                <ReportItem key={report.id} report={report} />
-              ))
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <AlertTriangle className="w-12 h-12 mx-auto text-muted mb-3" />
-                <p>Chưa có báo cáo nào</p>
+              <FileText className="w-5 h-5 text-accent" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Quản lý báo cáo</p>
+                <p className="text-xs text-muted-foreground">Xem và xử lý báo cáo từ công dân</p>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Facilities */}
-        <div className="bg-card rounded-xl shadow-sm border border-border p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-foreground">Cơ sở tiện ích</h2>
+            </Link>
             <Link 
-              href="/map" 
-              className="text-sm text-accent hover:text-accent/80 flex items-center"
+              href="/users" 
+              className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
             >
-              Xem bản đồ
-              <MapPin className="w-4 h-4 ml-1" />
+              <Activity className="w-5 h-5 text-accent" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Người dùng</p>
+                <p className="text-xs text-muted-foreground">Quản lý tài khoản hệ thống</p>
+              </div>
             </Link>
           </div>
-          <div className="space-y-3">
-            {loading ? (
-              // Loading skeleton
-              Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="animate-pulse p-4 bg-muted/50 rounded-lg">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-5 h-5 bg-muted rounded"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-muted rounded w-3/4"></div>
-                      <div className="h-3 bg-muted rounded w-1/4"></div>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : facilities.length > 0 ? (
-              facilities.map((facility) => (
-                <FacilityItem key={facility.id} facility={facility} />
-              ))
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Building className="w-12 h-12 mx-auto text-muted mb-3" />
-                <p>Chưa có dữ liệu cơ sở</p>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-gradient-to-r from-accent to-accent/80 rounded-xl p-6 text-white">
-        <h2 className="text-lg font-semibold mb-2">Hành động nhanh</h2>
-        <p className="text-white/80 mb-4">Quản lý và theo dõi tình hình đô thị</p>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/reports/new"
-            className="inline-flex items-center px-4 py-2 bg-white text-accent rounded-lg hover:bg-white/90 transition-colors font-medium"
-          >
-            <AlertTriangle className="w-5 h-5 mr-2" />
-            Tạo báo cáo mới
-          </Link>
-          <Link
-            href="/map"
-            className="inline-flex items-center px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors font-medium"
-          >
-            <MapPin className="w-5 h-5 mr-2" />
-            Xem bản đồ
-          </Link>
-          <Link
-            href="/analytics"
-            className="inline-flex items-center px-4 py-2 bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors font-medium"
-          >
-            <BarChart3 className="w-5 h-5 mr-2" />
-            Xem thống kê
-          </Link>
-        </div>
+        </OverviewCard>
       </div>
     </div>
   );
