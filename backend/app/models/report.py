@@ -8,9 +8,10 @@ Layer 3: Citizen generated data
 
 from sqlalchemy import Column, Integer, String, Float, DateTime, ForeignKey, Enum, Text, Boolean, ARRAY
 from sqlalchemy.sql import func
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
 from geoalchemy2 import Geometry
 import enum
+import uuid
 from app.db.postgres import Base
 
 
@@ -54,8 +55,8 @@ class Report(Base):
     """Báo cáo từ người dân - Core table"""
     __tablename__ = "reports"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    reporter_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     
     # Category
     category = Column(String(50), nullable=False, index=True)
@@ -65,10 +66,9 @@ class Report(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
     
-    # Location
+    # Location (spatial query thay vì district_id)
     location = Column(Geometry('POINT', srid=4326), nullable=False)
-    address = Column(String(500))
-    district_id = Column(Integer, nullable=True, index=True)
+    address = Column(Text)
     
     # Links to Layer 2 (optional)
     related_facility_id = Column(Integer, nullable=True)
@@ -91,7 +91,7 @@ class Report(Base):
     comments_count = Column(Integer, default=0)
     
     # Verification
-    verified_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    verified_by = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     verified_at = Column(DateTime(timezone=True))
     
     # Resolution
@@ -106,10 +106,10 @@ class ReportComment(Base):
     """Bình luận trên báo cáo"""
     __tablename__ = "report_comments"
 
-    id = Column(Integer, primary_key=True, index=True)
-    report_id = Column(Integer, ForeignKey("reports.id"), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    parent_id = Column(Integer, ForeignKey("report_comments.id"), nullable=True)
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    report_id = Column(PGUUID(as_uuid=True), ForeignKey("reports.id"), nullable=False, index=True)
+    user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    parent_id = Column(PGUUID(as_uuid=True), ForeignKey("report_comments.id"), nullable=True)
     
     content = Column(Text, nullable=False)
     images = Column(ARRAY(Text), default=[])
@@ -122,9 +122,9 @@ class ReportVote(Base):
     """Vote trên báo cáo"""
     __tablename__ = "report_votes"
 
-    id = Column(Integer, primary_key=True, index=True)
-    report_id = Column(Integer, ForeignKey("reports.id"), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    report_id = Column(PGUUID(as_uuid=True), ForeignKey("reports.id"), nullable=False, index=True)
+    user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     vote_type = Column(String(10), nullable=False)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -134,9 +134,9 @@ class ReportFollower(Base):
     """Theo dõi báo cáo"""
     __tablename__ = "report_followers"
 
-    id = Column(Integer, primary_key=True, index=True)
-    report_id = Column(Integer, ForeignKey("reports.id"), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    report_id = Column(PGUUID(as_uuid=True), ForeignKey("reports.id"), nullable=False, index=True)
+    user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -145,9 +145,9 @@ class ReportActivity(Base):
     """Lịch sử thay đổi báo cáo"""
     __tablename__ = "report_activities"
 
-    id = Column(Integer, primary_key=True, index=True)
-    report_id = Column(Integer, ForeignKey("reports.id"), nullable=False, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    report_id = Column(PGUUID(as_uuid=True), ForeignKey("reports.id"), nullable=False, index=True)
+    user_id = Column(PGUUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     
     action = Column(String(50), nullable=False)
     old_value = Column(JSONB)
