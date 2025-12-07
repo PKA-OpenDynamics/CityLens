@@ -8,57 +8,28 @@ import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { 
   LayoutDashboard, 
-  Map, 
   Users,
   Settings,
   LogOut,
   Circle,
   MapPin,
-  Database,
-  Network,
-  Search,
-  Lightbulb,
-  GitCompare,
-  Clock,
-  Bot,
-  Upload,
-  Code,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Navigation grouped by category
+// Navigation - Clean and focused
 const navigationGroups = [
   {
-    title: 'Core',
+    title: 'Main',
     items: [
       { name: 'Dashboard', nameVi: 'Bảng điều khiển', href: '/dashboard', icon: LayoutDashboard },
-      { name: 'Map', nameVi: 'Bản đồ', href: '/map', icon: Map },
-    ],
-  },
-  {
-    title: 'Analytics & Insights',
-    items: [
-      { name: 'Spatial Analytics', nameVi: 'Phân tích không gian', href: '/spatial-analytics', icon: MapPin },
-      { name: 'Insight Generator', nameVi: 'Tạo insight', href: '/insight-generator', icon: Lightbulb },
-      { name: 'Compare Areas', nameVi: 'So sánh khu vực', href: '/compare-areas', icon: GitCompare },
-      { name: 'Timeline Explorer', nameVi: 'Khám phá dòng thời gian', href: '/timeline-explorer', icon: Clock },
-    ],
-  },
-  {
-    title: 'Data Management',
-    items: [
-      { name: 'Data Catalog', nameVi: 'Danh mục dữ liệu', href: '/data-catalog', icon: Database },
-      { name: 'Linked Data Graph', nameVi: 'Đồ thị dữ liệu liên kết', href: '/linked-data-graph', icon: Network },
-      { name: 'Entity Browser', nameVi: 'Duyệt thực thể', href: '/entity-browser', icon: Search },
-      { name: 'Data Import / Sync', nameVi: 'Nhập / Đồng bộ dữ liệu', href: '/data-import', icon: Upload },
+      { name: 'Geographic Data', nameVi: 'Dữ liệu địa lý', href: '/geographic', icon: MapPin },
+      { name: 'Reports', nameVi: 'Báo cáo sự cố', href: '/reports', icon: Circle },
     ],
   },
   {
     title: 'System',
     items: [
-      { name: 'AI Assistant', nameVi: 'Trợ lý AI', href: '/ai-assistant', icon: Bot },
-      { name: 'User Management', nameVi: 'Quản lý người dùng', href: '/users', icon: Users },
-      { name: 'API Integration', nameVi: 'Tích hợp API', href: '/api-integration', icon: Code },
+      { name: 'Users', nameVi: 'Quản lý người dùng', href: '/users', icon: Users },
       { name: 'Settings', nameVi: 'Cài đặt', href: '/settings', icon: Settings },
     ],
   },
