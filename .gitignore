@@ -1,5 +1,35 @@
 # Copyright (c) 2025 CityLens Contributors
-# Licensed under the MIT License
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
+
+# Documentation & Guides (DO NOT COMMIT)
+*.md
+!README.md
+!LICENSE.md
+*.MD
+**/*.md
+!README.md
+!LICENSE.md
+.github/copilot-instructions.md
+ARCHITECTURE.md
+BACKEND_*.md
+COMPREHENSIVE_*.md
+DEPLOYMENT_*.md
+PROJECT_*.md
+QUICK_START.md
+ROADMAP.md
+STATUS.md
+
+# Scripts & Shell files (DO NOT COMMIT)
+*.sh
+**/*.sh
+release.sh
+backend/scripts/*.sh
+
+# SQL Scripts (DO NOT COMMIT - for local use only)
+backend/scripts/*.sql
+
+# Python utility scripts (DO NOT COMMIT)
+fix_*.py
 
 # Python
 __pycache__/
@@ -66,19 +96,22 @@ build/
 *~
 .DS_Store
 
-# Environment files (NEVER commit)
+# Environment files (NEVER commit actual secrets)
 .env
-.env.*
 .env.local
 .env.*.local
-**/.env
-**/.env.*
 backend/.env
-backend/.env.*
 web-dashboard/.env
-web-dashboard/.env.*
+web-dashboard/.env.local
 mobile-app/.env
-mobile-app/.env.*
+
+# BUT allow .env.example and .env.production.example templates
+!.env.example
+!.env.production.example
+!backend/.env.example
+!backend/.env.production.example
+!web-dashboard/.env.example
+!mobile-app/.env.example
 
 # Database
 *.db
@@ -95,8 +128,8 @@ backend/data/osm/*.geojson
 uploads/
 media/
 
-# Docker
-.dockerignore
+# Docker (allow .dockerignore for deployment)
+# .dockerignore is needed for Railway/Docker builds
 
 # Logs
 logs/

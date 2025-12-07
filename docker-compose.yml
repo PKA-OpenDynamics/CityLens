@@ -87,6 +87,7 @@ services:
       - POSTGRES_USER=citylens
       - POSTGRES_PASSWORD=citylens_password
       - POSTGRES_DB=citylens_db
+      - POSTGRES_PORT=5432
       - MONGODB_URL=mongodb://mongodb:27017
       - REDIS_HOST=redis
       - GRAPHDB_URL=http://graphdb:3030
