@@ -1,5 +1,5 @@
 # Copyright (c) 2025 CityLens Contributors
-# Licensed under the MIT License
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
 """
 Facility models: Public facilities, transportation infrastructure
@@ -10,7 +10,7 @@ from sqlalchemy import Column, Integer, String, DECIMAL, DateTime, func
 from sqlalchemy.dialects.postgresql import JSONB
 from geoalchemy2 import Geometry
 
-from app.db.base import Base
+from app.db.postgres import Base
 
 
 class PublicFacility(Base):

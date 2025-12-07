@@ -1,5 +1,5 @@
 # Copyright (c) 2025 CityLens Contributors
-# Licensed under the MIT License
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
 """
 Kết nối PostgreSQL với PostGIS
@@ -11,7 +11,7 @@ from sqlalchemy.orm import sessionmaker
 from app.core.config import settings
 
 engine = create_engine(
-    settings.SQLALCHEMY_DATABASE_URI,
+    settings.SQLALCHEMY_SYNC_DATABASE_URI,
     pool_pre_ping=True,
     echo=settings.LOG_LEVEL == "DEBUG"
 )

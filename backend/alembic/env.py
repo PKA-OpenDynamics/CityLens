@@ -1,34 +1,47 @@
-# Copyright (c) 2025 CityLens Contributors
-# Licensed under the MIT License
-
+import asyncio
 from logging.config import fileConfig
+import os
+import sys
 
-from sqlalchemy import engine_from_config
 from sqlalchemy import pool
+from sqlalchemy.engine import Connection
+from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
 
-import sys
-import os
-sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
+# ---------------------------------------------------------
+# Import your models and config here
+# ---------------------------------------------------------
+# Add the parent directory to sys.path so we can import 'app'
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-from app.db.base import Base
 from app.core.config import settings
+from app.db.postgres import Base
+
+# Import all models so Alembic can detect them
+from app.models.user import User
+from app.models.report import Report, ReportCategory, ReportComment, ReportVote, ReportFollower, ReportActivity
+from app.models.geographic import AdministrativeBoundary, Street, Building
+from app.models.facility import PublicFacility, TransportFacility
+from app.models.environment import EnvironmentalData
+from app.models.db_models import EntityDB
+from app.models.assignment import Department, ReportAssignment, AssignmentHistory, DepartmentMember
+from app.models.notification import Notification, UserNotificationSettings, NotificationTemplate
+from app.models.media import MediaFile
+from app.models.incident import Incident
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-
-# Override sqlalchemy.url with our settings
-config.set_main_option('sqlalchemy.url', settings.SQLALCHEMY_DATABASE_URI)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# add your model's MetaData object here
-# for 'autogenerate' support
+# Override sqlalchemy.url with environment variable
+config.set_main_option("sqlalchemy.url", settings.SQLALCHEMY_DATABASE_URI)
+
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -61,29 +74,46 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def run_migrations_online() -> None:
+def do_run_migrations(connection: Connection) -> None:
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        include_schemas=False,  # Don't include tiger/topology schemas
+        include_object=lambda obj, name, type_, reflected, compare_to: (
+            # Ignore tiger and topology schemas
+            type_ != "table" or (
+                not name.startswith("tiger.") and
+                not name.startswith("topology.") and
+                obj.schema not in ("tiger", "topology")
+            )
+        )
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+async def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
     In this scenario we need to create an Engine
     and associate a connection with the context.
 
     """
-    connectable = engine_from_config(
+    connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+    async with connectable.connect() as connection:
+        await connection.run_sync(do_run_migrations)
 
-        with context.begin_transaction():
-            context.run_migrations()
+    await connectable.dispose()
 
 
 if context.is_offline_mode():
     run_migrations_offline()
 else:
-    run_migrations_online()
+    asyncio.run(run_migrations_online())
+

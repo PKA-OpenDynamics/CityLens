@@ -1,110 +1,69 @@
 # Copyright (c) 2025 CityLens Contributors
-# Licensed under the MIT License
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
-"""
-Cấu hình ứng dụng CityLens Backend
-"""
-
-from typing import List, Optional, Union
-from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import AnyHttpUrl, field_validator
-import json
-
+from typing import List, Union, Optional
+from pydantic import AnyHttpUrl, validator, ConfigDict
+from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
-    """Cấu hình hệ thống"""
+    model_config = ConfigDict(
+        case_sensitive=True,
+        env_file=".env",
+        extra='ignore'  # Ignore extra fields from .env
+    )
     
-    # Thông tin ứng dụng
-    PROJECT_NAME: str = "CityLens LOD Cloud"
-    VERSION: str = "1.0.0"
+    PROJECT_NAME: str = "CityLens"
+    VERSION: str = "0.3.0"
     API_V1_STR: str = "/api/v1"
-    DESCRIPTION: str = "Hệ thống thành phố thông minh sử dụng Linked Open Data"
+    LOG_LEVEL: str = "INFO"
     
-    # Bảo mật
-    SECRET_KEY: str  # Must be set in .env file
+    # Security
+    SECRET_KEY: str = "secret-key-change-in-production-citylens-2025"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8  # 8 ngày
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 11520  # 8 days
     
     # CORS
-    BACKEND_CORS_ORIGINS: Union[str, List[AnyHttpUrl]] = ""
+    BACKEND_CORS_ORIGINS: List[Union[str, AnyHttpUrl]] = ["http://localhost:3000", "http://localhost:8000", "*"]
+
+    # Database (PostgreSQL with PostGIS)
+    POSTGRES_SERVER: str = "db"
+    POSTGRES_USER: str = "postgres"
+    POSTGRES_PASSWORD: str = "citylens_secret"
+    POSTGRES_DB: str = "citylens_db"
+    POSTGRES_PORT: str = "5432"
     
-    @field_validator("BACKEND_CORS_ORIGINS", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v: Union[str, List]) -> List[str]:
-        """Parse CORS origins from various formats"""
-        if isinstance(v, str):
-            if not v or v.strip() == "":
-                return []
-            # Try JSON parse first (for backward compatibility)
-            if v.strip().startswith("["):
-                try:
-                    parsed = json.loads(v)
-                    if isinstance(parsed, list):
-                        return parsed
-                except json.JSONDecodeError:
-                    pass
-            # Parse comma-separated string (recommended)
-            return [origin.strip() for origin in v.split(",") if origin.strip()]
-        elif isinstance(v, list):
-            return v
-        return []
-    
-    # PostgreSQL + PostGIS
-    POSTGRES_SERVER: str = "localhost"
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str
-    POSTGRES_PORT: int = 5432
-    
-    @property
-    def SQLALCHEMY_DATABASE_URI(self) -> str:
-        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+    # GraphDB / Fuseki
+    GRAPHDB_URL: str = "http://fuseki:3030"
+    GRAPHDB_DATASET: str = "citylens"
+    GRAPHDB_REPOSITORY: str = "citylens"
     
     # MongoDB
-    MONGODB_URL: str = "mongodb://localhost:27017"
+    MONGODB_URL: str = "mongodb://mongodb:27017"
     MONGODB_DB: str = "citylens_realtime"
     
     # Redis
-    REDIS_HOST: str = "localhost"
+    REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
     
+    # External API Keys (Optional for data adapters)
+    OPENWEATHER_API_KEY: Optional[str] = None
+    TOMTOM_API_KEY: Optional[str] = None
+    AQICN_API_KEY: Optional[str] = None  # WAQI API token from https://aqicn.org/api/
+    
     @property
     def REDIS_URL(self) -> str:
+        """Redis URL for cache connections"""
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
     
-    # GraphDB / SPARQL Endpoint
-    GRAPHDB_URL: str = "http://localhost:7200"
-    GRAPHDB_REPOSITORY: str = "citylens"
+    @property
+    def SQLALCHEMY_DATABASE_URI(self) -> str:
+        """Async database URI for AsyncSession"""
+        return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
     
-    # Celery
-    CELERY_BROKER_URL: str = "redis://localhost:6379/1"
-    CELERY_RESULT_BACKEND: str = "redis://localhost:6379/2"
-    
-    # File Upload
-    MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
-    UPLOAD_DIR: str = "./uploads"
-    ALLOWED_EXTENSIONS: List[str] = ["jpg", "jpeg", "png", "gif", "mp4", "mov"]
-    
-    # External APIs
-    OPENWEATHER_API_KEY: Optional[str] = None
-    OPENAQ_API_KEY: Optional[str] = None
-    MAPBOX_ACCESS_TOKEN: Optional[str] = None
-    
-    # Logging
-    LOG_LEVEL: str = "INFO"
-    
-    # Gamification
-    POINTS_PER_REPORT: int = 10
-    POINTS_PER_VERIFICATION: int = 5
-    REPUTATION_THRESHOLD_TRUSTED: float = 0.8
-    
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        case_sensitive=True,
-        env_parse_none_str="null",
-        extra="ignore",
-    )
-
+    @property
+    def SQLALCHEMY_SYNC_DATABASE_URI(self) -> str:
+        """Sync database URI for legacy Session"""
+        return f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
 
 settings = Settings()

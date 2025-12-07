@@ -1,11 +1,11 @@
 # Copyright (c) 2025 CityLens Contributors
-# Licensed under the MIT License
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
 """
 Schema cho NGSI-LD entities
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Literal
 from datetime import datetime
 from pydantic import BaseModel, Field
 

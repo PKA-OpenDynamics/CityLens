@@ -1,19 +1,18 @@
 # Copyright (c) 2025 CityLens Contributors
-# Licensed under the MIT License
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
 """
 Schema cho Report API
 """
 
-from typing import Optional, List
+from typing import Optional, List, Literal
 from datetime import datetime
 from pydantic import BaseModel, Field
-from app.models.report import IncidentType, ReportStatus
+from app.models.report import ReportStatus
 
 
 class ReportBase(BaseModel):
     """Schema cơ bản cho Report"""
-    incident_type: IncidentType
     title: str = Field(..., min_length=5, max_length=200)
     description: Optional[str] = None
     severity: int = Field(default=3, ge=1, le=5)

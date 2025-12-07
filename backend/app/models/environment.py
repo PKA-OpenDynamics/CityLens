@@ -1,5 +1,5 @@
 # Copyright (c) 2025 CityLens Contributors
-# Licensed under the MIT License
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
 """
 Environmental data models: Air quality, weather, traffic
@@ -9,7 +9,7 @@ Layer 2: Semi-dynamic data updated from external APIs
 from sqlalchemy import Column, Integer, String, DECIMAL, DateTime, func
 from sqlalchemy.dialects.postgresql import JSONB
 
-from app.db.base import Base
+from app.db.postgres import Base
 
 
 class EnvironmentalData(Base):

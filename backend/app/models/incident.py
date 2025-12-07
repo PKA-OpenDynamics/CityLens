@@ -1,56 +1,75 @@
 # Copyright (c) 2025 CityLens Contributors
-# Licensed under the MIT License
+# Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
 """
-Model sự kiện thời gian thực
+Incident models - Sự cố/sự kiện đô thị
 """
 
-from sqlalchemy import Column, Integer, String, Float, DateTime, Enum
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Float, Enum
 from sqlalchemy.sql import func
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
 from geoalchemy2 import Geometry
 import enum
+import uuid
 from app.db.postgres import Base
 
 
-class AlertLevel(str, enum.Enum):
-    """Mức độ cảnh báo"""
-    INFO = "thong_tin"
-    WARNING = "canh_bao"
-    DANGER = "nguy_hiem"
-    CRITICAL = "khan_cap"
+class IncidentType(str, enum.Enum):
+    """Loại sự cố"""
+    TRAFFIC = "traffic"
+    WEATHER = "weather"
+    ENVIRONMENTAL = "environmental"
+    INFRASTRUCTURE = "infrastructure"
+    PUBLIC_SAFETY = "public_safety"
+    UTILITY = "utility"
+
+
+class IncidentSeverity(str, enum.Enum):
+    """Mức độ nghiêm trọng"""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
 
 
 class Incident(Base):
-    """Bảng sự kiện được tổng hợp"""
+    """Sự cố/sự kiện đô thị"""
     __tablename__ = "incidents"
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     
-    # Thông tin cơ bản
-    incident_type = Column(String, nullable=False)
-    title = Column(String, nullable=False)
-    description = Column(String)
+    # Incident info
+    title = Column(String(255), nullable=False, index=True)
+    description = Column(Text)
+    type = Column(Enum(IncidentType), nullable=False, index=True)
+    severity = Column(Enum(IncidentSeverity), default=IncidentSeverity.MEDIUM, index=True)
     
-    # Mức độ
-    alert_level = Column(Enum(AlertLevel), default=AlertLevel.INFO)
-    severity_score = Column(Float, default=0.5)
+    # Location
+    location = Column(Geometry('POINT', srid=4326), nullable=False)
+    address = Column(Text)
+    district_id = Column(Integer, nullable=True)
     
-    # Vị trí
-    location = Column(Geometry(geometry_type="POINT", srid=4326), nullable=False)
-    affected_radius = Column(Float, default=500)  # meters
-    address = Column(String)
-    district = Column(String)
+    # Time
+    started_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now(), index=True)
+    ended_at = Column(DateTime(timezone=True), nullable=True)
     
-    # Nguồn dữ liệu
-    source_type = Column(String)  # "citizen", "iot_sensor", "ai_prediction"
-    source_ids = Column(String)  # JSON array
-    confirmation_count = Column(Integer, default=1)
+    # Source
+    source = Column(String(100), comment="system, user_report, external_api")
+    source_id = Column(String(255), comment="ID from source system")
     
-    # Trạng thái
-    is_active = Column(Integer, default=1)
+    # Status
+    is_active = Column(Boolean, default=True, index=True)
+    is_verified = Column(Boolean, default=False)
     
-    # Thời gian
-    start_time = Column(DateTime(timezone=True), nullable=False)
-    end_time = Column(DateTime(timezone=True))
+    # Impact
+    affected_area_radius = Column(Float, comment="Radius in meters")
+    estimated_impact = Column(Integer, comment="Number of people affected")
+    
+    # Additional data
+    incident_metadata = Column(JSONB, comment="Extra incident data")
+    
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    def __repr__(self):
+        return f"<Incident {self.title} ({self.type})>"
