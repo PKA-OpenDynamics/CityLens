@@ -1,0 +1,39 @@
+{
+  "name": "@pka_opendynamics_2025/citylens-utils",
+  "version": "1.0.0",
+  "description": "CityLens Smart City Platform - Tiện ích xử lý dữ liệu đô thị thông minh",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pka-opendynamics/citylens.git"
+  },
+  "keywords": [
+    "citylens",
+    "smart-city",
+    "urban-data",
+    "geo-utils",
+    "linked-open-data"
+  ],
+  "author": "CityLens Team",
+  "license": "GPL-3.0",
+  "homepage": "https://github.com/pka-opendynamics/citylens#readme",
+  "bugs": {
+    "url": "https://github.com/pka-opendynamics/citylens/issues"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "tsup": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
