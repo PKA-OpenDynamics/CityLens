@@ -1,0 +1,51 @@
+# Core Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+pydantic==2.6.0
+pydantic-settings==2.1.0
+email-validator==2.1.0
+
+# Database - PostgreSQL
+sqlalchemy==2.0.25
+geoalchemy2==0.14.3
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+alembic==1.13.1
+
+# Database - MongoDB
+pymongo==4.6.1
+motor==3.3.2
+
+# Database - Redis
+redis==5.0.1
+
+# Authentication & Security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+email-validator==2.1.0
+
+# File Upload & Media
+python-multipart==0.0.6
+Pillow==10.2.0
+cloudinary==1.37.0
+
+# HTTP Client
+httpx==0.26.0
+requests==2.31.0
+
+# System monitoring
+psutil==5.9.8
+
+# LOD & RDF libraries (Optional - for GraphDB)
+rdflib==7.0.0
+SPARQLWrapper==2.0.0
+
+# GIS
+shapely==2.0.2
+numpy==1.26.3
+
+# OSM Data Processing
+osmium==3.7.0
+
+# Python Environment
+python-dotenv==1.0.0
