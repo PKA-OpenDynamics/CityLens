@@ -70,6 +70,24 @@ class OpenWeatherMapAdapter:
                 "unitCode": "P1",
                 "observedAt": datetime.utcnow().isoformat() + "Z"
             },
+            "feelsLikeTemperature": {
+                "type": "Property",
+                "value": data["main"].get("feels_like"),
+                "unitCode": "CEL",
+                "observedAt": datetime.utcnow().isoformat() + "Z"
+            },
+            "clouds": {
+                "type": "Property",
+                "value": data.get("clouds", {}).get("all"),
+                "unitCode": "P1",
+                "observedAt": datetime.utcnow().isoformat() + "Z"
+            },
+            "visibility": {
+                "type": "Property",
+                "value": data.get("visibility"),
+                "unitCode": "MTR",
+                "observedAt": datetime.utcnow().isoformat() + "Z"
+            },
             "pressure": {
                 "type": "Property",
                 "value": data["main"]["pressure"],
