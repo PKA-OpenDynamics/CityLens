@@ -8,9 +8,10 @@ Layer 3: Citizen accounts
 
 from sqlalchemy import Column, Integer, String, Float, DateTime, Boolean, Enum
 from sqlalchemy.sql import func
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import JSONB, UUID as PGUUID
 from geoalchemy2 import Geometry
 import enum
+import uuid
 from app.db.postgres import Base
 
 
@@ -26,7 +27,7 @@ class User(Base):
     """Bảng người dùng"""
     __tablename__ = "users"
     
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(PGUUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     username = Column(String(100), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
@@ -43,9 +44,10 @@ class User(Base):
     # Trạng thái
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False, comment="Email verified")
+    is_admin = Column(Boolean, default=False)
     
-    # Location (optional)
-    district_id = Column(Integer, nullable=True)
+    # Location (optional) - link to ward (admin_level=6)
+    ward_id = Column(Integer, nullable=True, comment="Phường/xã cư trú")
     location = Column(Geometry('POINT', srid=4326), nullable=True)
     
     # Statistics
@@ -55,8 +57,6 @@ class User(Base):
     avatar_url = Column(String(500))
     bio = Column(String(500))
     properties = Column(JSONB)
-    is_verified = Column(Boolean, default=False)
-    is_admin = Column(Boolean, default=False)
     
     # Thời gian
     created_at = Column(DateTime(timezone=True), server_default=func.now())
