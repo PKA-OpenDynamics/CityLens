@@ -3,16 +3,13 @@
 
 """
 Database base configuration
-Import all models here for Alembic autogenerate
+Base class for all SQLAlchemy models
 """
 
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
 
-# Import all models here so Alembic can detect them
-from app.models.user import User  # noqa
-from app.models.report import Report, ReportCategory, ReportComment, ReportVote, ReportFollower, ReportActivity  # noqa
-from app.models.geographic import AdministrativeBoundary, Street, Building  # noqa
-from app.models.facility import PublicFacility, TransportFacility  # noqa
-from app.models.environment import EnvironmentalData  # noqa
+# Note: Do NOT import models here to avoid circular imports
+# Models should import Base from here, not the other way around
+# For Alembic, models are imported in alembic/env.py
