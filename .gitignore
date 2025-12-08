@@ -6,8 +6,11 @@
 # Scripts & Shell files (DO NOT COMMIT)
 *.sh
 **/*.sh
+# Allow specific backend scripts
+!backend/start.sh
+!backend/scripts/export_database.sh
+!backend/scripts/import_database.sh
 release.sh
-backend/scripts/*.sh
 
 # SQL Scripts (DO NOT COMMIT - for local use only)
 backend/scripts/*.sql

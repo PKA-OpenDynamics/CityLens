@@ -1,13 +1,11 @@
 # Copyright (c) 2025 CityLens Contributors
 # Licensed under the MIT License
 
-version: '3.8'
-
 services:
   # PostgreSQL với PostGIS
   postgres:
     image: postgis/postgis:15-3.4
-    container_name: citylens-postgres
+    container_name: citylens-postgres-prod
     environment:
       POSTGRES_USER: citylens
       POSTGRES_PASSWORD: citylens_password
@@ -16,8 +14,10 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Mount init scripts for auto database seeding
+      - ./backend/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
     networks:
-      - citylens-network
+      - citylens-network-prod
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U citylens"]
       interval: 10s
@@ -27,7 +27,7 @@ services:
   # MongoDB
   mongodb:
     image: mongo:7.0
-    container_name: citylens-mongodb
+    container_name: citylens-mongodb-prod
     environment:
       MONGO_INITDB_DATABASE: citylens_realtime
     ports:
@@ -35,7 +35,7 @@ services:
     volumes:
       - mongodb_data:/data/db
     networks:
-      - citylens-network
+      - citylens-network-prod
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -45,13 +45,13 @@ services:
   # Redis
   redis:
     image: redis:7.2-alpine
-    container_name: citylens-redis
+    container_name: citylens-redis-prod
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
-      - citylens-network
+      - citylens-network-prod
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -61,7 +61,7 @@ services:
   # GraphDB (Apache Jena Fuseki)
   graphdb:
     image: stain/jena-fuseki:latest
-    container_name: citylens-graphdb
+    container_name: citylens-graphdb-prod
     environment:
       ADMIN_PASSWORD: admin
     ports:
@@ -69,7 +69,7 @@ services:
     volumes:
       - graphdb_data:/fuseki
     networks:
-      - citylens-network
+      - citylens-network-prod
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3030/$/ping"]
       interval: 30s
@@ -81,7 +81,9 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: citylens-backend
+    container_name: citylens-backend-prod
+    env_file:
+      - ./backend/.env
     environment:
       - POSTGRES_SERVER=postgres
       - POSTGRES_USER=citylens
@@ -104,7 +106,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - citylens-network
+      - citylens-network-prod
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   # Web Dashboard
@@ -112,13 +114,13 @@ services:
     build:
       context: ./web-dashboard
       dockerfile: Dockerfile
-    container_name: citylens-web
+    container_name: citylens-web-prod
     ports:
       - "3000:80"
     depends_on:
       - backend
     networks:
-      - citylens-network
+      - citylens-network-prod
 
 volumes:
   postgres_data:
@@ -128,5 +130,5 @@ volumes:
   backend_uploads:
 
 networks:
-  citylens-network:
+  citylens-network-prod:
     driver: bridge
