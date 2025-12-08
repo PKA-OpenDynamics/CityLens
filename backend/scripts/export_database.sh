@@ -87,7 +87,7 @@ if [ $? -eq 0 ]; then
     echo "  3. Use it as a backup before making schema changes"
     echo ""
     echo "To import into Docker:"
-    echo "  docker exec -i citylens-postgres psql -U citylens < $DUMP_FILE"
+    echo "  docker exec -i citylens-postgres-prod psql -U citylens < $DUMP_FILE"
     
 else
     echo ""

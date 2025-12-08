@@ -53,7 +53,7 @@ echo "Waiting for PostgreSQL to be ready..."
 sleep 5
 
 # Wait for postgres to be healthy
-until docker exec citylens-postgres pg_isready -U citylens 2>/dev/null; do
+until docker exec citylens-postgres-prod pg_isready -U citylens 2>/dev/null; do
     echo "Waiting for PostgreSQL..."
     sleep 2
 done
