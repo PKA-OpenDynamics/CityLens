@@ -79,7 +79,7 @@ function TabNavigator() {
 
         // Ẩn tab bar khi:
         // - Tab Map được chọn
-        // - Đang ở trong Report stack và màn hiện tại là ReportHome hoặc AiAssistant
+        // - Đang ở trong Report stack và màn hiện tại là ReportHome, CreateReport hoặc AiAssistant
         let hideTabBar = false;
 
         if (route.name === 'Map') {
@@ -88,6 +88,7 @@ function TabNavigator() {
           const reportRouteName = focusedRouteName ?? 'ReportHome';
           hideTabBar =
             reportRouteName === 'ReportHome' ||
+            reportRouteName === 'CreateReport' ||
             reportRouteName === 'AiAssistant';
         }
 
