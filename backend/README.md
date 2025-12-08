@@ -18,7 +18,52 @@
 
 ---
 
-## Tổng quan
+## Quick Start với Docker
+
+Cách nhanh nhất để chạy CityLens Backend:
+
+```bash
+# Clone repository
+git clone https://github.com/PKA-Open-Dynamics/CityLens.git
+cd CityLens/backend
+
+# Chạy 1 lệnh duy nhất
+./start.sh
+```
+
+Script sẽ tự động:
+- Tạo file .env từ template
+- Build Docker image
+- Khởi động PostgreSQL và Redis
+- Khởi động Backend API
+
+Truy cập API sau khi khởi động:
+- API Documentation: http://localhost:8000/docs
+- API Endpoint: http://localhost:8000/api/v1
+- Health Check: http://localhost:8000/health
+
+### Import database (487,000+ OSM entities)
+
+Sau khi backend chạy, xem hướng dẫn import dữ liệu:
+
+```bash
+# Xem hướng dẫn chi tiết
+cat DATABASE_IMPORT.md
+
+# Hoặc import trực tiếp (nếu có file dump)
+docker exec -i citylens-postgres psql -U citylens -d citylens_db < citylens_dump.sql
+```
+
+### Dừng services
+
+```bash
+docker-compose down        # Dừng nhưng giữ data
+docker-compose down -v     # Dừng và xóa tất cả data
+```
+
+---
+
+## Tong quan
 
 CityLens Backend cung cấp REST API và NGSI-LD API cho:
 - Quản lý báo cáo từ người dân (citizen reports)
@@ -37,7 +82,7 @@ CityLens Backend cung cấp REST API và NGSI-LD API cho:
 | Document Store | MongoDB | 7+ (tùy chọn) |
 | API Standards | REST, NGSI-LD | v1 |
 
-## Cài đặt từ mã nguồn
+## Cài đặt từ mã nguồn (Development)
 
 ### Yêu cầu hệ thống
 
@@ -111,29 +156,15 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
-## Chạy với Docker
-
-```bash
-# Build image
-docker build -t citylens-backend .
-
-# Run container
-docker run -p 8000:8000 --env-file .env citylens-backend
-
-# Hoặc dùng docker-compose từ thư mục gốc
-cd ..
-docker-compose up -d
-```
-
 ## API Documentation
 
 Sau khi chạy server, truy cập:
 
 | Tài liệu | URL |
 |----------|-----|
-| Swagger UI | http://localhost:8000/api/v1/docs |
-| ReDoc | http://localhost:8000/api/v1/redoc |
-| OpenAPI JSON | http://localhost:8000/api/v1/openapi.json |
+| Swagger UI | http://localhost:8000/docs |
+| ReDoc | http://localhost:8000/redoc |
+| OpenAPI JSON | http://localhost:8000/openapi.json |
 
 ### API Endpoints
 
