@@ -28,10 +28,94 @@ const LoginScreen: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ username?: string; password?: string }>({});
+  const [touched, setTouched] = useState<{ username?: boolean; password?: boolean }>({});
+
+  // Validation functions
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validateUsername = (username: string): boolean => {
+    // Username should be at least 3 characters, alphanumeric and underscores
+    const usernameRegex = /^[a-zA-Z0-9_]{3,}$/;
+    return usernameRegex.test(username);
+  };
+
+  const validateUsernameOrEmail = (value: string): boolean => {
+    if (!value.trim()) return false;
+    // Check if it's an email or username
+    if (value.includes('@')) {
+      return validateEmail(value);
+    }
+    return validateUsername(value);
+  };
+
+  const validatePassword = (password: string): boolean => {
+    return password.trim().length >= 6;
+  };
+
+  const validateField = (field: 'username' | 'password', value: string) => {
+    const newErrors = { ...errors };
+    
+    if (field === 'username') {
+      if (!value.trim()) {
+        newErrors.username = 'Vui lòng nhập tên đăng nhập hoặc email';
+      } else if (!validateUsernameOrEmail(value)) {
+        if (value.includes('@')) {
+          newErrors.username = 'Email không hợp lệ';
+        } else {
+          newErrors.username = 'Tên đăng nhập phải có ít nhất 3 ký tự (chữ, số, dấu gạch dưới)';
+        }
+      } else {
+        delete newErrors.username;
+      }
+    } else if (field === 'password') {
+      if (!value.trim()) {
+        newErrors.password = 'Vui lòng nhập mật khẩu';
+      } else if (!validatePassword(value)) {
+        newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
+      } else {
+        delete newErrors.password;
+      }
+    }
+    
+    setErrors(newErrors);
+  };
+
+  const handleUsernameChange = (text: string) => {
+    setUsername(text);
+    if (touched.username) {
+      validateField('username', text);
+    }
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    if (touched.password) {
+      validateField('password', text);
+    }
+  };
+
+  const handleBlur = (field: 'username' | 'password') => {
+    setTouched({ ...touched, [field]: true });
+    validateField(field, field === 'username' ? username : password);
+  };
+
+  const isFormValid = (): boolean => {
+    return validateUsernameOrEmail(username) && validatePassword(password);
+  };
 
   const handleLogin = async () => {
-    if (!username.trim() || !password.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin');
+    // Mark all fields as touched
+    setTouched({ username: true, password: true });
+    
+    // Validate all fields
+    validateField('username', username);
+    validateField('password', password);
+
+    if (!isFormValid()) {
       return;
     }
 
@@ -67,40 +151,52 @@ const LoginScreen: React.FC = () => {
             </View>
 
             <View style={styles.form}>
-              <View style={styles.inputContainer}>
-                <MaterialIcons name="person" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Tên đăng nhập hoặc email"
-                  placeholderTextColor="#9CA3AF"
-                  value={username}
-                  onChangeText={setUsername}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
+              <View style={styles.inputGroup}>
+                <View style={[styles.inputContainer, errors.username && styles.inputError]}>
+                  <MaterialIcons name="person" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Tên đăng nhập hoặc email"
+                    placeholderTextColor="#9CA3AF"
+                    value={username}
+                    onChangeText={handleUsernameChange}
+                    onBlur={() => handleBlur('username')}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+                {errors.username && touched.username && (
+                  <Text style={styles.errorText}>{errors.username}</Text>
+                )}
               </View>
 
-              <View style={styles.inputContainer}>
-                <MaterialIcons name="lock" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Mật khẩu"
-                  placeholderTextColor="#9CA3AF"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeIcon}
-                >
-                  <MaterialIcons
-                    name={showPassword ? 'visibility' : 'visibility-off'}
-                    size={20}
-                    color="#9CA3AF"
+              <View style={styles.inputGroup}>
+                <View style={[styles.inputContainer, errors.password && styles.inputError]}>
+                  <MaterialIcons name="lock" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Mật khẩu"
+                    placeholderTextColor="#9CA3AF"
+                    value={password}
+                    onChangeText={handlePasswordChange}
+                    onBlur={() => handleBlur('password')}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
                   />
-                </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    <MaterialIcons
+                      name={showPassword ? 'visibility' : 'visibility-off'}
+                      size={20}
+                      color="#9CA3AF"
+                    />
+                  </TouchableOpacity>
+                </View>
+                {errors.password && touched.password && (
+                  <Text style={styles.errorText}>{errors.password}</Text>
+                )}
               </View>
 
               <TouchableOpacity
@@ -111,9 +207,12 @@ const LoginScreen: React.FC = () => {
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+                style={[
+                  styles.loginButton,
+                  (loading || !isFormValid()) && styles.loginButtonDisabled
+                ]}
                 onPress={handleLogin}
-                disabled={loading}
+                disabled={loading || !isFormValid()}
               >
                 {loading ? (
                   <ActivityIndicator color="#FFFFFF" />
@@ -171,14 +270,21 @@ const styles = StyleSheet.create({
   form: {
     width: '100%',
   },
+  inputGroup: {
+    marginBottom: 16,
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
-    marginBottom: 16,
     height: 52,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  inputError: {
+    borderColor: '#EF4444',
   },
   inputIcon: {
     marginRight: 12,
@@ -229,6 +335,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textDecorationLine: 'underline',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
 });
 
