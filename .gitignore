@@ -139,4 +139,6 @@ backend/.env.*
 web-dashboard/node_modules/
 web-dashboard/dist/
 web-dashboard/.env
-web-dashboard/.env.*
+web-dashboard/.env.*web-dashboard/.next/
+web-dashboard/next-env.d.ts
+web-dashboard/tsconfig.tsbuildinfo
