@@ -1,5 +1,5 @@
 {
-  "name": "@pka_opendynamics_2025/citylens-ngsi-ld",
+  "name": "@pka-opendynamics/citylens-ngsi-ld",
   "version": "1.0.0",
   "description": "CityLens - Thư viện xây dựng và xử lý NGSI-LD entities theo chuẩn ETSI",
   "main": "dist/index.js",
