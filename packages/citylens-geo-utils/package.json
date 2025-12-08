@@ -1,5 +1,5 @@
 {
-  "name": "@pka_opendynamics_2025/citylens-geo-utils",
+  "name": "@pka-opendynamics/citylens-geo-utils",
   "version": "1.0.0",
   "description": "CityLens - Thư viện xử lý dữ liệu địa lý và GeoJSON cho đô thị thông minh",
   "main": "dist/index.js",
