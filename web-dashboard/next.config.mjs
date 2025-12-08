@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',  // Static export for Netlify
+  // Use standalone for development, export for production
+  output: process.env.NODE_ENV === 'production' ? 'export' : 'standalone',
   
   // Disable image optimization for static export
   images: {
