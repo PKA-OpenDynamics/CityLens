@@ -30,6 +30,16 @@ const PersonalInfoScreen: React.FC = () => {
     email: '',
     phone: '',
   });
+  const [errors, setErrors] = useState<{
+    full_name?: string;
+    email?: string;
+    phone?: string;
+  }>({});
+  const [touched, setTouched] = useState<{
+    full_name?: boolean;
+    email?: boolean;
+    phone?: boolean;
+  }>({});
 
   useEffect(() => {
     loadUserInfo();
@@ -52,7 +62,90 @@ const PersonalInfoScreen: React.FC = () => {
     }
   };
 
+  // Validation functions
+  const validateFullName = (name: string): boolean => {
+    return name.trim().length >= 2;
+  };
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone: string): boolean => {
+    if (!phone.trim()) return true; // Optional field
+    // Vietnamese phone number format: 10-11 digits, may start with 0 or +84
+    const phoneRegex = /^(\+84|0)[0-9]{9,10}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ''));
+  };
+
+  const validateField = (field: string, value: string) => {
+    const newErrors = { ...errors };
+
+    if (field === 'full_name') {
+      if (!value.trim()) {
+        newErrors.full_name = 'Vui lòng nhập họ và tên';
+      } else if (!validateFullName(value)) {
+        newErrors.full_name = 'Họ và tên phải có ít nhất 2 ký tự';
+      } else {
+        delete newErrors.full_name;
+      }
+    } else if (field === 'email') {
+      if (!value.trim()) {
+        newErrors.email = 'Vui lòng nhập email';
+      } else if (!validateEmail(value)) {
+        newErrors.email = 'Email không hợp lệ';
+      } else {
+        delete newErrors.email;
+      }
+    } else if (field === 'phone') {
+      if (value.trim() && !validatePhone(value)) {
+        newErrors.phone = 'Số điện thoại không hợp lệ (VD: 0912345678 hoặc +84912345678)';
+      } else {
+        delete newErrors.phone;
+      }
+    }
+
+    setErrors(newErrors);
+  };
+
+  const handleFieldChange = (field: 'full_name' | 'email' | 'phone', value: string) => {
+    setFormData({ ...formData, [field]: value });
+    if (touched[field]) {
+      validateField(field, value);
+    }
+  };
+
+  const handleBlur = (field: 'full_name' | 'email' | 'phone') => {
+    setTouched({ ...touched, [field]: true });
+    validateField(field, formData[field]);
+  };
+
+  const isFormValid = (): boolean => {
+    return (
+      validateFullName(formData.full_name) &&
+      validateEmail(formData.email) &&
+      (!formData.phone || validatePhone(formData.phone))
+    );
+  };
+
   const handleSave = async () => {
+    // Mark all fields as touched
+    setTouched({
+      full_name: true,
+      email: true,
+      phone: true,
+    });
+
+    // Validate all fields
+    validateField('full_name', formData.full_name);
+    validateField('email', formData.email);
+    validateField('phone', formData.phone);
+
+    if (!isFormValid()) {
+      return;
+    }
+
     // TODO: Implement update user API call
     setSaving(true);
     try {
@@ -102,44 +195,56 @@ const PersonalInfoScreen: React.FC = () => {
         <View style={styles.form}>
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Họ và tên</Text>
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, errors.full_name && styles.inputError]}>
               <MaterialIcons name="person" size={20} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 value={formData.full_name}
-                onChangeText={(text) => setFormData({ ...formData, full_name: text })}
+                onChangeText={(text) => handleFieldChange('full_name', text)}
+                onBlur={() => handleBlur('full_name')}
                 placeholder="Họ và tên"
               />
             </View>
+            {errors.full_name && touched.full_name && (
+              <Text style={styles.errorText}>{errors.full_name}</Text>
+            )}
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, errors.email && styles.inputError]}>
               <MaterialIcons name="email" size={20} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 value={formData.email}
-                onChangeText={(text) => setFormData({ ...formData, email: text })}
+                onChangeText={(text) => handleFieldChange('email', text)}
+                onBlur={() => handleBlur('email')}
                 placeholder="Email"
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
             </View>
+            {errors.email && touched.email && (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            )}
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Số điện thoại</Text>
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, errors.phone && styles.inputError]}>
               <MaterialIcons name="phone" size={20} color="#9CA3AF" style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
                 value={formData.phone}
-                onChangeText={(text) => setFormData({ ...formData, phone: text })}
+                onChangeText={(text) => handleFieldChange('phone', text)}
+                onBlur={() => handleBlur('phone')}
                 placeholder="Số điện thoại"
                 keyboardType="phone-pad"
               />
             </View>
+            {errors.phone && touched.phone && (
+              <Text style={styles.errorText}>{errors.phone}</Text>
+            )}
           </View>
 
           <View style={styles.inputGroup}>
@@ -152,9 +257,12 @@ const PersonalInfoScreen: React.FC = () => {
           </View>
 
           <TouchableOpacity
-            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+            style={[
+              styles.saveButton,
+              (saving || !isFormValid()) && styles.saveButtonDisabled
+            ]}
             onPress={handleSave}
-            disabled={saving}
+            disabled={saving || !isFormValid()}
           >
             {saving ? (
               <ActivityIndicator color="#FFFFFF" />
@@ -233,6 +341,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
+  inputError: {
+    borderColor: '#EF4444',
+  },
   inputDisabled: {
     backgroundColor: '#F3F4F6',
   },
@@ -269,6 +380,12 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
 });
 

@@ -1,5 +1,5 @@
 {
-  "name": "@pka_opendynamics_2025/citylens-geo-utils",
+  "name": "@pka-opendynamics/citylens-geo-utils",
   "version": "1.0.0",
   "description": "CityLens - Thư viện xử lý dữ liệu địa lý và GeoJSON cho đô thị thông minh",
   "main": "dist/index.js",
@@ -14,7 +14,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/PKA-Open-Dynamics/CityLens.git"
+    "url": "https://github.com/PKA-OpenDynamics/CityLens.git",
+    "directory": "packages/citylens-geo-utils"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "keywords": [
     "citylens",

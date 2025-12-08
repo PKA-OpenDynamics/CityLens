@@ -2,22 +2,6 @@
 # Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
 # Documentation & Guides (DO NOT COMMIT)
-*.md
-!README.md
-!LICENSE.md
-*.MD
-**/*.md
-!README.md
-!LICENSE.md
-.github/copilot-instructions.md
-ARCHITECTURE.md
-BACKEND_*.md
-COMPREHENSIVE_*.md
-DEPLOYMENT_*.md
-PROJECT_*.md
-QUICK_START.md
-ROADMAP.md
-STATUS.md
 
 # Scripts & Shell files (DO NOT COMMIT)
 *.sh
@@ -146,11 +130,10 @@ coverage/
 *.bak
 *.tmp
 
-# Backend (excluded from git)
-backend/
+backend/.env
+backend/.env.*
 
-# Web Dashboard (excluded from git)
-web-dashboard/
-
-# Old citylens-app (replaced by web-app)
-citylens-app/
+web-dashboard/node_modules/
+web-dashboard/dist/
+web-dashboard/.env
+web-dashboard/.env.*
