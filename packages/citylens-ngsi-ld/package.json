@@ -14,7 +14,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/PKA-Open-Dynamics/CityLens.git"
+    "url": "https://github.com/PKA-OpenDynamics/CityLens.git",
+    "directory": "packages/citylens-ngsi-ld"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "keywords": [
     "citylens",
