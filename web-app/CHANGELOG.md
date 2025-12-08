@@ -13,6 +13,17 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Chế độ offline
 - Hỗ trợ đa ngôn ngữ (i18n)
 
+## [1.0.1] - 2025-12-08
+
+### Tài liệu
+- Cập nhật CHANGELOG.md với format tiếng Việt
+- Thêm CONTRIBUTING.md với hướng dẫn đóng góp đầy đủ
+- Thêm DEPENDENCIES.md với thông tin licenses
+
+### Cải thiện
+- Chuẩn hóa cấu trúc tài liệu
+- Đồng bộ README format với các sub-projects khác
+
 ## [1.0.0] - 2025-12-07
 
 ### Thêm mới
