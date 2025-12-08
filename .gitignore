@@ -130,11 +130,10 @@ coverage/
 *.bak
 *.tmp
 
-# Backend (excluded from git)
-backend/
+backend/.env
+backend/.env.*
 
-# Web Dashboard (excluded from git)
-web-dashboard/
-
-# Old citylens-app (replaced by web-app)
-citylens-app/
+web-dashboard/node_modules/
+web-dashboard/dist/
+web-dashboard/.env
+web-dashboard/.env.*
