@@ -12,6 +12,17 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Phân tích nâng cao với machine learning
 - Hỗ trợ đa ngôn ngữ (i18n)
 
+## [1.0.1] - 2025-12-08
+
+### Tài liệu
+- Thêm CHANGELOG.md với lịch sử thay đổi chi tiết
+- Thêm CONTRIBUTING.md với hướng dẫn đóng góp
+- Thêm DEPENDENCIES.md với thông tin licenses
+
+### Cải thiện
+- Chuẩn hóa format tài liệu tiếng Việt
+- Cập nhật .gitignore
+
 ## [1.0.0] - 2025-12-07
 
 ### Thêm mới
