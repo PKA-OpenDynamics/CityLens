@@ -66,9 +66,9 @@ npm publish
 
 1. Vào: https://github.com/PKA-OpenDynamics/CityLens/packages
 2. Bạn sẽ thấy 3 packages:
-   - `@pka_opendynamics_2025/citylens-utils`
-   - `@pka_opendynamics_2025/citylens-geo-utils`
-   - `@pka_opendynamics_2025/citylens-ngsi-ld`
+   - `@pka-opendynamics/citylens-utils`
+   - `@pka-opendynamics/citylens-geo-utils`
+   - `@pka-opendynamics/citylens-ngsi-ld`
 
 ## Bước 5: Cài đặt từ GitHub Packages
 
@@ -76,16 +76,16 @@ npm publish
 
 ```bash
 # .npmrc
-@pka_opendynamics_2025:registry=https://npm.pkg.github.com
+@pka-opendynamics:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN
 ```
 
 Sau đó cài đặt:
 
 ```bash
-npm install @pka_opendynamics_2025/citylens-utils
-npm install @pka_opendynamics_2025/citylens-geo-utils
-npm install @pka_opendynamics_2025/citylens-ngsi-ld
+npm install @pka-opendynamics/citylens-utils
+npm install @pka-opendynamics/citylens-geo-utils
+npm install @pka-opendynamics/citylens-ngsi-ld
 ```
 
 ## Troubleshooting
@@ -101,7 +101,7 @@ npm login --registry=https://npm.pkg.github.com
 ### Lỗi 404 Not Found
 
 Kiểm tra:
-- Package name phải match với owner: `@pka_opendynamics_2025/...`
+- Package name phải match với owner: `@pka-opendynamics/...`
 - Repository URL đúng trong package.json
 - Token có đủ quyền
 
@@ -134,7 +134,7 @@ npm publish
 Nếu cần xóa version đã publish:
 
 ```bash
-npm unpublish @pka_opendynamics_2025/citylens-utils@1.0.0 --registry=https://npm.pkg.github.com
+npm unpublish @pka-opendynamics/citylens-utils@1.0.0 --registry=https://npm.pkg.github.com
 ```
 
 **Lưu ý**: Chỉ xóa được trong vòng 72 giờ sau khi publish.
