@@ -53,6 +53,77 @@ const CreateReportScreen: React.FC = () => {
   const [images, setImages] = useState<string[]>([]);
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [showWardModal, setShowWardModal] = useState(false);
+  const [errors, setErrors] = useState<{
+    reportType?: string;
+    ward?: string;
+    content?: string;
+    images?: string;
+  }>({});
+  const [touched, setTouched] = useState<{
+    reportType?: boolean;
+    ward?: boolean;
+    content?: boolean;
+    images?: boolean;
+  }>({});
+
+  // Validation functions
+  const validateContent = (content: string): boolean => {
+    const trimmed = content.trim();
+    return trimmed.length >= 10 && trimmed.length <= 2000;
+  };
+
+  const validateImages = (imageList: string[]): boolean => {
+    return imageList.length >= 1 && imageList.length <= 5;
+  };
+
+  const validateField = (field: string, value: any) => {
+    const newErrors = { ...errors };
+
+    if (field === 'reportType') {
+      if (!value) {
+        newErrors.reportType = 'Vui lòng chọn loại phản ánh';
+      } else {
+        delete newErrors.reportType;
+      }
+    } else if (field === 'ward') {
+      if (!value) {
+        newErrors.ward = 'Vui lòng chọn địa điểm';
+      } else {
+        delete newErrors.ward;
+      }
+    } else if (field === 'content') {
+      if (!value.trim()) {
+        newErrors.content = 'Vui lòng nhập nội dung phản ánh';
+      } else if (value.trim().length < 10) {
+        newErrors.content = 'Nội dung phải có ít nhất 10 ký tự';
+      } else if (value.trim().length > 2000) {
+        newErrors.content = 'Nội dung không được vượt quá 2000 ký tự';
+      } else {
+        delete newErrors.content;
+      }
+    } else if (field === 'images') {
+      if (!validateImages(value)) {
+        if (value.length === 0) {
+          newErrors.images = 'Vui lòng thêm ít nhất một ảnh/video';
+        } else if (value.length > 5) {
+          newErrors.images = 'Chỉ được thêm tối đa 5 ảnh/video';
+        }
+      } else {
+        delete newErrors.images;
+      }
+    }
+
+    setErrors(newErrors);
+  };
+
+  const isFormValid = (): boolean => {
+    return (
+      !!reportType &&
+      !!ward &&
+      validateContent(content) &&
+      validateImages(images)
+    );
+  };
 
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -69,12 +140,20 @@ const CreateReportScreen: React.FC = () => {
 
     if (!result.canceled && result.assets) {
       const newImages = result.assets.map((asset) => asset.uri);
-      setImages([...images, ...newImages].slice(0, 5)); // Tối đa 5 ảnh
+      const updatedImages = [...images, ...newImages].slice(0, 5); // Tối đa 5 ảnh
+      setImages(updatedImages);
+      if (touched.images) {
+        validateField('images', updatedImages);
+      }
     }
   };
 
   const handleRemoveImage = (index: number) => {
-    setImages(images.filter((_, i) => i !== index));
+    const updatedImages = images.filter((_, i) => i !== index);
+    setImages(updatedImages);
+    if (touched.images) {
+      validateField('images', updatedImages);
+    }
   };
 
   const handleSave = () => {
@@ -84,14 +163,46 @@ const CreateReportScreen: React.FC = () => {
     ]);
   };
 
-  const handleSubmit = () => {
-    if (!reportType || !ward || !content.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin bắt buộc');
-      return;
-    }
+  const handleReportTypeSelect = (item: string) => {
+    setReportType(item);
+    setTouched({ ...touched, reportType: true });
+    validateField('reportType', item);
+  };
 
-    if (images.length === 0) {
-      Alert.alert('Lỗi', 'Vui lòng thêm ít nhất một ảnh/video');
+  const handleWardSelect = (item: string) => {
+    setWard(item);
+    setTouched({ ...touched, ward: true });
+    validateField('ward', item);
+  };
+
+  const handleContentChange = (text: string) => {
+    setContent(text);
+    if (touched.content) {
+      validateField('content', text);
+    }
+  };
+
+  const handleContentBlur = () => {
+    setTouched({ ...touched, content: true });
+    validateField('content', content);
+  };
+
+  const handleSubmit = () => {
+    // Mark all fields as touched
+    setTouched({
+      reportType: true,
+      ward: true,
+      content: true,
+      images: true,
+    });
+
+    // Validate all fields
+    validateField('reportType', reportType);
+    validateField('ward', ward);
+    validateField('content', content);
+    validateField('images', images);
+
+    if (!isFormValid()) {
       return;
     }
 
@@ -159,19 +270,22 @@ const CreateReportScreen: React.FC = () => {
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         <View style={styles.form}>
           <Text style={styles.label}>Loại phản ánh *</Text>
-          <TouchableOpacity
-            style={styles.dropdown}
-            onPress={() => setShowTypeModal(true)}
-          >
-            <Text style={[styles.dropdownText, !reportType && styles.dropdownPlaceholder]}>
-              {reportType || 'Chọn loại phản ánh (mock)'}
-            </Text>
-            <MaterialIcons name="arrow-drop-down" size={24} color="#9CA3AF" />
-          </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.dropdown, errors.reportType && styles.inputError]}
+                onPress={() => setShowTypeModal(true)}
+              >
+                <Text style={[styles.dropdownText, !reportType && styles.dropdownPlaceholder]}>
+                  {reportType || 'Chọn loại phản ánh (mock)'}
+                </Text>
+                <MaterialIcons name="arrow-drop-down" size={24} color="#9CA3AF" />
+              </TouchableOpacity>
+              {errors.reportType && touched.reportType && (
+                <Text style={styles.errorText}>{errors.reportType}</Text>
+              )}
 
           <Text style={styles.label}>Địa điểm *</Text>
           <TouchableOpacity
-            style={styles.dropdown}
+            style={[styles.dropdown, errors.ward && styles.inputError]}
             onPress={() => setShowWardModal(true)}
           >
             <Text style={[styles.dropdownText, !ward && styles.dropdownPlaceholder]}>
@@ -179,6 +293,9 @@ const CreateReportScreen: React.FC = () => {
             </Text>
             <MaterialIcons name="arrow-drop-down" size={24} color="#9CA3AF" />
           </TouchableOpacity>
+          {errors.ward && touched.ward && (
+            <Text style={styles.errorText}>{errors.ward}</Text>
+          )}
 
           <TouchableOpacity
             style={styles.mapButton}
@@ -198,14 +315,24 @@ const CreateReportScreen: React.FC = () => {
 
           <Text style={styles.label}>Nội dung *</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Mô tả chi tiết nội dung phản ánh"
+            style={[styles.input, styles.textArea, errors.content && styles.inputError]}
+            placeholder="Mô tả chi tiết nội dung phản ánh (tối thiểu 10 ký tự)"
             value={content}
-            onChangeText={setContent}
+            onChangeText={handleContentChange}
+            onBlur={handleContentBlur}
             multiline
             numberOfLines={6}
             textAlignVertical="top"
+            maxLength={2000}
           />
+          <Text style={styles.helperText}>
+            {content.length}/2000 ký tự {content.length < 10 && touched.content && (
+              <Text style={styles.errorText}> - Tối thiểu 10 ký tự</Text>
+            )}
+          </Text>
+          {errors.content && touched.content && (
+            <Text style={styles.errorText}>{errors.content}</Text>
+          )}
 
           <TouchableOpacity style={styles.voiceButton}>
             <MaterialIcons name="mic" size={20} color="#3B82F6" />
@@ -216,8 +343,11 @@ const CreateReportScreen: React.FC = () => {
 
           <Text style={styles.label}>Ảnh/Video *</Text>
           <Text style={styles.helperText}>
-            Cho phép tổng dung lượng tối đa 30MB
+            Cho phép tổng dung lượng tối đa 30MB (tối thiểu 1, tối đa 5 ảnh)
           </Text>
+          {errors.images && touched.images && (
+            <Text style={styles.errorText}>{errors.images}</Text>
+          )}
           <View style={styles.imageContainer}>
             {images.map((uri, index) => (
               <View key={index} style={styles.imageWrapper}>
@@ -231,7 +361,13 @@ const CreateReportScreen: React.FC = () => {
               </View>
             ))}
             {images.length < 5 && (
-              <TouchableOpacity style={styles.addImageButton} onPress={handlePickImage}>
+              <TouchableOpacity
+                style={styles.addImageButton}
+                onPress={() => {
+                  handlePickImage();
+                  setTouched({ ...touched, images: true });
+                }}
+              >
                 <MaterialIcons name="camera-alt" size={28} color="#9CA3AF" />
                 <Text style={styles.addImageText}>Thêm{'\n'}Ảnh/Video</Text>
               </TouchableOpacity>
@@ -252,7 +388,11 @@ const CreateReportScreen: React.FC = () => {
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
               <Text style={styles.saveButtonText}>Lưu lại</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+            <TouchableOpacity
+              style={[styles.submitButton, !isFormValid() && styles.submitButtonDisabled]}
+              onPress={handleSubmit}
+              disabled={!isFormValid()}
+            >
               <Text style={styles.submitButtonText}>Gửi phản ánh</Text>
             </TouchableOpacity>
           </View>
@@ -264,7 +404,7 @@ const CreateReportScreen: React.FC = () => {
         () => setShowTypeModal(false),
         REPORT_TYPES,
         reportType,
-        setReportType,
+        handleReportTypeSelect,
         'Chọn loại phản ánh'
       )}
 
@@ -273,7 +413,7 @@ const CreateReportScreen: React.FC = () => {
         () => setShowWardModal(false),
         WARDS,
         ward,
-        setWard,
+        handleWardSelect,
         'Chọn xã/phường'
       )}
     </SafeAreaView>
@@ -325,6 +465,9 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+  },
+  inputError: {
+    borderColor: '#EF4444',
   },
   dropdownText: {
     flex: 1,
@@ -461,6 +604,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 4,
   },
   modalOverlay: {
     flex: 1,
