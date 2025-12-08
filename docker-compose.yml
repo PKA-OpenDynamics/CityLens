@@ -16,6 +16,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      # Mount init scripts for auto database seeding
+      - ./backend/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d:ro
     networks:
       - citylens-network
     healthcheck:
@@ -82,6 +84,8 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: citylens-backend
+    env_file:
+      - ./backend/.env
     environment:
       - POSTGRES_SERVER=postgres
       - POSTGRES_USER=citylens
