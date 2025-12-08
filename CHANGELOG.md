@@ -53,7 +53,7 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Chuẩn hóa API client với hỗ trợ PATCH
 - Cập nhật cấu trúc tài liệu
 
-## [0.2.0] - 2025-11-25
+## 2025-11-25
 
 ### Thêm mới
 - SQLAlchemy models cho tất cả entities
@@ -77,7 +77,7 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   - Cấu hình environment (.env)
   - Database files
 
-## [0.1.0] - 2025-11-20
+## 2025-11-20
 
 ### Thêm mới
 - Cấu trúc dự án ban đầu
