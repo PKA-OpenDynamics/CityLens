@@ -91,17 +91,12 @@ const AiAssistantScreen: React.FC = () => {
       >
         <View style={styles.header}>
           <TouchableOpacity
-            style={styles.headerBackButton}
             onPress={() => navigation.goBack()}
+            style={styles.backButton}
           >
-            <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+            <MaterialIcons name="arrow-back" size={24} color="#20A957" />
           </TouchableOpacity>
-          <View style={styles.headerTextWrapper}>
-            <Text style={styles.headerTitle}>Chat với AI CityLens</Text>
-            <Text style={styles.headerSubtitle}>
-              Hỏi về ngập, tắc đường, dịch vụ, điểm trú mưa...
-            </Text>
-          </View>
+          <Text style={styles.headerTitle}>Chat với AI CityLens</Text>
         </View>
 
         <View style={styles.chatContainer}>
@@ -186,31 +181,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    backgroundColor: '#FFFFFF',
+    paddingTop: 16,
+    paddingBottom: 24,
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#20A957',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#16A34A',
+    justifyContent: 'center',
+    position: 'relative',
   },
-  headerBackButton: {
-    marginRight: 8,
-    padding: 4,
-  },
-  headerTextWrapper: {
-    flex: 1,
+  backButton: {
+    position: 'absolute',
+    left: 16,
+    padding: 8,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: '700',
-    color: '#FFFFFF',
-  },
-  headerSubtitle: {
-    marginTop: 4,
-    fontSize: 13,
-    color: '#D1FAE5',
+    color: '#20A957',
+    textAlign: 'center',
   },
   chatContainer: {
     flex: 1,

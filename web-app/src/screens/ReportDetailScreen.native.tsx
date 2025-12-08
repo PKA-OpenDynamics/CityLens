@@ -5,7 +5,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 
@@ -15,18 +14,15 @@ const ReportDetailScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#20A957', '#7BE882']}
-        style={styles.header}
-      >
+      <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+          <MaterialIcons name="arrow-back" size={24} color="#20A957" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Chi tiết báo cáo</Text>
-      </LinearGradient>
+      </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         <View style={styles.card}>
@@ -46,19 +42,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   header: {
+    backgroundColor: '#FFFFFF',
     paddingTop: 16,
     paddingBottom: 24,
     paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
   },
   backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 16,
+    position: 'absolute',
+    left: 16,
     padding: 8,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#20A957',
+    textAlign: 'center',
   },
   content: {
     flex: 1,

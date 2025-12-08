@@ -17,7 +17,6 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
@@ -134,7 +133,7 @@ const CreateReportScreen: React.FC = () => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsMultiple: true,
+      allowsMultipleSelection: true,
       quality: 0.8,
     });
 
@@ -254,22 +253,21 @@ const CreateReportScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#20A957', '#7BE882']}
-        style={styles.header}
-      >
+      <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+          <MaterialIcons name="arrow-back" size={24} color="#20A957" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Gửi phản ánh</Text>
-      </LinearGradient>
+      </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         <View style={styles.form}>
-          <Text style={styles.label}>Loại phản ánh *</Text>
+          <Text style={styles.label}>
+            Loại phản ánh <Text style={styles.requiredStar}>*</Text>
+          </Text>
               <TouchableOpacity
                 style={[styles.dropdown, errors.reportType && styles.inputError]}
                 onPress={() => setShowTypeModal(true)}
@@ -283,7 +281,9 @@ const CreateReportScreen: React.FC = () => {
                 <Text style={styles.errorText}>{errors.reportType}</Text>
               )}
 
-          <Text style={styles.label}>Địa điểm *</Text>
+          <Text style={styles.label}>
+            Địa điểm <Text style={styles.requiredStar}>*</Text>
+          </Text>
           <TouchableOpacity
             style={[styles.dropdown, errors.ward && styles.inputError]}
             onPress={() => setShowWardModal(true)}
@@ -301,7 +301,7 @@ const CreateReportScreen: React.FC = () => {
             style={styles.mapButton}
             onPress={() => navigation.navigate('Map', { selectLocation: true })}
           >
-            <MaterialIcons name="place" size={20} color="#3B82F6" />
+            <MaterialIcons name="place" size={20} color="#20A957" />
             <Text style={styles.mapButtonText}>Chọn địa điểm từ bản đồ</Text>
           </TouchableOpacity>
 
@@ -313,7 +313,9 @@ const CreateReportScreen: React.FC = () => {
             onChangeText={setTitle}
           />
 
-          <Text style={styles.label}>Nội dung *</Text>
+          <Text style={styles.label}>
+            Nội dung <Text style={styles.requiredStar}>*</Text>
+          </Text>
           <TextInput
             style={[styles.input, styles.textArea, errors.content && styles.inputError]}
             placeholder="Mô tả chi tiết nội dung phản ánh (tối thiểu 10 ký tự)"
@@ -335,13 +337,15 @@ const CreateReportScreen: React.FC = () => {
           )}
 
           <TouchableOpacity style={styles.voiceButton}>
-            <MaterialIcons name="mic" size={20} color="#3B82F6" />
+            <MaterialIcons name="mic" size={20} color="#20A957" />
             <Text style={styles.voiceButtonText}>
               Ấn để nhập nội dung bằng giọng nói (mock)
             </Text>
           </TouchableOpacity>
 
-          <Text style={styles.label}>Ảnh/Video *</Text>
+          <Text style={styles.label}>
+            Ảnh/Video <Text style={styles.requiredStar}>*</Text>
+          </Text>
           <Text style={styles.helperText}>
             Cho phép tổng dung lượng tối đa 30MB (tối thiểu 1, tối đa 5 ảnh)
           </Text>
@@ -426,19 +430,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   header: {
+    backgroundColor: '#FFFFFF',
     paddingTop: 16,
     paddingBottom: 24,
     paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
   },
   backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 16,
+    position: 'absolute',
+    left: 16,
     padding: 8,
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#20A957',
+    textAlign: 'center',
   },
   content: {
     flex: 1,
@@ -455,6 +465,9 @@ const styles = StyleSheet.create({
     color: '#374151',
     marginBottom: 8,
     marginTop: 16,
+  },
+  requiredStar: {
+    color: '#EF4444',
   },
   dropdown: {
     flexDirection: 'row',
@@ -486,7 +499,7 @@ const styles = StyleSheet.create({
   mapButtonText: {
     marginLeft: 8,
     fontSize: 14,
-    color: '#3B82F6',
+    color: '#20A957',
   },
   input: {
     backgroundColor: '#FFFFFF',
@@ -595,15 +608,17 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     flex: 1,
-    backgroundColor: '#20A957',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#20A957',
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
   },
   submitButtonText: {
-    color: '#FFFFFF',
+    color: '#20A957',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   submitButtonDisabled: {
     opacity: 0.6,

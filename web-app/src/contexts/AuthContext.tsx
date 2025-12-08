@@ -5,6 +5,18 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService, User } from '../services/auth';
 
+// ============================================
+// TEMPORARY: Bypass login for testing
+// Set to false to re-enable authentication
+// ============================================
+const BYPASS_LOGIN = true;
+
+// ============================================
+// Force show login screen even when bypass is enabled
+// Set to true to view/login screen for UI editing
+// ============================================
+const FORCE_SHOW_LOGIN = false;
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
@@ -16,13 +28,44 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Mock user data for testing when login is bypassed
+const MOCK_USER: User = {
+  id: 'mock-user-id',
+  username: 'testuser',
+  email: 'test@example.com',
+  full_name: 'Người dùng Test',
+  phone: '0123456789',
+  is_active: true,
+  role: 'user',
+  level: 1,
+  points: 0,
+  reputation_score: 0,
+  is_verified: false,
+  is_admin: false,
+};
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    checkAuthStatus();
+    if (FORCE_SHOW_LOGIN) {
+      // Force show login screen for UI editing
+      console.log('⚠️ FORCE SHOW LOGIN: Showing login screen for UI editing');
+      setUser(null);
+      setIsAuthenticated(false);
+      setIsLoading(false);
+    } else if (BYPASS_LOGIN) {
+      // Bypass authentication - set mock user and mark as authenticated
+      console.log('⚠️ LOGIN BYPASSED: Using mock user for testing');
+      setUser(MOCK_USER);
+      setIsAuthenticated(true);
+      setIsLoading(false);
+    } else {
+      // Normal authentication flow
+      checkAuthStatus();
+    }
   }, []);
 
   const checkAuthStatus = async () => {
@@ -69,6 +112,28 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const login = async (username: string, password: string) => {
+    if (FORCE_SHOW_LOGIN) {
+      // When forcing login screen, still allow login but use mock user if bypass is enabled
+      if (BYPASS_LOGIN) {
+        console.log('⚠️ FORCE SHOW LOGIN: Login called, using mock user');
+        setUser(MOCK_USER);
+        setIsAuthenticated(true);
+        return;
+      }
+      // If not bypassing, use real login
+      await authService.login({ username, password });
+      const userData = await authService.getCurrentUser();
+      setUser(userData);
+      setIsAuthenticated(true);
+      return;
+    }
+    if (BYPASS_LOGIN) {
+      // When bypassing login, just set mock user
+      console.log('⚠️ LOGIN BYPASSED: Login called but bypassed');
+      setUser(MOCK_USER);
+      setIsAuthenticated(true);
+      return;
+    }
     await authService.login({ username, password });
     const userData = await authService.getCurrentUser();
     setUser(userData);
@@ -76,12 +141,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = async () => {
+    if (BYPASS_LOGIN) {
+      // When bypassing login, just clear mock user but keep authenticated for testing
+      console.log('⚠️ LOGIN BYPASSED: Logout called but bypassed - staying authenticated');
+      // Keep authenticated for testing purposes
+      // setUser(null);
+      // setIsAuthenticated(false);
+      return;
+    }
     await authService.logout();
     setUser(null);
     setIsAuthenticated(false);
   };
 
   const refreshUser = async () => {
+    if (BYPASS_LOGIN) {
+      // When bypassing login, just refresh mock user
+      setUser(MOCK_USER);
+      return;
+    }
     try {
       if (await authService.isAuthenticated()) {
         const userData = await authService.getCurrentUser();

@@ -14,9 +14,9 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
@@ -132,10 +132,7 @@ const LoginScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient
-        colors={['#20A957', '#7BE882']}
-        style={styles.gradient}
-      >
+      <View style={styles.gradient}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.container}
@@ -145,9 +142,11 @@ const LoginScreen: React.FC = () => {
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.header}>
-              <MaterialIcons name="explore" size={48} color="#FFFFFF" />
-              <Text style={styles.title}>CityLens</Text>
-              <Text style={styles.subtitle}>Hệ thống quản lý thành phố thông minh</Text>
+              <Image 
+                source={require('../../assets/logo.jpg')} 
+                style={styles.logo}
+                resizeMode="contain"
+              />
             </View>
 
             <View style={styles.form}>
@@ -230,7 +229,7 @@ const LoginScreen: React.FC = () => {
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
-      </LinearGradient>
+      </View>
     </SafeAreaView>
   );
 };
@@ -241,6 +240,7 @@ const styles = StyleSheet.create({
   },
   gradient: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   container: {
     flex: 1,
@@ -254,16 +254,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 48,
   },
+  logo: {
+    width: 150,
+    height: 150,
+  },
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#20A957',
     marginTop: 16,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#6B7280',
     marginTop: 8,
     opacity: 0.9,
   },
@@ -302,11 +306,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   forgotPasswordText: {
-    color: '#FFFFFF',
+    color: '#20A957',
     fontSize: 14,
   },
   loginButton: {
     backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#20A957',
     borderRadius: 12,
     height: 52,
     alignItems: 'center',
@@ -327,11 +333,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   registerText: {
-    color: '#FFFFFF',
+    color: '#6B7280',
     fontSize: 14,
   },
   registerLink: {
-    color: '#FFFFFF',
+    color: '#20A957',
     fontSize: 14,
     fontWeight: '600',
     textDecorationLine: 'underline',
