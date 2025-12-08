@@ -1932,7 +1932,7 @@ const MapScreen: React.FC = () => {
             style={styles.headerBackButton}
             onPress={handleBack}
           >
-            <MaterialIcons name="chevron-left" size={24} color="#FFFFFF" />
+            <MaterialIcons name="arrow-back" size={24} color="#20A957" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Bản đồ chi tiết</Text>
         </View>
@@ -1963,7 +1963,7 @@ const MapScreen: React.FC = () => {
                 top: 80,
                 right: 16,
                 width: 280,
-                backgroundColor: 'rgba(45, 55, 72, 0.95)',
+                backgroundColor: '#FFFFFF',
                 borderRadius: 12,
                 overflow: 'hidden',
                 zIndex: 1000,
@@ -1973,7 +1973,7 @@ const MapScreen: React.FC = () => {
               className="notification-panel"
             >
               <View style={styles.notificationHeader}>
-                <Text style={styles.notificationHeaderText}>Thông báo</Text>
+                <Text style={styles.notificationHeaderText}>Camera giao thông</Text>
                 <TouchableOpacity
                   onPress={() => {
                     setShowNotificationPanel(false);
@@ -2089,7 +2089,11 @@ const MapScreen: React.FC = () => {
                         activeOpacity={0.7}
                       >
                         <Text 
-                          style={styles.notificationButtonText}
+                          style={[
+                            styles.notificationButtonText,
+                            selectedCamera?.name === camera.name &&
+                              styles.notificationButtonTextActive,
+                          ]}
                           // @ts-ignore - web only
                           onPress={undefined}
                           // @ts-ignore - web only
@@ -2182,7 +2186,7 @@ const MapScreen: React.FC = () => {
             >
               <MaterialIcons
                   name="location-city"
-                size={20}
+                size={18}
                   color="#20A957"
               />
                 <Text style={styles.cityDropdownButtonText}>
@@ -2190,7 +2194,7 @@ const MapScreen: React.FC = () => {
               </Text>
                 <MaterialIcons
                   name={showCityDropdown ? 'expand-less' : 'expand-more'}
-                  size={20}
+                  size={18}
                   color="#757575"
                 />
             </TouchableOpacity>
@@ -2579,10 +2583,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#20A957',
+    backgroundColor: '#FFFFFF',
     zIndex: 20,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#16A34A',
+    borderBottomColor: '#E5E7EB',
   },
   headerBackButton: {
     position: 'absolute',
@@ -2590,9 +2594,10 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#20A957',
+    textAlign: 'center',
   },
   mapContainer: {
     flex: 1,
@@ -2616,7 +2621,7 @@ const styles = StyleSheet.create({
     top: 16,
     right: 16,
     width: 280,
-    backgroundColor: 'rgba(45, 55, 72, 0.95)',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     overflow: 'hidden',
     zIndex: 1000,
@@ -2670,7 +2675,7 @@ const styles = StyleSheet.create({
   },
   notificationStatText: {
     fontSize: 13,
-    color: '#E2E8F0',
+    color: '#374151',
     marginBottom: 0,
   },
   notificationButtons: {
@@ -2682,7 +2687,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
-    backgroundColor: '#2D3748',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#20A957',
     alignItems: 'center',
     // @ts-ignore - web only
     cursor: 'pointer',
@@ -2693,11 +2700,15 @@ const styles = StyleSheet.create({
   },
   notificationButtonActive: {
     backgroundColor: '#20A957',
+    borderColor: '#20A957',
   },
   notificationButtonText: {
     fontSize: 12,
-    color: '#FFFFFF',
+    color: '#20A957',
     fontWeight: '600',
+  },
+  notificationButtonTextActive: {
+    color: '#FFFFFF',
   },
   zoomControlsWrapper: {
     position: 'absolute',
@@ -2788,24 +2799,24 @@ const styles = StyleSheet.create({
     zIndex: 1001,
     overflow: 'visible',
     flexShrink: 0,
-    minWidth: 120,
+    minWidth: 80,
   },
   cityDropdownButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     borderRadius: 8,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   cityDropdownButtonText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#374151',
     fontWeight: '600',
-    marginRight: 4,
+    marginRight: 2,
   },
   monitorButton: {
     flexDirection: 'row',
