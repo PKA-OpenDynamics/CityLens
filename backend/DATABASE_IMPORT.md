@@ -25,17 +25,17 @@ Nếu bạn chưa có file dump, liên hệ team để nhận:
 
 ```bash
 # Import trực tiếp vào container đang chạy
-docker exec -i citylens-postgres psql -U citylens -d citylens_db < citylens_dump.sql
+docker exec -i citylens-postgres-prod psql -U citylens -d citylens_db < citylens_dump.sql
 ```
 
 ### Bước 3: Kiểm tra
 
 ```bash
 # Kiểm tra số lượng entities
-docker exec citylens-postgres psql -U citylens -d citylens_db -c "SELECT COUNT(*) FROM osm_entities;"
+docker exec citylens-postgres-prod psql -U citylens -d citylens_db -c "SELECT COUNT(*) FROM osm_entities;"
 
 # Xem breakdown theo type
-docker exec citylens-postgres psql -U citylens -d citylens_db -c "SELECT entity_type, COUNT(*) FROM osm_entities GROUP BY entity_type;"
+docker exec citylens-postgres-prod psql -U citylens -d citylens_db -c "SELECT entity_type, COUNT(*) FROM osm_entities GROUP BY entity_type;"
 ```
 
 ---
@@ -71,7 +71,7 @@ Nếu bạn muốn tạo backup hoặc chia sẻ database:
 
 ```bash
 # Export từ container
-docker exec citylens-postgres pg_dump -U citylens citylens_db > citylens_backup_$(date +%Y%m%d).sql
+docker exec citylens-postgres-prod pg_dump -U citylens citylens_db > citylens_backup_$(date +%Y%m%d).sql
 
 # Hoặc dùng script
 ./scripts/export_database.sh
@@ -85,8 +85,8 @@ docker exec citylens-postgres pg_dump -U citylens citylens_db > citylens_backup_
 
 ```bash
 # Tạo database
-docker exec citylens-postgres psql -U citylens -c "CREATE DATABASE citylens_db;"
-docker exec citylens-postgres psql -U citylens -d citylens_db -c "CREATE EXTENSION postgis;"
+docker exec citylens-postgres-prod psql -U citylens -c "CREATE DATABASE citylens_db;"
+docker exec citylens-postgres-prod psql -U citylens -d citylens_db -c "CREATE EXTENSION postgis;"
 ```
 
 ### Lỗi: "connection refused"
@@ -108,17 +108,17 @@ File dump lớn có thể mất thời gian. Theo dõi progress:
 docker-compose logs -f postgres
 
 # Kiểm tra disk usage
-docker exec citylens-postgres df -h
+docker exec citylens-postgres-prod df -h
 ```
 
 ### Xóa dữ liệu và import lại
 
 ```bash
 # Drop tất cả tables
-docker exec citylens-postgres psql -U citylens -d citylens_db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+docker exec citylens-postgres-prod psql -U citylens -d citylens_db -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
 # Import lại
-docker exec -i citylens-postgres psql -U citylens -d citylens_db < citylens_dump.sql
+docker exec -i citylens-postgres-prod psql -U citylens -d citylens_db < citylens_dump.sql
 ```
 
 ---
