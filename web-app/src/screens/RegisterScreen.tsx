@@ -34,27 +34,192 @@ const RegisterScreen: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{
+    full_name?: string;
+    username?: string;
+    email?: string;
+    phone?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
+  const [touched, setTouched] = useState<{
+    full_name?: boolean;
+    username?: boolean;
+    email?: boolean;
+    phone?: boolean;
+    password?: boolean;
+    confirmPassword?: boolean;
+  }>({});
+
+  // Validation functions
+  const validateFullName = (name: string): boolean => {
+    return name.trim().length >= 2;
+  };
+
+  const validateUsername = (username: string): boolean => {
+    // Username should be 3-30 characters, alphanumeric and underscores
+    const usernameRegex = /^[a-zA-Z0-9_]{3,30}$/;
+    return usernameRegex.test(username);
+  };
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePhone = (phone: string): boolean => {
+    if (!phone.trim()) return true; // Optional field
+    // Vietnamese phone number format: 10-11 digits, may start with 0 or +84
+    const phoneRegex = /^(\+84|0)[0-9]{9,10}$/;
+    return phoneRegex.test(phone.replace(/\s/g, ''));
+  };
+
+  const validatePasswordStrength = (password: string): { valid: boolean; message?: string } => {
+    if (password.length < 8) {
+      return { valid: false, message: 'Mật khẩu phải có ít nhất 8 ký tự' };
+    }
+    if (!/[A-Z]/.test(password)) {
+      return { valid: false, message: 'Mật khẩu phải có ít nhất 1 chữ hoa' };
+    }
+    if (!/[a-z]/.test(password)) {
+      return { valid: false, message: 'Mật khẩu phải có ít nhất 1 chữ thường' };
+    }
+    if (!/[0-9]/.test(password)) {
+      return { valid: false, message: 'Mật khẩu phải có ít nhất 1 số' };
+    }
+    return { valid: true };
+  };
+
+  const validateField = (field: string, value: string) => {
+    const newErrors = { ...errors };
+
+    if (field === 'full_name') {
+      if (!value.trim()) {
+        newErrors.full_name = 'Vui lòng nhập họ và tên';
+      } else if (!validateFullName(value)) {
+        newErrors.full_name = 'Họ và tên phải có ít nhất 2 ký tự';
+      } else {
+        delete newErrors.full_name;
+      }
+    } else if (field === 'username') {
+      if (!value.trim()) {
+        newErrors.username = 'Vui lòng nhập tên đăng nhập';
+      } else if (!validateUsername(value)) {
+        newErrors.username = 'Tên đăng nhập phải có 3-30 ký tự (chữ, số, dấu gạch dưới)';
+      } else {
+        delete newErrors.username;
+      }
+    } else if (field === 'email') {
+      if (!value.trim()) {
+        newErrors.email = 'Vui lòng nhập email';
+      } else if (!validateEmail(value)) {
+        newErrors.email = 'Email không hợp lệ';
+      } else {
+        delete newErrors.email;
+      }
+    } else if (field === 'phone') {
+      if (value.trim() && !validatePhone(value)) {
+        newErrors.phone = 'Số điện thoại không hợp lệ (VD: 0912345678 hoặc +84912345678)';
+      } else {
+        delete newErrors.phone;
+      }
+    } else if (field === 'password') {
+      if (!value.trim()) {
+        newErrors.password = 'Vui lòng nhập mật khẩu';
+      } else {
+        const passwordValidation = validatePasswordStrength(value);
+        if (!passwordValidation.valid) {
+          newErrors.password = passwordValidation.message;
+        } else {
+          delete newErrors.password;
+        }
+        // Also validate confirm password if it's been touched
+        if (touched.confirmPassword && confirmPassword) {
+          if (value !== confirmPassword) {
+            newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+          } else {
+            delete newErrors.confirmPassword;
+          }
+        }
+      }
+    } else if (field === 'confirmPassword') {
+      if (!value.trim()) {
+        newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
+      } else if (value !== formData.password) {
+        newErrors.confirmPassword = 'Mật khẩu xác nhận không khớp';
+      } else {
+        delete newErrors.confirmPassword;
+      }
+    }
+
+    setErrors(newErrors);
+  };
+
+  const handleFieldChange = (field: keyof RegisterData, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    if (touched[field as keyof typeof touched]) {
+      validateField(field, value);
+    }
+  };
+
+  const handleConfirmPasswordChange = (value: string) => {
+    setConfirmPassword(value);
+    if (touched.confirmPassword) {
+      validateField('confirmPassword', value);
+    }
+    // Also re-validate password match
+    if (touched.password && formData.password) {
+      if (value !== formData.password) {
+        setErrors({ ...errors, confirmPassword: 'Mật khẩu xác nhận không khớp' });
+      } else {
+        const newErrors = { ...errors };
+        delete newErrors.confirmPassword;
+        setErrors(newErrors);
+      }
+    }
+  };
+
+  const handleBlur = (field: string) => {
+    setTouched({ ...touched, [field]: true });
+    if (field === 'confirmPassword') {
+      validateField('confirmPassword', confirmPassword);
+    } else {
+      validateField(field, formData[field as keyof RegisterData] || '');
+    }
+  };
+
+  const isFormValid = (): boolean => {
+    return (
+      validateFullName(formData.full_name) &&
+      validateUsername(formData.username) &&
+      validateEmail(formData.email) &&
+      (!formData.phone || validatePhone(formData.phone)) &&
+      validatePasswordStrength(formData.password).valid &&
+      formData.password === confirmPassword &&
+      confirmPassword.trim().length > 0
+    );
+  };
 
   const handleRegister = async () => {
-    if (!formData.username.trim() || !formData.email.trim() || !formData.password.trim() || !formData.full_name.trim()) {
-      Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin bắt buộc');
-      return;
-    }
+    // Mark all fields as touched
+    setTouched({
+      full_name: true,
+      username: true,
+      email: true,
+      phone: true,
+      password: true,
+      confirmPassword: true,
+    });
 
-    if (formData.password !== confirmPassword) {
-      Alert.alert('Lỗi', 'Mật khẩu xác nhận không khớp');
-      return;
-    }
+    // Validate all fields
+    validateField('full_name', formData.full_name);
+    validateField('username', formData.username);
+    validateField('email', formData.email);
+    validateField('phone', formData.phone);
+    validateField('password', formData.password);
+    validateField('confirmPassword', confirmPassword);
 
-    if (formData.password.length < 6) {
-      Alert.alert('Lỗi', 'Mật khẩu phải có ít nhất 6 ký tự');
-      return;
-    }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      Alert.alert('Lỗi', 'Email không hợp lệ');
+    if (!isFormValid()) {
       return;
     }
 
@@ -100,106 +265,145 @@ const RegisterScreen: React.FC = () => {
             </View>
 
             <View style={styles.form}>
-              <View style={styles.inputContainer}>
-                <MaterialIcons name="person" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Họ và tên *"
-                  placeholderTextColor="#9CA3AF"
-                  value={formData.full_name}
-                  onChangeText={(text) => setFormData({ ...formData, full_name: text })}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <MaterialIcons name="account-circle" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Tên đăng nhập *"
-                  placeholderTextColor="#9CA3AF"
-                  value={formData.username}
-                  onChangeText={(text) => setFormData({ ...formData, username: text })}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <MaterialIcons name="email" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email *"
-                  placeholderTextColor="#9CA3AF"
-                  value={formData.email}
-                  onChangeText={(text) => setFormData({ ...formData, email: text })}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <MaterialIcons name="phone" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Số điện thoại (tùy chọn)"
-                  placeholderTextColor="#9CA3AF"
-                  value={formData.phone}
-                  onChangeText={(text) => setFormData({ ...formData, phone: text })}
-                  keyboardType="phone-pad"
-                />
-              </View>
-
-              <View style={styles.inputContainer}>
-                <MaterialIcons name="lock" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Mật khẩu *"
-                  placeholderTextColor="#9CA3AF"
-                  value={formData.password}
-                  onChangeText={(text) => setFormData({ ...formData, password: text })}
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeIcon}
-                >
-                  <MaterialIcons
-                    name={showPassword ? 'visibility' : 'visibility-off'}
-                    size={20}
-                    color="#9CA3AF"
+              <View style={styles.inputGroup}>
+                <View style={[styles.inputContainer, errors.full_name && styles.inputError]}>
+                  <MaterialIcons name="person" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Họ và tên *"
+                    placeholderTextColor="#9CA3AF"
+                    value={formData.full_name}
+                    onChangeText={(text) => handleFieldChange('full_name', text)}
+                    onBlur={() => handleBlur('full_name')}
                   />
-                </TouchableOpacity>
+                </View>
+                {errors.full_name && touched.full_name && (
+                  <Text style={styles.errorText}>{errors.full_name}</Text>
+                )}
               </View>
 
-              <View style={styles.inputContainer}>
-                <MaterialIcons name="lock-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Xác nhận mật khẩu *"
-                  placeholderTextColor="#9CA3AF"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry={!showConfirmPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                  style={styles.eyeIcon}
-                >
-                  <MaterialIcons
-                    name={showConfirmPassword ? 'visibility' : 'visibility-off'}
-                    size={20}
-                    color="#9CA3AF"
+              <View style={styles.inputGroup}>
+                <View style={[styles.inputContainer, errors.username && styles.inputError]}>
+                  <MaterialIcons name="account-circle" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Tên đăng nhập *"
+                    placeholderTextColor="#9CA3AF"
+                    value={formData.username}
+                    onChangeText={(text) => handleFieldChange('username', text)}
+                    onBlur={() => handleBlur('username')}
+                    autoCapitalize="none"
+                    autoCorrect={false}
                   />
-                </TouchableOpacity>
+                </View>
+                {errors.username && touched.username && (
+                  <Text style={styles.errorText}>{errors.username}</Text>
+                )}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <View style={[styles.inputContainer, errors.email && styles.inputError]}>
+                  <MaterialIcons name="email" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Email *"
+                    placeholderTextColor="#9CA3AF"
+                    value={formData.email}
+                    onChangeText={(text) => handleFieldChange('email', text)}
+                    onBlur={() => handleBlur('email')}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
+                {errors.email && touched.email && (
+                  <Text style={styles.errorText}>{errors.email}</Text>
+                )}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <View style={[styles.inputContainer, errors.phone && styles.inputError]}>
+                  <MaterialIcons name="phone" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Số điện thoại (tùy chọn)"
+                    placeholderTextColor="#9CA3AF"
+                    value={formData.phone}
+                    onChangeText={(text) => handleFieldChange('phone', text)}
+                    onBlur={() => handleBlur('phone')}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+                {errors.phone && touched.phone && (
+                  <Text style={styles.errorText}>{errors.phone}</Text>
+                )}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <View style={[styles.inputContainer, errors.password && styles.inputError]}>
+                  <MaterialIcons name="lock" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Mật khẩu *"
+                    placeholderTextColor="#9CA3AF"
+                    value={formData.password}
+                    onChangeText={(text) => handleFieldChange('password', text)}
+                    onBlur={() => handleBlur('password')}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    <MaterialIcons
+                      name={showPassword ? 'visibility' : 'visibility-off'}
+                      size={20}
+                      color="#9CA3AF"
+                    />
+                  </TouchableOpacity>
+                </View>
+                {errors.password && touched.password && (
+                  <Text style={styles.errorText}>{errors.password}</Text>
+                )}
+              </View>
+
+              <View style={styles.inputGroup}>
+                <View style={[styles.inputContainer, errors.confirmPassword && styles.inputError]}>
+                  <MaterialIcons name="lock-outline" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Xác nhận mật khẩu *"
+                    placeholderTextColor="#9CA3AF"
+                    value={confirmPassword}
+                    onChangeText={handleConfirmPasswordChange}
+                    onBlur={() => handleBlur('confirmPassword')}
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={styles.eyeIcon}
+                  >
+                    <MaterialIcons
+                      name={showConfirmPassword ? 'visibility' : 'visibility-off'}
+                      size={20}
+                      color="#9CA3AF"
+                    />
+                  </TouchableOpacity>
+                </View>
+                {errors.confirmPassword && touched.confirmPassword && (
+                  <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+                )}
               </View>
 
               <TouchableOpacity
-                style={[styles.registerButton, loading && styles.registerButtonDisabled]}
+                style={[
+                  styles.registerButton,
+                  (loading || !isFormValid()) && styles.registerButtonDisabled
+                ]}
                 onPress={handleRegister}
-                disabled={loading}
+                disabled={loading || !isFormValid()}
               >
                 {loading ? (
                   <ActivityIndicator color="#FFFFFF" />
@@ -259,14 +463,21 @@ const styles = StyleSheet.create({
   form: {
     width: '100%',
   },
+  inputGroup: {
+    marginBottom: 16,
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
-    marginBottom: 16,
     height: 52,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  inputError: {
+    borderColor: '#EF4444',
   },
   inputIcon: {
     marginRight: 12,
@@ -310,6 +521,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textDecorationLine: 'underline',
+  },
+  errorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 4,
   },
 });
 
