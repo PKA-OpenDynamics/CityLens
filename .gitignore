@@ -6,8 +6,11 @@
 # Scripts & Shell files (DO NOT COMMIT)
 *.sh
 **/*.sh
+# Allow specific backend scripts
+!backend/start.sh
+!backend/scripts/export_database.sh
+!backend/scripts/import_database.sh
 release.sh
-backend/scripts/*.sh
 
 # SQL Scripts (DO NOT COMMIT - for local use only)
 backend/scripts/*.sql
@@ -136,4 +139,9 @@ backend/.env.*
 web-dashboard/node_modules/
 web-dashboard/dist/
 web-dashboard/.env
-web-dashboard/.env.*
+web-dashboard/.env.*web-dashboard/.next/
+web-dashboard/next-env.d.ts
+web-dashboard/tsconfig.tsbuildinfo
+web-dashboard/.next/
+web-dashboard/tsconfig.tsbuildinfo
+web-dashboard/out/

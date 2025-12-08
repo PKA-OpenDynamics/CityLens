@@ -13,6 +13,28 @@ và dự án tuân theo [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Hỗ trợ đa ngôn ngữ (i18n)
 - Push notifications
 
+## [1.0.1] - 2025-12-08
+
+### Thêm mới
+- NPM Packages published lên GitHub Packages
+- Pull Request template cho GitHub
+- PUBLISHING.md hướng dẫn publish packages
+
+### Sửa lỗi
+- Sửa package names để phù hợp với GitHub organization
+- Cập nhật .gitignore loại trừ build artifacts
+
+### Tài liệu
+- Web App: CHANGELOG, CONTRIBUTING, DEPENDENCIES
+- Backend: CHANGELOG, CONTRIBUTING, DEPENDENCIES
+- Web Dashboard: CHANGELOG, CONTRIBUTING, DEPENDENCIES
+- Chuẩn hóa format tiếng Việt cho tất cả tài liệu
+
+### Cải thiện
+- Tối ưu cấu trúc documentation
+- Script tự động publish packages
+- Chuẩn hóa repository URLs
+
 ## [1.0.0] - 2025-12-07
 
 ### Thêm mới

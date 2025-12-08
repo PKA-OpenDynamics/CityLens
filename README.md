@@ -22,6 +22,25 @@
 
 ---
 
+## Quick Start
+
+Chạy toàn bộ project chỉ với 1 lệnh:
+
+```bash
+git clone https://github.com/PKA-Open-Dynamics/CityLens.git
+cd CityLens/backend
+./start.sh
+```
+
+Truy cập:
+- Backend API: http://localhost:8000/docs
+- API Endpoint: http://localhost:8000/api/v1
+- Health Check: http://localhost:8000/health
+
+Import database (487,000+ OSM entities): Xem `backend/DATABASE_IMPORT.md`
+
+---
+
 ## Mục lục
 
 - [Ý tưởng bài toán](#ý-tưởng-bài-toán)
