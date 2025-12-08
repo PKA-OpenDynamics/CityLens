@@ -18,6 +18,18 @@
 
 ---
 
+## Video Hướng dẫn
+
+<div align="center">
+
+[![CityLens Backend Setup Guide](https://img.youtube.com/vi/n725hlexIL8/maxresdefault.jpg)](https://www.youtube.com/watch?v=n725hlexIL8)
+
+**[▶Xem video hướng dẫn chạy Backend](https://www.youtube.com/watch?v=n725hlexIL8)**
+
+</div>
+
+---
+
 ## Quick Start với Docker
 
 Cách nhanh nhất để chạy CityLens Backend:
@@ -32,15 +44,15 @@ cd CityLens/backend
 ```
 
 Script sẽ tự động:
-- Tạo file .env từ template
-- Build Docker image
-- Khởi động PostgreSQL và Redis
-- Khởi động Backend API
+- ✅ Tạo file .env từ template
+- ✅ Build Docker image
+- ✅ Khởi động PostgreSQL và Redis
+- ✅ Khởi động Backend API
 
 Truy cập API sau khi khởi động:
-- API Documentation: http://localhost:8000/docs
-- API Endpoint: http://localhost:8000/api/v1
-- Health Check: http://localhost:8000/health
+- **API Documentation**: http://localhost:8000/docs
+- **API Endpoint**: http://localhost:8000/api/v1
+- **Health Check**: http://localhost:8000/health
 
 ### Import database (487,000+ OSM entities)
 
