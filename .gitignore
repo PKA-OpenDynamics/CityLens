@@ -144,3 +144,4 @@ web-dashboard/next-env.d.ts
 web-dashboard/tsconfig.tsbuildinfo
 web-dashboard/.next/
 web-dashboard/tsconfig.tsbuildinfo
+web-dashboard/out/
