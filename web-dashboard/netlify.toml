@@ -4,18 +4,30 @@
 
 [build]
   command = "npm run build"
-  publish = ".next"
+  publish = "out"
   
 [build.environment]
   NODE_VERSION = "20"
   NPM_VERSION = "10"
 
-# Redirects for Next.js App Router
+# Redirects for Next.js SPA
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
-  force = false
+  
+# Headers for security
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Environment variables placeholder
+# Set these in Netlify Dashboard: Site settings > Environment variables
+# NEXT_PUBLIC_API_BASE_URL = "https://your-backend-api.com/api/v1"
   
 # Headers for security
 [[headers]]
