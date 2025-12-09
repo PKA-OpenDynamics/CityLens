@@ -37,9 +37,13 @@ class Settings(BaseSettings):
     GRAPHDB_DATASET: str = "citylens"
     GRAPHDB_REPOSITORY: str = "citylens"
     
-    # MongoDB
+    # MongoDB (Docker - for Web Dashboard)
     MONGODB_URL: str = "mongodb://mongodb:27017"
     MONGODB_DB: str = "citylens_realtime"
+    
+    # MongoDB Atlas (Cloud - for Mobile App)
+    MONGODB_ATLAS_URI: Optional[str] = None
+    MONGODB_ATLAS_DB: str = "citylens_app"
     
     # Redis
     REDIS_HOST: str = "redis"
