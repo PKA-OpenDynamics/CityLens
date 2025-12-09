@@ -22,25 +22,6 @@
 
 ---
 
-## Quick Start
-
-Chạy toàn bộ project chỉ với 1 lệnh:
-
-```bash
-git clone https://github.com/PKA-Open-Dynamics/CityLens.git
-cd CityLens/backend
-./start.sh
-```
-
-Truy cập:
-- Backend API: http://localhost:8000/docs
-- API Endpoint: http://localhost:8000/api/v1
-- Health Check: http://localhost:8000/health
-
-Import database (487,000+ OSM entities): Xem `backend/DATABASE_IMPORT.md`
-
----
-
 ## Mục lục
 
 - [Ý tưởng bài toán](#ý-tưởng-bài-toán)
@@ -88,6 +69,23 @@ Các thành phố lớn tại Việt Nam đang đối mặt với nhiều thách
 
 CityLens là nền tảng thành phố thông minh sử dụng kiến trúc Linked Open Data (LOD) 3 lớp, tuân thủ các chuẩn quốc tế NGSI-LD, SOSA/SSN và FiWARE Smart Data Models.
 
+### Mạng dữ liệu LOD Cloud
+
+Dự án tạo ra một **LOD Cloud** (Linked Open Data Cloud) cho dữ liệu đô thị Hà Nội với các đặc điểm:
+
+- **Chuẩn hóa dữ liệu**: Tất cả dữ liệu được mô hình hóa theo ontology chuẩn (NGSI-LD, SOSA/SSN, GeoSPARQL)
+- **Liên kết dữ liệu rời rạc**: Tích hợp và liên kết các nguồn dữ liệu độc lập:
+  - OpenStreetMap (ranh giới, POIs)
+  - AQICN (chất lượng không khí)
+  - OpenWeatherMap (thời tiết)
+  - TomTom (giao thông)
+  - Civic Issues (báo cáo công dân)
+- **Tăng tính hữu dụng**: Dữ liệu liên kết cho phép:
+  - Truy vấn SPARQL phức tạp trên nhiều domain
+  - Phát hiện mối quan hệ ẩn giữa các sự kiện đô thị
+  - Tái sử dụng dữ liệu cho các ứng dụng khác
+  - Mở rộng dễ dàng với nguồn dữ liệu mới
+
 ### Cách tiếp cận
 
 <p align="center">
@@ -113,12 +111,6 @@ CityLens là nền tảng thành phố thông minh sử dụng kiến trúc Link
 <p align="center">
   <img src="docs/assets/architecture/LOD_Architecture.png" alt="CityLens Logo" width="700">
 </p>
-
-### Sơ đồ kiến trúc chi tiết
-
-> **Lưu ý**: Sơ đồ kiến trúc chi tiết đang được cập nhật và sẽ được bổ sung trong phiên bản tiếp theo.
-> 
-> _Planned: System Architecture Diagram, Component Diagram, Deployment Diagram_
 
 ### Ontology và Data Models
 
@@ -162,81 +154,32 @@ CityLens sử dụng ontology tùy chỉnh kết hợp với các ontology chu�
 
 ### Dữ liệu đã xây dựng
 
-| Loại dữ liệu | Mô tả | Định dạng |
-|--------------|-------|-----------|
-| Ranh giới hành chính Hà Nội | 30 quận/huyện, 579 phường/xã | GeoJSON, PostGIS |
-| Danh mục báo cáo | 28 danh mục vấn đề đô thị | JSON |
-| Ontology CityLens | Định nghĩa lớp và thuộc tính | OWL/Turtle |
-| Context NGSI-LD | JSON-LD context cho entities | JSON-LD |
+| Loại dữ liệu | Mô tả | Số lượng | Định dạng |
+|--------------|-------|----------|-----------|
+| Ranh giới hành chính Hà Nội | 30 quận/huyện, 579 phường/xã | 609 entities | GeoJSON, PostGIS |
+| Dữ liệu OSM Hà Nội | Buildings, Roads, POIs | 487,000+ entities | PostgreSQL + PostGIS |
+| Danh mục báo cáo | Vấn đề hạ tầng đô thị | 28 categories | JSON |
+| Ontology CityLens | Định nghĩa lớp và thuộc tính | Custom ontology | OWL, Turtle, RDF/XML |
+| Context NGSI-LD | JSON-LD context cho entities | ETSI compliant | JSON-LD |
 
 ### NPM Packages đóng góp
 
-Dự án phát hành 3 thư viện npm mã nguồn mở:
+Dự án phát hành 3 thư viện npm mã nguồn mở theo chuẩn TypeScript:
 
-| Package | Mô tả | npm |
-|---------|-------|-----|
-| `@pka_opendynamics_2025/citylens-utils` | Tiện ích xử lý dữ liệu đô thị | [Link](https://www.npmjs.com/package/@pka_opendynamics_2025/citylens-utils) |
-| `@pka_opendynamics_2025/citylens-geo-utils` | Xử lý dữ liệu địa lý và GeoJSON | [Link](https://www.npmjs.com/package/@pka_opendynamics_2025/citylens-geo-utils) |
-| `@pka_opendynamics_2025/citylens-ngsi-ld` | Xây dựng NGSI-LD entities | [Link](https://www.npmjs.com/package/@pka_opendynamics_2025/citylens-ngsi-ld) |
+| Package | Version | Mô tả | Downloads |
+|---------|---------|-------|-----------|
+| `@pka_opendynamics_2025/citylens-utils` | 1.0.0 | Tiện ích xử lý dữ liệu đô thị | [npm](https://www.npmjs.com/package/@pka_opendynamics_2025/citylens-utils) |
+| `@pka_opendynamics_2025/citylens-geo-utils` | 1.0.0 | Xử lý dữ liệu địa lý và GeoJSON | [npm](https://www.npmjs.com/package/@pka_opendynamics_2025/citylens-geo-utils) |
+| `@pka_opendynamics_2025/citylens-ngsi-ld` | 1.0.0 | Xây dựng NGSI-LD entities | [npm](https://www.npmjs.com/package/@pka_opendynamics_2025/citylens-ngsi-ld) |
 
 ### Nguồn dữ liệu tích hợp
 
-| Nguồn | Loại dữ liệu | API |
-|-------|--------------|-----|
-| OpenStreetMap | Bản đồ nền, ranh giới | Overpass API |
-| AQICN | Chất lượng không khí | REST API |
-| OpenWeatherMap | Thời tiết | REST API |
-| TomTom | Giao thông | Traffic API |
-
----
-
-## NPM Packages
-
-### citylens-utils
-
-Thư viện tiện ích xử lý dữ liệu đô thị:
-
-```typescript
-import { calculateDistance, getAqiInfo, formatDateVi } from '@pka_opendynamics_2025/citylens-utils';
-
-// Tính khoảng cách giữa 2 điểm
-const distance = calculateDistance(21.0285, 105.8542, 21.0378, 105.8342);
-
-// Lấy thông tin AQI
-const aqiInfo = getAqiInfo(75);
-console.log(aqiInfo.labelVi); // => 'Trung bình'
-```
-
-### citylens-geo-utils
-
-Thư viện xử lý dữ liệu địa lý và GeoJSON:
-
-```typescript
-import { createPoint, distanceBetweenPoints, isInHanoi } from '@pka_opendynamics_2025/citylens-geo-utils';
-
-// Tạo GeoJSON Point
-const point = createPoint(21.0285, 105.8542);
-
-// Kiểm tra điểm trong Hà Nội
-console.log(isInHanoi(point)); // => true
-```
-
-### citylens-ngsi-ld
-
-Thư viện xây dựng NGSI-LD entities theo chuẩn ETSI:
-
-```typescript
-import { createCivicIssue, createEntityId } from '@pka_opendynamics_2025/citylens-ngsi-ld';
-
-// Tạo CivicIssue entity
-const issue = createCivicIssue({
-  id: 'report-001',
-  title: 'Đèn đường hỏng',
-  description: 'Đèn đường tại ngã tư không hoạt động',
-  location: { lat: 21.0285, lon: 105.8542 },
-  category: 'infrastructure',
-});
-```
+| Nguồn | Loại dữ liệu | Cập nhật | Định dạng |
+|-------|--------------|----------|-----------|
+| OpenStreetMap | Bản đồ nền, ranh giới, POIs | On-demand | GeoJSON, PostGIS |
+| AQICN | Chất lượng không khí (PM2.5, PM10, AQI) | Real-time | REST API |
+| OpenWeatherMap | Thời tiết, nhiệt độ, độ ẩm | Real-time | REST API |
+| TomTom | Giao thông, tắc đường | Real-time | Traffic API |
 
 ---
 
@@ -244,68 +187,109 @@ const issue = createCivicIssue({
 
 ```
 CityLens/
-├── backend/                    # FastAPI backend với LOD
-│   ├── app/                    # Mã nguồn chính
-│   │   ├── api/               # API endpoints
-│   │   ├── models/            # SQLAlchemy models
-│   │   ├── schemas/           # Pydantic schemas
-│   │   └── services/          # Business logic
-│   ├── graphdb/               # Ontology và RDF
-│   ├── scripts/               # Scripts tiện ích
-│   └── setup.sh               # Script cài đặt
 │
-├── web-dashboard/             # Next.js TypeScript dashboard
+├── backend/                           # FastAPI Backend - LOD Architecture
+│   ├── app/
+│   │   ├── api/v1/                   # REST API endpoints (NGSI-LD compliant)
+│   │   ├── core/                     # Config, database, security
+│   │   ├── db/                       # Multi-database: PostgreSQL, MongoDB, GraphDB, Redis
+│   │   ├── models/                   # SQLAlchemy ORM models
+│   │   ├── schemas/                  # Pydantic validation schemas
+│   │   ├── repositories/             # Data access layer
+│   │   ├── services/                 # Business logic
+│   │   └── adapters/                 # External APIs (AQICN, OpenWeather, TomTom)
+│   ├── scripts/
+│   │   ├── init_db.py                # Database initialization
+│   │   └── import_osm.py             # OSM import (487k+ entities)
+│   └── start.sh                      # Quick start script
+│
+├── web-dashboard/                     # Next.js 14 Admin Dashboard
 │   ├── src/
-│   │   ├── app/              # App Router pages
-│   │   ├── components/       # React components
-│   │   └── lib/              # Utilities
-│   └── setup.sh              # Script cài đặt
+│   │   ├── app/                      # App Router (Next.js 14)
+│   │   │   ├── (dashboard)/          # Protected routes
+│   │   │   ├── login/                # Authentication
+│   │   │   └── signup/               # Registration
+│   │   ├── components/
+│   │   │   ├── layout/               # Sidebar, Header
+│   │   │   ├── ui/                   # Reusable UI components
+│   │   │   └── providers/            # Auth & Theme providers
+│   │   └── lib/                      # API client, utilities
+│   └── netlify.toml                  # Netlify deployment config
 │
-├── mobile-app/                # Flutter mobile app
-│   └── lib/
-│       └── features/         # Feature modules
+├── web-app/                           # React Native + Expo (Mobile & Web)
+│   ├── src/
+│   │   ├── screens/                  # App screens
+│   │   │   ├── LoginScreen.tsx       # User authentication
+│   │   │   ├── MapScreen.native.tsx  # Interactive map
+│   │   │   ├── CreateReportScreen.native.tsx  # Civic issue reporting
+│   │   │   ├── ExploreScreen.native.tsx       # Data exploration
+│   │   │   └── ProfileScreen.native.tsx       # User profile
+│   │   ├── components/               # Reusable components
+│   │   ├── navigation/               # React Navigation setup
+│   │   ├── contexts/                 # Auth context
+│   │   └── services/                 # API services
+│   └── app.json                      # Expo configuration
 │
-├── packages/                  # NPM packages
-│   ├── citylens-utils/       # Tiện ích chung
-│   ├── citylens-geo-utils/   # Xử lý địa lý
-│   └── citylens-ngsi-ld/     # NGSI-LD builder
+├── packages/                          # NPM Packages (TypeScript)
+│   ├── citylens-utils/               # Urban data utilities
+│   ├── citylens-geo-utils/           # GeoJSON & spatial operations
+│   └── citylens-ngsi-ld/             # NGSI-LD entity builders
 │
-├── docs/                      # Tài liệu dự án
-├── LICENSE                    # GPL-3.0 License
-├── CONTRIBUTING.md            # Hướng dẫn đóng góp
-└── CODE_OF_CONDUCT.md         # Quy tắc ứng xử
+├── docs/                              # Documentation & Assets
+│   └── assets/architecture/          # Architecture diagrams
+│   └── assets/video_demo/          # Video Demo for clone & run
+│
+├── docker-compose.yml                 # Development environment
+├── README.md                          # This file
+├── CHANGELOG.md                       # Version history
+├── CONTRIBUTING.md                    # Contribution guidelines
+└── LICENSE                            # GPL-3.0 License
 ```
 
 ---
 
-## Công nghệ
+## Công nghệ sử dụng
 
-### Backend
-
-| Thành phần | Công nghệ | Phiên bản |
-|------------|-----------|-----------|
-| Framework | FastAPI | 0.109.0 |
-| Database | PostgreSQL + PostGIS | 15+ |
-| Graph Database | Apache Jena Fuseki | 4.x |
-| Cache | Redis | 7+ |
-| API Standards | REST, NGSI-LD | v1 |
-
-### Web Dashboard
+### Backend Stack
 
 | Thành phần | Công nghệ | Phiên bản |
 |------------|-----------|-----------|
-| Framework | Next.js | 14.2 |
-| Language | TypeScript | 5.6 |
-| Styling | Tailwind CSS | 3.4 |
-| Maps | Leaflet | 1.9 |
+| **Web Framework** | FastAPI | 0.109.0 |
+| **Database** | PostgreSQL + PostGIS | 15+ |
+| **Graph Database** | Apache Jena Fuseki | 4.x |
+| **Document Store** | MongoDB | 7+ |
+| **Cache** | Redis | 7+ |
+| **ORM** | SQLAlchemy | 2.0+ |
+| **Validation** | Pydantic | 2.0+ |
+| **Standards** | NGSI-LD, SOSA/SSN | ETSI v1.8.1 |
 
-### Mobile App
+### Web Dashboard Stack
 
 | Thành phần | Công nghệ | Phiên bản |
 |------------|-----------|-----------|
-| Framework | Flutter | 3.x |
-| Language | Dart | 3.x |
-| Platform | iOS, Android | - |
+| **Framework** | Next.js (App Router) | 14.2.33 |
+| **Language** | TypeScript | 5.6+ |
+| **Styling** | Tailwind CSS | 3.4+ |
+| **Maps** | Leaflet | 1.9+ |
+| **Deployment** | Netlify | Static Export |
+
+### Web App Stack (Mobile & Web)
+
+| Thành phần | Công nghệ | Phiên bản |
+|------------|-----------|-----------|
+| **Framework** | React Native + Expo | 0.81 / 54 |
+| **Language** | TypeScript | 5.9+ |
+| **Navigation** | React Navigation | 7.x |
+| **Maps** | React Native Maps | 1.20+ |
+| **Platform** | iOS, Android, Web | Cross-platform |
+
+### NPM Packages
+
+| Package | Version | TypeScript | npm |
+|---------|---------|------------|-----|
+| citylens-utils | 1.0.0 | Yes | Published |
+| citylens-geo-utils | 1.0.0 | Yes | Published |
+| citylens-ngsi-ld | 1.0.0 | Yes | Published |
 
 ---
 
@@ -313,10 +297,29 @@ CityLens/
 
 ### Yêu cầu hệ thống
 
-- Python 3.11 trở lên
-- Node.js 20 trở lên
-- PostgreSQL 15+ với PostGIS
-- Redis 7+ (tùy chọn)
+| Thành phần | Phiên bản tối thiểu | Khuyến nghị |
+|------------|---------------------|-------------|
+| **Python** | 3.11+ | 3.11.9 |
+| **Node.js** | 20+ | 20.18.1 LTS |
+| **npm** | 10+ | 10.9.0 |
+| **PostgreSQL** | 15+ | 15.10 |
+| **PostGIS** | 3.4+ | 3.4.3 |
+| **Redis** | 7+ | 7.4.1 (tùy chọn) |
+| **Docker** | 24+ | 27.3.1 (tùy chọn) |
+| **Git** | 2.40+ | Latest |
+
+### Hệ điều hành hỗ trợ
+
+- macOS 12+ (Monterey hoặc mới hơn)
+- Ubuntu 22.04 LTS hoặc mới hơn
+- Windows 11 với WSL2
+
+> **Lưu ý**: Mỗi sub-project có hướng dẫn cài đặt chi tiết riêng:
+> - Backend: Xem [backend/README.md](backend/README.md) - Hướng dẫn cài đặt Python environment, PostgreSQL, và import 487k+ OSM entities
+> - Web Dashboard: Xem [web-dashboard/README.md](web-dashboard/README.md) - Setup Next.js 14, Tailwind CSS, và Netlify deployment
+> - Web App: Xem [web-app/README.md](web-app/README.md) - Cài đặt React Native, Expo, và chạy trên iOS/Android/Web
+
+### Backend
 
 ### Backend
 
@@ -334,15 +337,15 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-### Mobile App
+### Web App (React Native + Expo)
 
 ```bash
-cd mobile-app
-flutter pub get
-flutter run
+cd web-app
+chmod +x scripts/setup.sh
+./scripts/setup.sh
 ```
 
-### Docker (Khuyến nghị)
+### Docker (Development)
 
 ```bash
 docker-compose up -d
@@ -352,45 +355,34 @@ docker-compose up -d
 
 ## Tài liệu
 
-### Tài liệu dự án
+### Tài liệu chính
 
-| Tài liệu | Mô tả |
-|----------|-------|
-| [CHANGELOG.md](CHANGELOG.md) | Lịch sử thay đổi |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Hướng dẫn đóng góp |
-| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Quy tắc ứng xử |
+- [CHANGELOG.md](CHANGELOG.md) - Lịch sử phiên bản
+- [CONTRIBUTING.md](CONTRIBUTING.md) - Hướng dẫn đóng góp
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) - Quy tắc cộng đồng
 
-### Tài liệu sub-projects
+### Tài liệu Sub-projects
 
-| Sub-project | README | DEPENDENCIES | CHANGELOG |
-|-------------|--------|--------------|-----------|
-| Backend | [README](backend/README.md) | [DEPENDENCIES](backend/DEPENDENCIES.md) | [CHANGELOG](backend/CHANGELOG.md) |
-| Web Dashboard | [README](web-dashboard/README.md) | [DEPENDENCIES](web-dashboard/DEPENDENCIES.md) | [CHANGELOG](web-dashboard/CHANGELOG.md) |
-| Mobile App | [README](mobile-app/README.md) | - | - |
+- Backend: [README](backend/README.md) | [DEPENDENCIES](backend/DEPENDENCIES.md) | [DATABASE_IMPORT](backend/DATABASE_IMPORT.md)
+- Web Dashboard: [README](web-dashboard/README.md) | [DEPENDENCIES](web-dashboard/DEPENDENCIES.md)
+- Web App: [README](web-app/README.md) | [DEPENDENCIES](web-app/DEPENDENCIES.md)
 
 ### NPM Packages
 
-| Package | README |
-|---------|--------|
-| citylens-utils | [README](packages/citylens-utils/README.md) |
-| citylens-geo-utils | [README](packages/citylens-geo-utils/README.md) |
-| citylens-ngsi-ld | [README](packages/citylens-ngsi-ld/README.md) |
+- [citylens-utils](packages/citylens-utils/README.md) - Urban data utilities
+- [citylens-geo-utils](packages/citylens-geo-utils/README.md) - GeoJSON operations
+- [citylens-ngsi-ld](packages/citylens-ngsi-ld/README.md) - NGSI-LD builders
 
 ### API Documentation
 
-| Tài liệu | URL |
-|----------|-----|
-| Swagger UI | http://localhost:8000/api/v1/docs |
-| ReDoc | http://localhost:8000/api/v1/redoc |
+- Swagger UI: http://localhost:8000/api/v1/docs
+- ReDoc: http://localhost:8000/api/v1/redoc
 
 ---
 
 ## Đóng góp
 
-Chúng tôi hoan nghênh mọi đóng góp! Vui lòng đọc:
-
-- [Hướng dẫn đóng góp](CONTRIBUTING.md)
-- [Quy tắc ứng xử](CODE_OF_CONDUCT.md)
+Chúng tôi hoan nghênh mọi đóng góp từ cộng đồng! Vui lòng đọc [CONTRIBUTING.md](CONTRIBUTING.md) và [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) trước khi bắt đầu.
 
 ---
 

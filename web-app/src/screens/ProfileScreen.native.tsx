@@ -5,7 +5,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Avatar from '../components/Avatar';
@@ -29,12 +28,9 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#20A957', '#7BE882']}
-        style={styles.header}
-      >
+      <View style={styles.header}>
         <Text style={styles.headerTitle}>Hồ sơ</Text>
-      </LinearGradient>
+      </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
         <View style={styles.avatarSection}>
@@ -81,6 +77,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   header: {
+    backgroundColor: '#FFFFFF',
     paddingTop: 16,
     paddingBottom: 24,
     paddingHorizontal: 16,
@@ -90,7 +87,8 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#20A957',
+    textAlign: 'center',
   },
   content: {
     flex: 1,

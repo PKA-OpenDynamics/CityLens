@@ -2,7 +2,7 @@
 
 // Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,9 @@ import {
   Platform,
   TextInput,
   ActivityIndicator,
+  Image,
+  Animated,
+  PanResponder,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -111,9 +114,35 @@ const NEARBY_CARDS: NearbyCard[] = [
 const ExploreScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const [showAiButton] = useState(true);
-  const [aiBottom] = useState(24);
-  const [aiRight] = useState(24);
   const [userName, setUserName] = useState<string | undefined>(undefined);
+  
+  // AI Button drag and drop
+  const aiButtonPan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const [isDragging, setIsDragging] = useState(false);
+  const aiButtonPanResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // Chỉ kéo thả khi di chuyển đủ xa (tránh conflict với click)
+        return Math.abs(gestureState.dx) > 5 || Math.abs(gestureState.dy) > 5;
+      },
+      onPanResponderGrant: () => {
+        setIsDragging(true);
+        aiButtonPan.setOffset({
+          x: (aiButtonPan.x as any)._value,
+          y: (aiButtonPan.y as any)._value,
+        });
+      },
+      onPanResponderMove: Animated.event(
+        [null, { dx: aiButtonPan.x, dy: aiButtonPan.y }],
+        { useNativeDriver: false }
+      ),
+      onPanResponderRelease: () => {
+        setIsDragging(false);
+        aiButtonPan.flattenOffset();
+      },
+    })
+  ).current;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   
@@ -289,12 +318,6 @@ const ExploreScreen: React.FC = () => {
             <View style={styles.headerTopRow}>
               <View>
                 <View style={styles.headerTitleRow}>
-                  <MaterialIcons
-                    name="explore"
-                    size={24}
-                    color="#FFFFFF"
-                    style={styles.headerExploreIcon}
-                  />
                   <Text style={styles.headerTitle}>Explore CityLens</Text>
                 </View>
                 <Text style={styles.headerLocation}>Hoàn Kiếm, Hà Nội</Text>
@@ -302,7 +325,7 @@ const ExploreScreen: React.FC = () => {
 
               <View style={styles.headerAvatarWrapper}>
                 <Avatar
-                  size={40}
+                  size={48}
                   name={userName}
                   onPress={() => navigation.navigate('Profile')}
                 />
@@ -482,7 +505,7 @@ const ExploreScreen: React.FC = () => {
                           handleCardAiPress(card);
                         }}
                       >
-                        <MaterialIcons name="smart-toy" size={16} color="#FFFFFF" />
+                        <MaterialIcons name="auto-awesome" size={16} color="#FFFFFF" />
                         <Text style={styles.aiCardButtonText}>AI CityLens</Text>
                         <MaterialIcons name="close" size={14} color="#FFFFFF" style={styles.aiCloseIcon} />
                       </TouchableOpacity>
@@ -601,19 +624,29 @@ const ExploreScreen: React.FC = () => {
 
         {/* NÚT AI NỔI */}
         {showAiButton && (
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={handleAiPress}
+          <Animated.View
             style={[
               styles.aiButton,
               {
-                bottom: aiBottom,
-                right: aiRight,
+                bottom: 24,
+                right: 24,
+                transform: aiButtonPan.getTranslateTransform(),
               },
             ]}
+            {...aiButtonPanResponder.panHandlers}
           >
-            <MaterialIcons name="smart-toy" size={26} color="#FFFFFF" />
-          </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={() => {
+                if (!isDragging) {
+                  handleAiPress();
+                }
+              }}
+              style={styles.aiButtonContent}
+            >
+              <MaterialIcons name="auto-awesome" size={26} color="#FFFFFF" />
+            </TouchableOpacity>
+          </Animated.View>
         )}
       </View>
     </SafeAreaView>
@@ -653,6 +686,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerExploreIcon: {
+    width: 24,
+    height: 24,
     marginRight: 8,
   },
   headerTitle: {
@@ -667,8 +702,8 @@ const styles = StyleSheet.create({
     fontWeight: '400',
   },
   headerAvatarWrapper: {
-    width: 40,
-    height: 40,
+    width: 48,
+    height: 48,
   },
   headerBottomRow: {
     flex: 1,
@@ -699,22 +734,27 @@ const styles = StyleSheet.create({
     width: 65, // Bằng nửa giao thông (130 / 2)
     height: 30,
     borderRadius: 12,
-    backgroundColor: '#67E87A',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#20A957',
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 8,
   },
   trafficBadge: {
-    minWidth: 100,
+    alignSelf: 'flex-start',
     height: 30,
     borderRadius: 12,
-    backgroundColor: '#67E87A',
-    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#20A957',
+    alignItems: 'flex-start',
     justifyContent: 'center',
+    paddingHorizontal: 12,
     marginTop: 8,
   },
   aqiText: {
-    color: '#FFFFFF',
+    color: '#20A957',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -935,17 +975,19 @@ const styles = StyleSheet.create({
   },
   aiButton: {
     position: 'absolute',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     backgroundColor: '#20A957',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+  },
+  aiButtonContent: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
