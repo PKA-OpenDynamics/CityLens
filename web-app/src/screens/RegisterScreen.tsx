@@ -16,8 +16,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { authService, RegisterData } from '../services/auth';
 
@@ -241,10 +241,7 @@ const RegisterScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient
-        colors={['#20A957', '#7BE882']}
-        style={styles.gradient}
-      >
+      <View style={styles.gradient}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.container}
@@ -254,12 +251,11 @@ const RegisterScreen: React.FC = () => {
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.header}>
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={styles.backButton}
-              >
-                <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
+              <Image 
+                source={require('../../assets/logo.jpg')} 
+                style={styles.logo}
+                resizeMode="contain"
+              />
               <Text style={styles.title}>Đăng ký</Text>
               <Text style={styles.subtitle}>Tạo tài khoản mới</Text>
             </View>
@@ -406,7 +402,7 @@ const RegisterScreen: React.FC = () => {
                 disabled={loading || !isFormValid()}
               >
                 {loading ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color="#20A957" />
                 ) : (
                   <Text style={styles.registerButtonText}>Đăng ký</Text>
                 )}
@@ -421,7 +417,7 @@ const RegisterScreen: React.FC = () => {
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
-      </LinearGradient>
+      </View>
     </SafeAreaView>
   );
 };
@@ -432,32 +428,35 @@ const styles = StyleSheet.create({
   },
   gradient: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   container: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
+    justifyContent: 'center',
     padding: 24,
-    paddingTop: 16,
   },
   header: {
-    marginBottom: 32,
+    alignItems: 'center',
+    marginBottom: 48,
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 16,
-    padding: 8,
+  logo: {
+    width: 150,
+    height: 150,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
+    color: '#20A957',
+    marginTop: 16,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#6B7280',
+    marginTop: 8,
     opacity: 0.9,
   },
   form: {
@@ -492,6 +491,8 @@ const styles = StyleSheet.create({
   },
   registerButton: {
     backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#20A957',
     borderRadius: 12,
     height: 52,
     alignItems: 'center',
@@ -513,11 +514,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loginText: {
-    color: '#FFFFFF',
+    color: '#6B7280',
     fontSize: 14,
   },
   loginLink: {
-    color: '#FFFFFF',
+    color: '#20A957',
     fontSize: 14,
     fontWeight: '600',
     textDecorationLine: 'underline',

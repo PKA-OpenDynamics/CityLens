@@ -16,8 +16,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
+import { Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 const ForgotPasswordScreen: React.FC = () => {
@@ -55,10 +55,7 @@ const ForgotPasswordScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient
-        colors={['#20A957', '#7BE882']}
-        style={styles.gradient}
-      >
+      <View style={styles.gradient}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.container}
@@ -68,13 +65,12 @@ const ForgotPasswordScreen: React.FC = () => {
             keyboardShouldPersistTaps="handled"
           >
             <View style={styles.header}>
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={styles.backButton}
-              >
-                <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
-              </TouchableOpacity>
-              <MaterialIcons name="lock-reset" size={48} color="#FFFFFF" />
+              <Image 
+                source={require('../../assets/logo.jpg')} 
+                style={styles.logo}
+                resizeMode="contain"
+              />
+              <MaterialIcons name="lock-reset" size={48} color="#20A957" style={styles.icon} />
               <Text style={styles.title}>Quên mật khẩu</Text>
               <Text style={styles.subtitle}>
                 Nhập email của bạn để nhận hướng dẫn đặt lại mật khẩu
@@ -82,18 +78,20 @@ const ForgotPasswordScreen: React.FC = () => {
             </View>
 
             <View style={styles.form}>
-              <View style={styles.inputContainer}>
-                <MaterialIcons name="email" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Email"
-                  placeholderTextColor="#9CA3AF"
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
+              <View style={styles.inputGroup}>
+                <View style={styles.inputContainer}>
+                  <MaterialIcons name="email" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Email"
+                    placeholderTextColor="#9CA3AF"
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                  />
+                </View>
               </View>
 
               <TouchableOpacity
@@ -102,7 +100,7 @@ const ForgotPasswordScreen: React.FC = () => {
                 disabled={loading}
               >
                 {loading ? (
-                  <ActivityIndicator color="#FFFFFF" />
+                  <ActivityIndicator color="#20A957" />
                 ) : (
                   <Text style={styles.resetButtonText}>Gửi yêu cầu</Text>
                 )}
@@ -117,7 +115,7 @@ const ForgotPasswordScreen: React.FC = () => {
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
-      </LinearGradient>
+      </View>
     </SafeAreaView>
   );
 };
@@ -128,6 +126,7 @@ const styles = StyleSheet.create({
   },
   gradient: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   container: {
     flex: 1,
@@ -141,27 +140,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 48,
   },
-  backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 24,
-    padding: 8,
+  logo: {
+    width: 150,
+    height: 150,
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FFFFFF',
+  icon: {
     marginTop: 16,
     marginBottom: 8,
   },
+  title: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#20A957',
+    marginTop: 16,
+    marginBottom: 8,
+    letterSpacing: -0.5,
+  },
   subtitle: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#6B7280',
     textAlign: 'center',
+    marginTop: 8,
     opacity: 0.9,
     paddingHorizontal: 16,
   },
   form: {
     width: '100%',
+  },
+  inputGroup: {
+    marginBottom: 16,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -169,8 +176,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
-    marginBottom: 24,
     height: 52,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   inputIcon: {
     marginRight: 12,
@@ -182,11 +190,13 @@ const styles = StyleSheet.create({
   },
   resetButton: {
     backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#20A957',
     borderRadius: 12,
     height: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
   },
   resetButtonDisabled: {
     opacity: 0.6,
@@ -201,7 +211,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   backToLoginText: {
-    color: '#FFFFFF',
+    color: '#20A957',
     fontSize: 14,
     textDecorationLine: 'underline',
   },
