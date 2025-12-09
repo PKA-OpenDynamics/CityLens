@@ -9,11 +9,17 @@ from fastapi import APIRouter
 from app.api.v1.endpoints import (
     reports, media, statistics, engagement, 
     assignments, notifications, geographic, realtime, ngsi_ld,
-    auth, admin, admin_dashboard_v2 as admin_dashboard
+    auth, admin, admin_dashboard_v2 as admin_dashboard,
+    app_auth, app_reports
 )
 
 api_router = APIRouter()
 
+# ============ Mobile App APIs (MongoDB Atlas) ============
+api_router.include_router(app_auth.router, prefix="/app/auth", tags=["Mobile App - Authentication"])
+api_router.include_router(app_reports.router, prefix="/app/reports", tags=["Mobile App - Reports"])
+
+# ============ Web Dashboard APIs (MongoDB Docker) ============
 # Authentication & User Management
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(admin.router, prefix="/admin", tags=["Admin - User Management"])
