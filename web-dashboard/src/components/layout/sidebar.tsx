@@ -13,11 +13,15 @@ import {
   LogOut,
   Circle,
   MapPin,
+  Activity,
+  AlertTriangle,
+  BarChart3,
+  Network,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/components/providers/auth-provider';
 
-// Navigation - Clean and focused
+// Navigation - Data-Driven Intelligence Focus
 const navigationGroups = [
   {
     title: 'Main',
@@ -28,9 +32,18 @@ const navigationGroups = [
     ],
   },
   {
+    title: 'Data Intelligence',
+    items: [
+      { name: 'City Health Monitor', nameVi: 'Sức khỏe đô thị', href: '/admin/city-health', icon: Activity },
+      { name: 'Data Insights', nameVi: 'Phân tích thông minh', href: '/admin/insights', icon: BarChart3 },
+      { name: 'Smart Alerts', nameVi: 'Cảnh báo thông minh', href: '/admin/smart-alerts', icon: AlertTriangle },
+      { name: 'LOD Cloud', nameVi: 'Mạng lưới dữ liệu mở', href: '/admin/lod-cloud', icon: Network },
+    ],
+  },
+  {
     title: 'System',
     items: [
-      { name: 'Users', nameVi: 'Quản lý người dùng', href: '/users', icon: Users },
+      { name: 'User Management', nameVi: 'Quản lý người dùng', href: '/users', icon: Users },
       { name: 'Settings', nameVi: 'Cài đặt', href: '/settings', icon: Settings },
     ],
   },
@@ -38,7 +51,7 @@ const navigationGroups = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { logout, userEmail } = useAuth();
+  const { logout } = useAuth();
 
   const isActive = (href: string) => {
     return pathname === href || pathname.startsWith(href + '/');
@@ -166,7 +179,7 @@ export default function Sidebar() {
             
             <div className="flex-1 overflow-hidden min-w-0">
               <p className="truncate text-xs font-semibold text-foreground">Người dùng Admin</p>
-              <p className="truncate text-[10px] text-muted-foreground mt-0.5">{userEmail || 'admin@citylens.vn'}</p>
+              <p className="truncate text-[10px] text-muted-foreground mt-0.5">admin@citylens.vn</p>
               <span className="inline-flex items-center gap-1 text-[10px] font-medium text-accent mt-1">
                 <Circle className="h-1.5 w-1.5 fill-accent text-accent" /> 
                 <span>Đang hoạt động</span>

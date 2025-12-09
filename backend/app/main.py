@@ -3,11 +3,26 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from app.core.config import settings
+from app.db.mongodb import mongodb
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan manager - startup and shutdown events"""
+    # Startup: Connect to MongoDB
+    await mongodb.connect_db()
+    
+    yield
+    
+    # Shutdown: Close MongoDB connection
+    await mongodb.close_db()
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="CityLens Smart City Platform - REST API for urban data management",
+    description="CityLens Smart City Platform - REST API for urban data management with FiWARE NGSI-LD",
     version=settings.VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url="/docs",
@@ -20,6 +35,7 @@ app = FastAPI(
         "name": "GNU General Public License v3.0",
         "url": "https://www.gnu.org/licenses/gpl-3.0.html",
     },
+    lifespan=lifespan
 )
 
 # Set all CORS enabled origins
@@ -37,7 +53,12 @@ def root():
     return {
         "message": "Welcome to CityLens NGSI-LD Context Broker",
         "version": settings.VERSION,
-        "docs": "/docs"
+        "docs": "/docs",
+        "features": [
+            "FiWARE NGSI-LD Smart Data Models",
+            "Dashboard Authentication & Authorization",
+            "Real-time Urban Data Management"
+        ]
     }
 
 @app.get("/health")
@@ -52,3 +73,4 @@ def health_check():
 # Use the new API v1 router with all endpoints
 from app.api.v1.api import api_router
 app.include_router(api_router, prefix=settings.API_V1_STR)
+

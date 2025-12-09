@@ -12,6 +12,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css}\""
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@types/leaflet.markercluster": "^1.5.6",
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.12",
@@ -30,9 +31,10 @@
     "postcss": "^8.4.49",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-hot-toast": "^2.6.0",
     "react-leaflet": "^4.2.1",
     "react-router-dom": "^7.10.1",
-    "recharts": "^2.14.1",
+    "recharts": "^2.15.4",
     "tailwind-merge": "^2.5.5",
     "tailwindcss": "^3.4.15",
     "typescript": "^5.6.3",

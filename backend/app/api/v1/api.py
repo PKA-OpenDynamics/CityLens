@@ -8,10 +8,18 @@ API router tổng hợp
 from fastapi import APIRouter
 from app.api.v1.endpoints import (
     reports, media, statistics, engagement, 
-    assignments, notifications, geographic, realtime, ngsi_ld
+    assignments, notifications, geographic, realtime, ngsi_ld,
+    auth, admin, admin_dashboard_v2 as admin_dashboard
 )
 
 api_router = APIRouter()
+
+# Authentication & User Management
+api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+api_router.include_router(admin.router, prefix="/admin", tags=["Admin - User Management"])
+
+# Admin Advanced Features
+api_router.include_router(admin_dashboard.router, prefix="/admin/dashboard", tags=["Admin - Dashboard & Statistics"])
 
 # NGSI-LD Context Broker (prioritized for compliance)
 api_router.include_router(ngsi_ld.router, tags=["NGSI-LD Context Broker"])

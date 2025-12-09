@@ -6,32 +6,92 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { authService } from "@/lib/auth-service";
+import toast from 'react-hot-toast';
 
 export default function SignupPage() {
-  const openDate = "11/12/2025";
-  const openDateTime = new Date("2025-12-11T00:00:00");
-  const now = new Date();
-  const isOpen = now >= openDateTime;
-
+  const router = useRouter();
   const [formData, setFormData] = useState({
-    name: "",
+    full_name: "",
     email: "",
     password: "",
     confirmPassword: "",
+    phone: "",
+    department: "",
+    position: "",
+    reason: "",
   });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isOpen) return;
+    setError("");
+    setIsLoading(true);
     
-    if (formData.password !== formData.confirmPassword) {
-      alert("Mật khẩu xác nhận không khớp!");
-      return;
+    try {
+      // Validate passwords match
+      if (formData.password !== formData.confirmPassword) {
+        toast.error("Mật khẩu xác nhận không khớp!");
+        setError("Mật khẩu xác nhận không khớp!");
+        setIsLoading(false);
+        return;
+      }
+
+      // Validate required fields
+      if (!formData.full_name || !formData.email || !formData.password) {
+        toast.error("Vui lòng nhập đầy đủ thông tin bắt buộc!");
+        setError("Vui lòng nhập đầy đủ thông tin bắt buộc!");
+        setIsLoading(false);
+        return;
+      }
+      
+      console.log("Attempting registration for:", formData.email);
+
+      // Call registration API
+      const response = await authService.register({
+        email: formData.email,
+        password: formData.password,
+        full_name: formData.full_name,
+        phone: formData.phone || undefined,
+        department: formData.department || undefined,
+        position: formData.position || undefined,
+        reason: formData.reason || undefined,
+      });
+
+      console.log("Registration successful:", response);
+
+      // Show success message
+      toast.success(
+        `Đăng ký thành công! Tài khoản của bạn đang chờ admin duyệt.`,
+        {
+          duration: 6000,
+          icon: '✅',
+          style: {
+            background: '#10b981',
+            color: '#fff',
+          },
+        }
+      );
+
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
+      
+    } catch (err: any) {
+      console.error("Registration error:", err);
+      const errorMessage = err?.response?.data?.detail || "Đăng ký thất bại. Vui lòng thử lại.";
+      
+      toast.error(errorMessage, {
+        icon: '❌',
+      });
+      
+      setError(errorMessage);
+      setIsLoading(false);
     }
-    
-    // TODO: Implement actual registration logic
-    console.log("Registration data:", formData);
-    alert("Đăng ký thành công! (Demo)");
   };
 
   return (
@@ -105,7 +165,7 @@ export default function SignupPage() {
         </div>
       </div>
 
-      {/* Right Side - Registration Form or Notice */}
+      {/* Right Side - Registration Form */}
       <div className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 bg-white">
         <div className="w-full max-w-md space-y-8">
           {/* Logo for mobile */}
@@ -120,239 +180,267 @@ export default function SignupPage() {
             />
           </div>
 
-          {isOpen ? (
-            /* Registration Form - When Open */
-            <div className="bg-white rounded-2xl shadow-xl p-8">
-              <h2 className="text-3xl font-bold text-gray-900 text-center mb-8">
-                Đăng ký tài khoản
-              </h2>
+          {/* Registration Form */}
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            <h2 className="text-3xl font-bold text-gray-900 text-center mb-2">
+              Đăng ký tài khoản
+            </h2>
+            <p className="text-center text-sm text-gray-600 mb-6">
+              Tài khoản sẽ cần được admin phê duyệt trước khi sử dụng
+            </p>
 
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                    Họ và tên
-                  </label>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="appearance-none relative block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="Nhập họ và tên"
-                  />
-                </div>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Full Name */}
+              <div>
+                <label htmlFor="full_name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Họ và tên <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="full_name"
+                  name="full_name"
+                  type="text"
+                  required
+                  value={formData.full_name}
+                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                  className="appearance-none relative block w-full px-4 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Nguyễn Văn A"
+                  disabled={isLoading}
+                />
+              </div>
 
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                    Email
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="appearance-none relative block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="email@example.com"
-                  />
-                </div>
+              {/* Email */}
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="appearance-none relative block w-full px-4 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="email@example.com"
+                  disabled={isLoading}
+                />
+              </div>
 
-                <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                    Mật khẩu
-                  </label>
+              {/* Phone */}
+              <div>
+                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  Số điện thoại
+                </label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  className="appearance-none relative block w-full px-4 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="0912345678"
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* Department */}
+              <div>
+                <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">
+                  Phòng ban / Đơn vị
+                </label>
+                <input
+                  id="department"
+                  name="department"
+                  type="text"
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  className="appearance-none relative block w-full px-4 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Sở Giao thông Vận tải"
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* Position */}
+              <div>
+                <label htmlFor="position" className="block text-sm font-medium text-gray-700 mb-1">
+                  Chức vụ
+                </label>
+                <input
+                  id="position"
+                  name="position"
+                  type="text"
+                  value={formData.position}
+                  onChange={(e) => setFormData({ ...formData, position: e.target.value })}
+                  className="appearance-none relative block w-full px-4 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Chuyên viên"
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                  Mật khẩu <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
                   <input
                     id="password"
                     name="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     required
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="appearance-none relative block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="appearance-none relative block w-full px-4 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent pr-10"
                     placeholder="Tối thiểu 8 ký tự"
+                    disabled={isLoading}
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  >
+                    {showPassword ? (
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                      </svg>
+                    ) : (
+                      <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
                 </div>
+              </div>
 
-                <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                    Xác nhận mật khẩu
-                  </label>
-                  <input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    required
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                    className="appearance-none relative block w-full px-4 py-3 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                    placeholder="Nhập lại mật khẩu"
-                  />
+              {/* Confirm Password */}
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+                  Xác nhận mật khẩu <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  required
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                  className="appearance-none relative block w-full px-4 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  placeholder="Nhập lại mật khẩu"
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* Reason */}
+              <div>
+                <label htmlFor="reason" className="block text-sm font-medium text-gray-700 mb-1">
+                  Lý do đăng ký
+                </label>
+                <textarea
+                  id="reason"
+                  name="reason"
+                  rows={3}
+                  value={formData.reason}
+                  onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                  className="appearance-none relative block w-full px-4 py-2.5 border border-gray-300 rounded-lg placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+                  placeholder="Tôi cần sử dụng hệ thống để..."
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="rounded-md bg-red-50 p-3">
+                  <p className="text-sm text-red-800">{error}</p>
                 </div>
+              )}
 
-                <button
-                  type="submit"
-                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Đang xử lý...
+                  </>
+                ) : (
+                  'Đăng ký ngay'
+                )}
+              </button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                Đã có tài khoản?{" "}
+                <Link href="/login" className="font-medium text-green-600 hover:text-green-500">
+                  Đăng nhập
+                </Link>
+              </p>
+            </div>
+          </div>
+
+          {/* Additional Info */}
+          <div className="bg-gradient-to-br from-green-50 to-white rounded-xl p-6 border border-green-200">
+            <div className="space-y-3 text-sm text-gray-600">
+              <div className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-green-600 mr-2 mt-0.5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
                 >
-                  Đăng ký ngay
-                </button>
-              </form>
-
-              <div className="mt-6 text-center">
-                <p className="text-sm text-gray-600">
-                  Đã có tài khoản?{" "}
-                  <Link href="/login" className="font-medium text-green-600 hover:text-green-500">
-                    Đăng nhập
-                  </Link>
-                </p>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>Tài khoản được bảo vệ bởi hệ thống bảo mật tiên tiến</span>
+              </div>
+              <div className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-green-600 mr-2 mt-0.5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>Chỉ cho phép tài khoản được ủy quyền truy cập</span>
+              </div>
+              <div className="flex items-start">
+                <svg
+                  className="w-5 h-5 text-green-600 mr-2 mt-0.5 flex-shrink-0"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>Dữ liệu được mã hóa và bảo mật theo tiêu chuẩn quốc tế</span>
               </div>
             </div>
-          ) : (
-            /* Registration Closed Notice - When Not Open Yet */
-            <div className="bg-gradient-to-br from-green-50 to-white rounded-2xl shadow-xl p-8 border-2 border-green-200">
-              {/* Info Icon */}
-              <div className="flex justify-center mb-6">
-                <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-green-50 rounded-full flex items-center justify-center border-2 border-green-300">
-                  <svg
-                    className="w-12 h-12 text-green-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-              </div>
-
-              {/* Title */}
-              <h2 className="text-2xl font-bold text-gray-900 text-center mb-4">
-                Đăng ký tài khoản
-              </h2>
-
-              {/* Message */}
-              <div className="space-y-4 text-center">
-                <p className="text-gray-700 text-lg">
-                  Xin cảm ơn bạn đã quan tâm đến CityLens!
-                </p>
-
-                <div className="bg-white p-6 rounded-lg border border-green-200">
-                  <div className="flex items-center justify-center space-x-2 mb-2">
-                    <svg
-                      className="w-5 h-5 text-green-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                    <p className="text-sm font-medium text-gray-600">
-                      Đăng ký sẽ được mở từ:
-                    </p>
-                  </div>
-                  <p className="text-2xl font-bold text-green-600">{openDate}</p>
-                </div>
-
-                <p className="text-gray-600 text-sm">
-                  Hiện tại chức năng đăng ký chưa được mở. Vui lòng quay lại từ ngày{" "}
-                  <span className="font-semibold text-green-600">{openDate}</span>.
-                </p>
-
-                <div className="pt-4">
-                  <p className="text-gray-600 text-sm mb-4">
-                    Nếu bạn đã có tài khoản, vui lòng đăng nhập:
-                  </p>
-                  <Link
-                    href="/login"
-                    className="inline-flex items-center justify-center w-full px-6 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
-                  >
-                    <svg
-                      className="w-5 h-5 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"
-                      />
-                    </svg>
-                    Đăng nhập
-                  </Link>
-                </div>
-              </div>
-
-              {/* Additional Info */}
-              <div className="mt-8 pt-6 border-t border-green-200">
-                <div className="space-y-3 text-sm text-gray-600">
-                  <div className="flex items-start">
-                    <svg
-                      className="w-5 h-5 text-green-600 mr-2 mt-0.5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <span>Tài khoản được bảo vệ bởi hệ thống bảo mật tiên tiến</span>
-                  </div>
-                  <div className="flex items-start">
-                    <svg
-                      className="w-5 h-5 text-green-600 mr-2 mt-0.5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <span>Chỉ cho phép tài khoản được ủy quyền truy cập</span>
-                  </div>
-                  <div className="flex items-start">
-                    <svg
-                      className="w-5 h-5 text-green-600 mr-2 mt-0.5 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                    <span>Dữ liệu được mã hóa và bảo mật theo tiêu chuẩn quốc tế</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* Footer */}
-          <p className="text-center text-xs text-gray-500">
+          <p className="text-center text-xs text-gray-500 mt-4">
             © 2025 CityLens Contributors. Licensed under GPL-3.0
           </p>
         </div>
