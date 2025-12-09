@@ -8,10 +8,13 @@ API router tổng hợp
 from fastapi import APIRouter
 from app.api.v1.endpoints import (
     reports, media, statistics, engagement, 
-    assignments, notifications, geographic, realtime
+    assignments, notifications, geographic, realtime, ngsi_ld
 )
 
 api_router = APIRouter()
+
+# NGSI-LD Context Broker (prioritized for compliance)
+api_router.include_router(ngsi_ld.router, tags=["NGSI-LD Context Broker"])
 
 # Core APIs
 api_router.include_router(reports.router, prefix="/reports", tags=["Báo cáo"])
