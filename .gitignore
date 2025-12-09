@@ -111,6 +111,18 @@ mobile-app/.env
 backend/data/osm/*.osm.pbf
 backend/data/osm/*.geojson
 
+# Video files (large media files)
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+**/*.mp4
+**/*.mov
+**/*.avi
+**/*.mkv
+**/*.webm
+
 # Uploads
 uploads/
 media/
