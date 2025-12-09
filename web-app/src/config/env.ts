@@ -44,21 +44,23 @@ export const MONGODB_DB_NAME =
 
 /**
  * API Base URL for Reports (Backend API)
+ * Now using FastAPI backend at /api/v1/app/reports
  */
 export const REPORTS_API_BASE_URL =
   (Constants.expoConfig?.extra as any)?.reportsApiBaseUrl ||
   (typeof process !== 'undefined' && process.env?.REPORTS_API_BASE_URL) ||
   process.env?.EXPO_PUBLIC_REPORTS_API_BASE_URL ||
-  'http://localhost:3001/api';
+  'http://localhost:8000/api/v1/app';
 
 /**
  * API Base URL for Authentication (Backend API)
+ * Now using FastAPI backend at /api/v1/app/auth
  */
 export const AUTH_API_BASE_URL =
   (Constants.expoConfig?.extra as any)?.authApiBaseUrl ||
   (typeof process !== 'undefined' && process.env?.AUTH_API_BASE_URL) ||
   process.env?.EXPO_PUBLIC_AUTH_API_BASE_URL ||
-  'http://localhost:3001/api';
+  'http://localhost:8000/api/v1/app';
 
 /**
  * Kiểm tra xem API key đã được cấu hình chưa
