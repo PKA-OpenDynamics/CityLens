@@ -15,6 +15,7 @@ import {
   MapPin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/components/providers/auth-provider';
 
 // Navigation - Clean and focused
 const navigationGroups = [
@@ -37,6 +38,7 @@ const navigationGroups = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { logout, userEmail } = useAuth();
 
   const isActive = (href: string) => {
     return pathname === href || pathname.startsWith(href + '/');
@@ -164,7 +166,7 @@ export default function Sidebar() {
             
             <div className="flex-1 overflow-hidden min-w-0">
               <p className="truncate text-xs font-semibold text-foreground">Người dùng Admin</p>
-              <p className="truncate text-[10px] text-muted-foreground mt-0.5">admin@citylens.vn</p>
+              <p className="truncate text-[10px] text-muted-foreground mt-0.5">{userEmail || 'admin@citylens.vn'}</p>
               <span className="inline-flex items-center gap-1 text-[10px] font-medium text-accent mt-1">
                 <Circle className="h-1.5 w-1.5 fill-accent text-accent" /> 
                 <span>Đang hoạt động</span>
@@ -172,6 +174,7 @@ export default function Sidebar() {
             </div>
             
             <button 
+              onClick={logout}
               className="ml-1 flex h-9 w-9 items-center justify-center rounded-lg bg-muted/60 hover:bg-accent hover:text-accent-foreground border border-border/50 hover:border-accent/50 transition-all duration-200 hover:scale-105 group" 
               title="Đăng xuất"
               aria-label="Đăng xuất"

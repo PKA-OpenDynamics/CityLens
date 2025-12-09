@@ -2,28 +2,15 @@
 # Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
 # Documentation & Guides (DO NOT COMMIT)
-*.md
-!README.md
-!LICENSE.md
-*.MD
-**/*.md
-!README.md
-!LICENSE.md
-.github/copilot-instructions.md
-ARCHITECTURE.md
-BACKEND_*.md
-COMPREHENSIVE_*.md
-DEPLOYMENT_*.md
-PROJECT_*.md
-QUICK_START.md
-ROADMAP.md
-STATUS.md
 
 # Scripts & Shell files (DO NOT COMMIT)
 *.sh
 **/*.sh
+# Allow specific backend scripts
+!backend/start.sh
+!backend/scripts/export_database.sh
+!backend/scripts/import_database.sh
 release.sh
-backend/scripts/*.sh
 
 # SQL Scripts (DO NOT COMMIT - for local use only)
 backend/scripts/*.sql
@@ -100,28 +87,10 @@ build/
 .env
 .env.local
 .env.*.local
-.env.production
-.env.development
 backend/.env
 web-dashboard/.env
 web-dashboard/.env.local
 mobile-app/.env
-web-app/.env
-web-app/.env.local
-web-app/.env.production
-web-app/.env.development
-
-# Config files that may contain secrets
-**/config/env.ts.local
-**/config/*.secret.*
-**/*.secret.*
-**/*.key
-**/*.pem
-
-# Dependencies lock files (server/development only)
-**/server/package-lock.json
-**/server/node_modules/
-**/server/.env
 
 # BUT allow .env.example and .env.production.example templates
 !.env.example
@@ -130,7 +99,6 @@ web-app/.env.development
 !backend/.env.production.example
 !web-dashboard/.env.example
 !mobile-app/.env.example
-!web-app/.env.example
 
 # Database
 *.db
@@ -142,6 +110,18 @@ web-app/.env.development
 *.geojson
 backend/data/osm/*.osm.pbf
 backend/data/osm/*.geojson
+
+# Video files (large media files)
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.webm
+**/*.mp4
+**/*.mov
+**/*.avi
+**/*.mkv
+**/*.webm
 
 # Uploads
 uploads/
@@ -165,11 +145,15 @@ coverage/
 *.bak
 *.tmp
 
-# Backend (excluded from git)
-backend/
+backend/.env
+backend/.env.*
 
-# Web Dashboard (excluded from git)
-web-dashboard/
-
-# Old citylens-app (replaced by web-app)
-citylens-app/
+web-dashboard/node_modules/
+web-dashboard/dist/
+web-dashboard/.env
+web-dashboard/.env.*web-dashboard/.next/
+web-dashboard/next-env.d.ts
+web-dashboard/tsconfig.tsbuildinfo
+web-dashboard/.next/
+web-dashboard/tsconfig.tsbuildinfo
+web-dashboard/out/

@@ -1,5 +1,5 @@
 {
-  "name": "@pka_opendynamics_2025/citylens-utils",
+  "name": "@pka-opendynamics/citylens-utils",
   "version": "1.0.0",
   "description": "CityLens Smart City Platform - Tiện ích xử lý dữ liệu đô thị thông minh",
   "main": "dist/index.js",
@@ -14,7 +14,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/pka-opendynamics/citylens.git"
+    "url": "https://github.com/PKA-OpenDynamics/CityLens.git",
+    "directory": "packages/citylens-utils"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "keywords": [
     "citylens",

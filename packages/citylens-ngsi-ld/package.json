@@ -1,5 +1,5 @@
 {
-  "name": "@pka_opendynamics_2025/citylens-ngsi-ld",
+  "name": "@pka-opendynamics/citylens-ngsi-ld",
   "version": "1.0.0",
   "description": "CityLens - Thư viện xây dựng và xử lý NGSI-LD entities theo chuẩn ETSI",
   "main": "dist/index.js",
@@ -14,7 +14,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/PKA-Open-Dynamics/CityLens.git"
+    "url": "https://github.com/PKA-OpenDynamics/CityLens.git",
+    "directory": "packages/citylens-ngsi-ld"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "keywords": [
     "citylens",
