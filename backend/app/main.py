@@ -6,18 +6,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from app.core.config import settings
 from app.db.mongodb import mongodb
+from app.db.mongodb_atlas import mongodb_atlas
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan manager - startup and shutdown events"""
-    # Startup: Connect to MongoDB
+    # Startup: Connect to MongoDB (Docker - for Web Dashboard)
     await mongodb.connect_db()
+    
+    # Startup: Connect to MongoDB Atlas (Cloud - for Mobile App)
+    await mongodb_atlas.connect()
     
     yield
     
-    # Shutdown: Close MongoDB connection
+    # Shutdown: Close MongoDB connections
     await mongodb.close_db()
+    await mongodb_atlas.close()
 
 
 app = FastAPI(
@@ -56,7 +61,8 @@ def root():
         "docs": "/docs",
         "features": [
             "FiWARE NGSI-LD Smart Data Models",
-            "Dashboard Authentication & Authorization",
+            "Web Dashboard Authentication & Authorization (MongoDB Docker)",
+            "Mobile App Authentication & Reports (MongoDB Atlas)",
             "Real-time Urban Data Management"
         ]
     }
