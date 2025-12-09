@@ -2,7 +2,7 @@
 
 // Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,10 +11,11 @@ import {
   ScrollView,
   FlatList,
   Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 interface ReportItem {
   id: string;
@@ -28,8 +29,31 @@ interface ReportItem {
 
 const ReportScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const [bottomIndex, setBottomIndex] = useState(0); // 0: Cộng đồng, 1: Cá nhân
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
+
+  // Show success message if coming from CreateReportScreen
+  useEffect(() => {
+    if (route.params?.showSuccessMessage) {
+      const message = route.params?.message || 'Tạo phản ánh thành công';
+      
+      // Use setTimeout to ensure screen is fully mounted before showing alert
+      const timer = setTimeout(() => {
+        Alert.alert('Thành công', message, [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Clear params after alert is dismissed
+              navigation.setParams({ showSuccessMessage: false, message: undefined });
+            }
+          }
+        ]);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [route.params?.showSuccessMessage, route.params?.message, navigation]);
 
   // Mock data
   const communityReports: ReportItem[] = [
@@ -226,12 +250,15 @@ const ReportScreen: React.FC = () => {
         </TouchableOpacity>
 
         {/* Floating Action Button - Tích hợp vào bottom nav */}
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => navigation.navigate('CreateReport')}
-        >
-          <MaterialIcons name="add" size={28} color="#FFFFFF" />
-        </TouchableOpacity>
+        <View style={styles.fabWrapper}>
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() => navigation.navigate('CreateReport')}
+          >
+            <MaterialIcons name="add" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.fabLabel}>Tạo phản ánh</Text>
+        </View>
 
         <TouchableOpacity
           style={styles.bottomNavItem}
@@ -396,9 +423,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     marginTop: -28, // Nổi lên trên navigation bar
   },
+  fabWrapper: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  fabLabel: {
+    marginTop: 6,
+    fontSize: 11,
+    color: '#20A957',
+    fontWeight: '600',
+  },
   bottomNav: {
     flexDirection: 'row',
-    height: 60,
+    height: 76,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 0.5,
     borderTopColor: '#E5E7EB',
