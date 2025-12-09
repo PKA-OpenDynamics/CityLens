@@ -35,6 +35,9 @@ module.exports = {
     extra: {
       tomtomApiKey: process.env.TOMTOM_API_KEY || '',
       weatherApiBaseUrl: process.env.WEATHER_API_BASE_URL || 'http://localhost:8000',
+      mongodbUri: process.env.MONGODB_URI || '',
+      mongodbDbName: process.env.MONGODB_DB_NAME || 'citylens',
+      reportsApiBaseUrl: process.env.REPORTS_API_BASE_URL || 'http://localhost:3001/api',
     },
   },
 };

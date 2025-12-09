@@ -25,6 +25,33 @@ export const WEATHER_API_BASE_URL =
   'http://localhost:8000';
 
 /**
+ * MongoDB Atlas Connection String
+ */
+export const MONGODB_URI =
+  (Constants.expoConfig?.extra as any)?.mongodbUri ||
+  (typeof process !== 'undefined' && process.env?.MONGODB_URI) ||
+  process.env?.EXPO_PUBLIC_MONGODB_URI ||
+  '';
+
+/**
+ * MongoDB Database Name
+ */
+export const MONGODB_DB_NAME =
+  (Constants.expoConfig?.extra as any)?.mongodbDbName ||
+  (typeof process !== 'undefined' && process.env?.MONGODB_DB_NAME) ||
+  process.env?.EXPO_PUBLIC_MONGODB_DB_NAME ||
+  'citylens';
+
+/**
+ * API Base URL for Reports (Backend API)
+ */
+export const REPORTS_API_BASE_URL =
+  (Constants.expoConfig?.extra as any)?.reportsApiBaseUrl ||
+  (typeof process !== 'undefined' && process.env?.REPORTS_API_BASE_URL) ||
+  process.env?.EXPO_PUBLIC_REPORTS_API_BASE_URL ||
+  'http://localhost:3001/api';
+
+/**
  * Kiểm tra xem API key đã được cấu hình chưa
  */
 export const isTomTomApiKeyConfigured = (): boolean => {
