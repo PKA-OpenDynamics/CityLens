@@ -177,12 +177,12 @@ async def seed_civic_issues(service: NGSILDEntityService, count: int = 50):
         if (i + 1) % 10 == 0:
             print(f"  ✓ Created {i + 1}/{count} civic issues")
     
-    print(f"✅ Successfully seeded {count} civic issues")
+    print(f"Successfully seeded {count} civic issues")
 
 
 async def seed_parking_spots(service: NGSILDEntityService, count: int = 100):
     """Seed parking spot entities"""
-    print(f"\n🅿️  Seeding {count} parking spots...")
+    print(f"\n🅿Seeding {count} parking spots...")
     
     parking_sites = [
         "Times City", "Royal City", "Vincom Center", "Lotte Center",
@@ -223,27 +223,27 @@ async def seed_parking_spots(service: NGSILDEntityService, count: int = 100):
         if (i + 1) % 20 == 0:
             print(f"  ✓ Created {i + 1}/{count} parking spots")
     
-    print(f"✅ Successfully seeded {count} parking spots")
+    print(f"Successfully seeded {count} parking spots")
 
 
 async def seed_realtime_data(service: NGSILDEntityService):
     """Seed current real-time weather and air quality data"""
-    print("\n🌤️  Fetching and storing real-time data...")
+    print("\nFetching and storing real-time data...")
     
     try:
         # Sync weather data for Hanoi
-        print("  📡 Fetching weather data...")
+        print("Fetching weather data...")
         await service.sync_weather_data(21.028511, 105.804817, "Hanoi")
         print("  ✓ Weather data stored")
         
         # Sync air quality data
-        print("  📡 Fetching air quality data...")
+        print("Fetching air quality data...")
         await service.sync_air_quality_data("hanoi")
         print("  ✓ Air quality data stored")
         
-        print("✅ Real-time data synchronized")
+        print("Real-time data synchronized")
     except Exception as e:
-        print(f"⚠️  Warning: Could not sync real-time data: {e}")
+        print(f"Warning: Could not sync real-time data: {e}")
 
 
 async def main():
@@ -278,9 +278,9 @@ async def main():
     await engine.dispose()
     
     print("\n" + "=" * 60)
-    print("  ✅ Demo data seeding completed!")
-    print("  🌐 Access NGSI-LD API: http://localhost:8000/api/v1/ngsi-ld/v1/entities")
-    print("  📖 API Docs: http://localhost:8000/docs")
+    print("Demo data seeding completed!")
+    print("Access NGSI-LD API: http://localhost:8000/api/v1/ngsi-ld/v1/entities")
+    print("API Docs: http://localhost:8000/docs")
     print("=" * 60)
 
 
