@@ -52,6 +52,15 @@ export const REPORTS_API_BASE_URL =
   'http://localhost:3001/api';
 
 /**
+ * API Base URL for Authentication (Backend API)
+ */
+export const AUTH_API_BASE_URL =
+  (Constants.expoConfig?.extra as any)?.authApiBaseUrl ||
+  (typeof process !== 'undefined' && process.env?.AUTH_API_BASE_URL) ||
+  process.env?.EXPO_PUBLIC_AUTH_API_BASE_URL ||
+  'http://localhost:3001/api';
+
+/**
  * Kiểm tra xem API key đã được cấu hình chưa
  */
 export const isTomTomApiKeyConfigured = (): boolean => {

@@ -6,6 +6,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import reportsRouter from './routes/reports.js';
 import mediaRouter from './routes/media.js';
+import authRouter from './routes/auth.js';
 import { connectToDatabase } from './config/db.js';
 
 dotenv.config();
@@ -41,6 +42,7 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/api/reports', reportsRouter);
 app.use('/api/media', mediaRouter);
+app.use('/api/auth', authRouter);
 
 // Test MongoDB connection on startup
 async function testConnection() {

@@ -7,8 +7,8 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AUTH_API_BASE_URL } from '../config/env';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1';
 const TOKEN_KEY = '@citylens:access_token';
 
 export interface LoginCredentials {
@@ -30,7 +30,8 @@ export interface LoginResponse {
 }
 
 export interface User {
-  id: string; // MongoDB ObjectId as string
+  _id?: string; // MongoDB ObjectId
+  id?: string; // Alias for _id (for compatibility)
   username: string;
   email: string;
   full_name: string;
@@ -48,48 +49,77 @@ export interface User {
 
 class AuthService {
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
-    // OAuth2PasswordRequestForm requires application/x-www-form-urlencoded
-    const params = new URLSearchParams();
-    params.append('username', credentials.username);
-    params.append('password', credentials.password);
-
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params.toString(),
-    });
-
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Đăng nhập thất bại' }));
-      throw new Error(error.detail || 'Đăng nhập thất bại');
-    }
-
-    const data: LoginResponse = await response.json();
-    
-    if (data.access_token) {
-      await AsyncStorage.setItem(TOKEN_KEY, data.access_token);
-    }
-    
-    return data;
-  }
-
-  async register(userData: RegisterData): Promise<User> {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+    const response = await fetch(`${AUTH_API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(userData),
+      body: JSON.stringify({
+        username: credentials.username,
+        password: credentials.password,
+      }),
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Đăng ký thất bại' }));
-      throw new Error(error.detail || 'Đăng ký thất bại');
+      const error = await response.json().catch(() => ({ error: 'Đăng nhập thất bại' }));
+      throw new Error(error.error || error.detail || 'Đăng nhập thất bại');
     }
 
-    return response.json();
+    const result = await response.json();
+    
+    if (result.success && result.data?.access_token) {
+      await AsyncStorage.setItem(TOKEN_KEY, result.data.access_token);
+      return {
+        access_token: result.data.access_token,
+        token_type: result.data.token_type || 'bearer',
+      };
+    }
+    
+    throw new Error('Đăng nhập thất bại');
+  }
+
+  async register(userData: RegisterData): Promise<User> {
+    const requestBody = {
+      username: userData.username,
+      email: userData.email,
+      password: userData.password,
+      full_name: userData.full_name,
+      phone: userData.phone,
+    };
+    
+    console.log('Register request:', { url: `${AUTH_API_BASE_URL}/auth/register`, body: { ...requestBody, password: '***' } });
+    
+    const response = await fetch(`${AUTH_API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    const responseData = await response.json().catch(() => ({ error: 'Đăng ký thất bại' }));
+    console.log('Register response:', { status: response.status, data: responseData });
+
+    if (!response.ok) {
+      throw new Error(responseData.error || responseData.detail || 'Đăng ký thất bại');
+    }
+
+    const result = await response.json();
+    
+    if (result.success && result.data?.user) {
+      // Save token if provided
+      if (result.data.access_token) {
+        await AsyncStorage.setItem(TOKEN_KEY, result.data.access_token);
+      }
+      // Map _id to id for compatibility
+      const user = result.data.user;
+      if (user._id && !user.id) {
+        user.id = user._id;
+      }
+      return user;
+    }
+    
+    throw new Error('Đăng ký thất bại');
   }
 
   async getCurrentUser(): Promise<User> {
@@ -98,7 +128,7 @@ class AuthService {
       throw new Error('Chưa đăng nhập');
     }
 
-    const response = await fetch(`${API_BASE_URL}/users/me`, {
+    const response = await fetch(`${AUTH_API_BASE_URL}/auth/me`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -107,10 +137,22 @@ class AuthService {
     });
 
     if (!response.ok) {
-      throw new Error('Không thể lấy thông tin người dùng');
+      const error = await response.json().catch(() => ({ error: 'Không thể lấy thông tin người dùng' }));
+      throw new Error(error.error || 'Không thể lấy thông tin người dùng');
     }
 
-    return response.json();
+    const result = await response.json();
+    
+    if (result.success && result.data) {
+      // Map _id to id for compatibility
+      const user = result.data;
+      if (user._id && !user.id) {
+        user.id = user._id;
+      }
+      return user;
+    }
+    
+    throw new Error('Không thể lấy thông tin người dùng');
   }
 
   async logout(): Promise<void> {
