@@ -62,6 +62,11 @@ class Settings(BaseSettings):
         return f"postgresql+asyncpg://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
     
     @property
+    def ASYNC_DATABASE_URL(self) -> str:
+        """Alias for SQLALCHEMY_DATABASE_URI"""
+        return self.SQLALCHEMY_DATABASE_URI
+    
+    @property
     def SQLALCHEMY_SYNC_DATABASE_URI(self) -> str:
         """Sync database URI for legacy Session"""
         return f"postgresql+psycopg2://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
