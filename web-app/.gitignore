@@ -30,9 +30,21 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files (NEVER commit secrets)
 .env
 .env*.local
+.env.production
+.env.development
+web-app/.env
+web-app/.env.local
+
+# Config files that may contain secrets
+**/config/env.ts.local
+**/config/*.secret.*
+
+# Dependencies lock files (server only - keep main package-lock.json)
+**/server/package-lock.json
+**/server/node_modules/
 
 # typescript
 *.tsbuildinfo

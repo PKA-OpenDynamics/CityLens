@@ -100,10 +100,28 @@ build/
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
 backend/.env
 web-dashboard/.env
 web-dashboard/.env.local
 mobile-app/.env
+web-app/.env
+web-app/.env.local
+web-app/.env.production
+web-app/.env.development
+
+# Config files that may contain secrets
+**/config/env.ts.local
+**/config/*.secret.*
+**/*.secret.*
+**/*.key
+**/*.pem
+
+# Dependencies lock files (server/development only)
+**/server/package-lock.json
+**/server/node_modules/
+**/server/.env
 
 # BUT allow .env.example and .env.production.example templates
 !.env.example
@@ -112,6 +130,7 @@ mobile-app/.env
 !backend/.env.production.example
 !web-dashboard/.env.example
 !mobile-app/.env.example
+!web-app/.env.example
 
 # Database
 *.db
