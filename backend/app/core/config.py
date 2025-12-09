@@ -1,12 +1,13 @@
 # Copyright (c) 2025 CityLens Contributors
 # Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
+import json
 from typing import List, Union, Optional
-from pydantic import AnyHttpUrl, validator, ConfigDict
-from pydantic_settings import BaseSettings
+from pydantic import AnyHttpUrl, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    model_config = ConfigDict(
+    model_config = SettingsConfigDict(
         case_sensitive=True,
         env_file=".env",
         extra='ignore'  # Ignore extra fields from .env
@@ -24,6 +25,23 @@ class Settings(BaseSettings):
     
     # CORS
     BACKEND_CORS_ORIGINS: List[Union[str, AnyHttpUrl]] = ["http://localhost:3000", "http://localhost:8000", "*"]
+    
+    @field_validator('BACKEND_CORS_ORIGINS', mode='before')
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Allow comma-separated string or JSON array for CORS origins"""
+        if v is None or v == "":
+            return []
+        if isinstance(v, str):
+            # If user provides JSON array string, try to parse
+            if v.strip().startswith('['):
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    pass
+            # Fallback: comma-separated list
+            return [origin.strip() for origin in v.split(',') if origin.strip()]
+        return v
 
     # Database (PostgreSQL with PostGIS)
     POSTGRES_SERVER: str = "db"
