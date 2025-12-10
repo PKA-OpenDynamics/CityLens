@@ -4,8 +4,8 @@
   # Build command
   command = "npm run build:web"
   
-  # Output directory (Expo web export)
-  publish = "web-build"
+  # Output directory (Expo export with --platform web)
+  publish = "dist"
   
   # Base directory
   base = "web-app"
