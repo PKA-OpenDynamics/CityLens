@@ -1,0 +1,124 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix wgs84: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+@prefix fiware: <https://uri.fiware.org/ns/data-models#> .
+@prefix citylens: <https://citylens.vn/ontology/> .
+@prefix cl-data: <https://citylens.vn/data/> .
+@prefix cl-place: <https://citylens.vn/place/> .
+
+
+# =============================================================================
+# Parking Spots - Hanoi
+# =============================================================================
+
+cl-data:parking-vincom-batrieu a sosa:Observation ;
+    a fiware:OffStreetParking ;
+    rdfs:label "Vincom Ba Trieu Parking"@en ;
+    rdfs:label "Bãi đỗ xe Vincom Bà Triệu"@vi ;
+    citylens:parkingName "Vincom Center Ba Trieu" ;
+    citylens:totalSpaces "500"^^xsd:integer ;
+    citylens:availableSpaces "125"^^xsd:integer ;
+    citylens:occupancy "75"^^xsd:integer ;
+    citylens:pricePerHour "30000"^^xsd:integer ;
+    citylens:openHours "06:00-22:00" ;
+    citylens:parkingType "underground" ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HoanKiem ;
+    wgs84:lat "21.0122"^^xsd:double ;
+    wgs84:long "105.8492"^^xsd:double .
+
+cl-data:parking-lotte-lieu-giai a sosa:Observation ;
+    a fiware:OffStreetParking ;
+    rdfs:label "Lotte Lieu Giai Parking"@en ;
+    citylens:parkingName "Lotte Center Lieu Giai" ;
+    citylens:totalSpaces "800"^^xsd:integer ;
+    citylens:availableSpaces "320"^^xsd:integer ;
+    citylens:occupancy "60"^^xsd:integer ;
+    citylens:pricePerHour "35000"^^xsd:integer ;
+    citylens:openHours "06:00-23:00" ;
+    citylens:parkingType "underground" ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:BaDinh ;
+    wgs84:lat "21.0312"^^xsd:double ;
+    wgs84:long "105.8112"^^xsd:double .
+
+cl-data:parking-aeon-long-bien a sosa:Observation ;
+    a fiware:OffStreetParking ;
+    rdfs:label "AEON Long Bien Parking"@en ;
+    citylens:parkingName "AEON Mall Long Bien" ;
+    citylens:totalSpaces "2500"^^xsd:integer ;
+    citylens:availableSpaces "850"^^xsd:integer ;
+    citylens:occupancy "66"^^xsd:integer ;
+    citylens:pricePerHour "0"^^xsd:integer ;
+    citylens:openHours "08:00-22:00" ;
+    citylens:parkingType "surface" ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:LongBien ;
+    wgs84:lat "21.0512"^^xsd:double ;
+    wgs84:long "105.8989"^^xsd:double .
+
+cl-data:parking-times-city a sosa:Observation ;
+    a fiware:OffStreetParking ;
+    rdfs:label "Times City Parking"@en ;
+    citylens:parkingName "Vinhomes Times City" ;
+    citylens:totalSpaces "3000"^^xsd:integer ;
+    citylens:availableSpaces "1200"^^xsd:integer ;
+    citylens:occupancy "60"^^xsd:integer ;
+    citylens:pricePerHour "25000"^^xsd:integer ;
+    citylens:openHours "00:00-24:00" ;
+    citylens:parkingType "underground" ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HaiBaTrung ;
+    wgs84:lat "20.9954"^^xsd:double ;
+    wgs84:long "105.8682"^^xsd:double .
+
+cl-data:parking-royal-city a sosa:Observation ;
+    a fiware:OffStreetParking ;
+    rdfs:label "Royal City Parking"@en ;
+    citylens:parkingName "Vinhomes Royal City" ;
+    citylens:totalSpaces "4000"^^xsd:integer ;
+    citylens:availableSpaces "1800"^^xsd:integer ;
+    citylens:occupancy "55"^^xsd:integer ;
+    citylens:pricePerHour "20000"^^xsd:integer ;
+    citylens:openHours "00:00-24:00" ;
+    citylens:parkingType "underground" ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:ThanhXuan ;
+    wgs84:lat "20.9958"^^xsd:double ;
+    wgs84:long "105.8125"^^xsd:double .
+
+cl-data:parking-big-c-thang-long a sosa:Observation ;
+    a fiware:OffStreetParking ;
+    rdfs:label "Big C Thang Long Parking"@en ;
+    citylens:parkingName "Big C Thang Long" ;
+    citylens:totalSpaces "600"^^xsd:integer ;
+    citylens:availableSpaces "180"^^xsd:integer ;
+    citylens:occupancy "70"^^xsd:integer ;
+    citylens:pricePerHour "15000"^^xsd:integer ;
+    citylens:openHours "08:00-22:00" ;
+    citylens:parkingType "surface" ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:CauGiay ;
+    wgs84:lat "21.0089"^^xsd:double ;
+    wgs84:long "105.7758"^^xsd:double .
+
+cl-data:parking-street-tran-hung-dao a sosa:Observation ;
+    a fiware:OnStreetParking ;
+    rdfs:label "Tran Hung Dao Street Parking"@en ;
+    citylens:parkingName "Street Parking Tran Hung Dao" ;
+    citylens:totalSpaces "50"^^xsd:integer ;
+    citylens:availableSpaces "8"^^xsd:integer ;
+    citylens:occupancy "84"^^xsd:integer ;
+    citylens:pricePerHour "10000"^^xsd:integer ;
+    citylens:openHours "07:00-19:00" ;
+    citylens:parkingType "street" ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HoanKiem ;
+    wgs84:lat "21.0195"^^xsd:double ;
+    wgs84:long "105.8485"^^xsd:double .

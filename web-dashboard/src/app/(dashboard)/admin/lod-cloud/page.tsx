@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import {
   Database,
   Network,
@@ -21,12 +22,22 @@ import {
   ChevronDown,
   ChevronUp,
   Loader2,
+  Zap,
+  BarChart3,
+  Users,
+  Heart,
 } from 'lucide-react';
+import { getFusekiUrl, isLocal, detectEnvironment } from '@/lib/environment';
+import { SparqlService, SAMPLE_QUERIES, FUSEKI_CONFIG as SPARQL_CONFIG } from '@/lib/sparql';
 
-// Fuseki Configuration
+// Fuseki Configuration - Auto-detect environment
 const FUSEKI_CONFIG = {
-  endpoint: 'http://localhost:7200',
-  adminEndpoint: 'http://localhost:7200/$/datasets',
+  get endpoint() {
+    return getFusekiUrl();
+  },
+  get adminEndpoint() {
+    return `${getFusekiUrl()}/$/datasets`;
+  },
   username: 'admin',
   password: 'admin',
   defaultDataset: 'citylens',
@@ -43,6 +54,7 @@ interface Dataset {
   linkedTo: string[];
   status: 'active' | 'loading' | 'error';
   lastSync?: string;
+  entityTypes?: { type: string; count: number }[];
 }
 
 interface SparqlResult {
@@ -57,70 +69,95 @@ interface LodCompliance {
   details: string;
 }
 
+// Initialize SPARQL service
+const sparqlService = new SparqlService();
+
 export default function LodCloudPage() {
+  // Environment info
+  const [envInfo, setEnvInfo] = useState({ env: 'local', fusekiUrl: '' });
+  
+  useEffect(() => {
+    setEnvInfo({
+      env: detectEnvironment(),
+      fusekiUrl: getFusekiUrl()
+    });
+  }, []);
+
   const [datasets, setDatasets] = useState<Dataset[]>([
     {
-      id: 'weather',
+      id: 'citylens-ontology',
+      name: 'Ontology',
+      description: 'CityLens Ontology definitions',
+      namespace: 'https://citylens.vn/ontology/',
+      triples: 0,
+      sparqlEndpoint: `${FUSEKI_CONFIG.endpoint}/citylens-ontology/sparql`,
+      linkedTo: ['citylens-weather', 'citylens-airquality', 'citylens-traffic', 'citylens-parking', 'citylens-civic'],
+      status: 'loading',
+    },
+    {
+      id: 'citylens-weather',
       name: 'Dữ liệu Thời tiết',
       description: 'Quan trắc khí tượng SOSA/SSN',
-      namespace: 'https://citylens.vn/weather/',
+      namespace: 'https://citylens.vn/data/WeatherObserved/',
       triples: 0,
-      sparqlEndpoint: `${FUSEKI_CONFIG.endpoint}/weather/sparql`,
-      linkedTo: ['aqi', 'traffic'],
+      sparqlEndpoint: `${FUSEKI_CONFIG.endpoint}/citylens-weather/sparql`,
+      linkedTo: ['citylens-airquality', 'citylens-traffic'],
       status: 'loading',
     },
     {
-      id: 'aqi',
+      id: 'citylens-airquality',
       name: 'Chất lượng Không khí',
       description: 'Dữ liệu AQI theo chuẩn SOSA',
-      namespace: 'https://citylens.vn/aqi/',
+      namespace: 'https://citylens.vn/data/AirQualityObserved/',
       triples: 0,
-      sparqlEndpoint: `${FUSEKI_CONFIG.endpoint}/aqi/sparql`,
-      linkedTo: ['weather', 'civic'],
+      sparqlEndpoint: `${FUSEKI_CONFIG.endpoint}/citylens-airquality/sparql`,
+      linkedTo: ['citylens-weather', 'citylens-civic'],
       status: 'loading',
     },
     {
-      id: 'traffic',
+      id: 'citylens-traffic',
       name: 'Giao thông',
       description: 'Luồng giao thông NGSI-LD',
-      namespace: 'https://citylens.vn/traffic/',
+      namespace: 'https://citylens.vn/data/TrafficFlowObserved/',
       triples: 0,
-      sparqlEndpoint: `${FUSEKI_CONFIG.endpoint}/traffic/sparql`,
-      linkedTo: ['weather', 'parking'],
+      sparqlEndpoint: `${FUSEKI_CONFIG.endpoint}/citylens-traffic/sparql`,
+      linkedTo: ['citylens-weather', 'citylens-parking'],
       status: 'loading',
     },
     {
-      id: 'parking',
+      id: 'citylens-parking',
       name: 'Bãi đỗ xe',
       description: 'Dữ liệu bãi đỗ SmartCity',
-      namespace: 'https://citylens.vn/parking/',
+      namespace: 'https://citylens.vn/data/ParkingSpot/',
       triples: 0,
-      sparqlEndpoint: `${FUSEKI_CONFIG.endpoint}/parking/sparql`,
-      linkedTo: ['traffic'],
+      sparqlEndpoint: `${FUSEKI_CONFIG.endpoint}/citylens-parking/sparql`,
+      linkedTo: ['citylens-traffic'],
       status: 'loading',
     },
     {
-      id: 'civic',
+      id: 'citylens-civic',
       name: 'Phản ánh Công dân',
       description: 'Khiếu nại và báo cáo',
-      namespace: 'https://citylens.vn/civic/',
+      namespace: 'https://citylens.vn/data/CivicIssueTracking/',
       triples: 0,
-      sparqlEndpoint: `${FUSEKI_CONFIG.endpoint}/civic/sparql`,
-      linkedTo: ['aqi', 'traffic'],
+      sparqlEndpoint: `${FUSEKI_CONFIG.endpoint}/citylens-civic/sparql`,
+      linkedTo: ['citylens-airquality', 'citylens-traffic'],
+      status: 'loading',
+    },
+    {
+      id: 'citylens-places',
+      name: 'Địa danh',
+      description: 'Thông tin quận/huyện Hà Nội',
+      namespace: 'https://citylens.vn/place/',
+      triples: 0,
+      sparqlEndpoint: `${FUSEKI_CONFIG.endpoint}/citylens-places/sparql`,
+      linkedTo: ['citylens-ontology', 'citylens-weather', 'citylens-airquality'],
       status: 'loading',
     },
   ]);
 
-  const [selectedDataset, setSelectedDataset] = useState<string>('weather');
-  const [sparqlQuery, setSparqlQuery] = useState<string>(`PREFIX sosa: <http://www.w3.org/ns/sosa/>
-PREFIX ngsi-ld: <https://uri.etsi.org/ngsi-ld/>
-PREFIX citylens: <https://citylens.vn/ontology/>
-
-SELECT ?subject ?predicate ?object
-WHERE {
-  ?subject ?predicate ?object .
-}
-LIMIT 100`);
+  const [selectedDataset, setSelectedDataset] = useState<string>('citylens-ontology');
+  const [sparqlQuery, setSparqlQuery] = useState<string>(SAMPLE_QUERIES[0].query);
   const [queryResult, setQueryResult] = useState<SparqlResult | null>(null);
   const [isQuerying, setIsQuerying] = useState(false);
   const [queryError, setQueryError] = useState<string | null>(null);
@@ -166,29 +203,14 @@ LIMIT 100`);
   const checkFusekiStatus = useCallback(async () => {
     setFusekiStatus('checking');
     try {
-      const response = await fetch(`${FUSEKI_CONFIG.endpoint}/$/ping`, {
-        method: 'GET',
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${FUSEKI_CONFIG.username}:${FUSEKI_CONFIG.password}`),
-        },
-      });
-      setFusekiStatus(response.ok ? 'online' : 'offline');
+      const status = await sparqlService.checkStatus();
+      setFusekiStatus(status);
     } catch {
-      // Try alternative health check
-      try {
-        const altResponse = await fetch(`${FUSEKI_CONFIG.endpoint}/$/server`, {
-          headers: {
-            'Authorization': 'Basic ' + btoa(`${FUSEKI_CONFIG.username}:${FUSEKI_CONFIG.password}`),
-          },
-        });
-        setFusekiStatus(altResponse.ok ? 'online' : 'offline');
-      } catch {
-        setFusekiStatus('offline');
-      }
+      setFusekiStatus('offline');
     }
   }, []);
 
-  // Load dataset stats
+  // Load dataset stats using SPARQL service
   const loadDatasetStats = useCallback(async () => {
     setDatasets((prev) =>
       prev.map((ds) => ({
@@ -197,42 +219,55 @@ LIMIT 100`);
       }))
     );
 
-    // Simulate loading - in production, this would query each dataset
+    // Load stats for each dataset
     for (const dataset of datasets) {
       try {
-        // Try to get triple count
-        const countQuery = `SELECT (COUNT(*) as ?count) WHERE { ?s ?p ?o }`;
-        const response = await fetch(`${FUSEKI_CONFIG.endpoint}/${dataset.id}/sparql`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Accept': 'application/sparql-results+json',
-            'Authorization': 'Basic ' + btoa(`${FUSEKI_CONFIG.username}:${FUSEKI_CONFIG.password}`),
-          },
-          body: `query=${encodeURIComponent(countQuery)}`,
-        });
-
-        if (response.ok) {
-          const result: SparqlResult = await response.json();
-          const count = parseInt(result.results.bindings[0]?.count?.value || '0');
+        const stats = await sparqlService.getDatasetStats(dataset.id);
+        const entityTypes = await sparqlService.getEntityTypes(dataset.id);
+        
+        if (stats.triples > 0) {
           setDatasets((prev) =>
             prev.map((ds) =>
               ds.id === dataset.id
-                ? { ...ds, triples: count, status: 'active' as const, lastSync: new Date().toISOString() }
+                ? { 
+                    ...ds, 
+                    triples: stats.triples, 
+                    status: 'active' as const, 
+                    lastSync: new Date().toISOString(),
+                    entityTypes: entityTypes.slice(0, 5)
+                  }
                 : ds
             )
           );
         } else {
-          throw new Error('Dataset not found');
+          // Dataset might not exist yet - use mock data for demo
+          const mockCounts: Record<string, number> = {
+            'citylens-ontology': 165,
+            'citylens-weather': 63,
+            'citylens-airquality': 76,
+            'citylens-traffic': 106,
+            'citylens-parking': 99,
+            'citylens-civic': 108,
+            'citylens-places': 111,
+          };
+          setDatasets((prev) =>
+            prev.map((ds) =>
+              ds.id === dataset.id
+                ? { ...ds, triples: mockCounts[dataset.id] || 0, status: 'active' as const }
+                : ds
+            )
+          );
         }
       } catch {
-        // Dataset might not exist yet - use mock data
+        // Use mock data on error
         const mockCounts: Record<string, number> = {
-          weather: 1250,
-          aqi: 890,
-          traffic: 3200,
-          parking: 15600,
-          civic: 4500,
+          'citylens-ontology': 165,
+          'citylens-weather': 63,
+          'citylens-airquality': 76,
+          'citylens-traffic': 106,
+          'citylens-parking': 99,
+          'citylens-civic': 108,
+          'citylens-places': 111,
         };
         setDatasets((prev) =>
           prev.map((ds) =>
@@ -251,28 +286,14 @@ LIMIT 100`);
     loadDatasetStats();
   }, [checkFusekiStatus, loadDatasetStats]);
 
-  // Execute SPARQL query
+  // Execute SPARQL query using service
   const executeQuery = async () => {
     setIsQuerying(true);
     setQueryError(null);
     setQueryResult(null);
 
     try {
-      const response = await fetch(`${FUSEKI_CONFIG.endpoint}/${selectedDataset}/sparql`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/sparql-results+json',
-          'Authorization': 'Basic ' + btoa(`${FUSEKI_CONFIG.username}:${FUSEKI_CONFIG.password}`),
-        },
-        body: `query=${encodeURIComponent(sparqlQuery)}`,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Lỗi ${response.status}: ${response.statusText}`);
-      }
-
-      const result: SparqlResult = await response.json();
+      const result = await sparqlService.query(selectedDataset, sparqlQuery);
       setQueryResult(result);
     } catch (error) {
       setQueryError(error instanceof Error ? error.message : 'Không thể thực thi truy vấn');
@@ -286,56 +307,20 @@ LIMIT 100`);
     navigator.clipboard.writeText(text);
   };
 
-  // Sample queries
-  const sampleQueries = [
-    {
-      name: 'Lấy tất cả Observation',
-      query: `PREFIX sosa: <http://www.w3.org/ns/sosa/>
-
-SELECT ?obs ?feature ?result ?time
-WHERE {
-  ?obs a sosa:Observation ;
-       sosa:hasFeatureOfInterest ?feature ;
-       sosa:hasSimpleResult ?result ;
-       sosa:resultTime ?time .
-}
-LIMIT 50`,
-    },
-    {
-      name: 'Thống kê theo loại',
-      query: `SELECT ?type (COUNT(?s) as ?count)
-WHERE {
-  ?s a ?type .
-}
-GROUP BY ?type
-ORDER BY DESC(?count)`,
-    },
-    {
-      name: 'Liên kết bên ngoài',
-      query: `PREFIX owl: <http://www.w3.org/2002/07/owl#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-
-SELECT ?subject ?link
-WHERE {
-  { ?subject owl:sameAs ?link }
-  UNION
-  { ?subject rdfs:seeAlso ?link }
-}
-LIMIT 50`,
-    },
-  ];
+  // Use sample queries from SPARQL service
+  const sampleQueries = SAMPLE_QUERIES.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-background p-6">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Network className="w-7 h-7 text-green-600" />
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+              <Network className="w-7 h-7 text-green-600 dark:text-green-500" />
               LOD Cloud - Dữ liệu Liên kết Mở
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-muted-foreground mt-1">
               Quản lý và truy vấn dữ liệu Linked Open Data theo tiêu chuẩn 5-Star
             </p>
           </div>
@@ -344,10 +329,10 @@ LIMIT 50`,
             <div
               className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
                 fusekiStatus === 'online'
-                  ? 'bg-green-50 border border-green-200 text-green-700'
+                  ? 'bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
                   : fusekiStatus === 'offline'
-                  ? 'bg-red-50 border border-red-200 text-red-700'
-                  : 'bg-yellow-50 border border-yellow-200 text-yellow-700'
+                  ? 'bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
+                  : 'bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400'
               }`}
             >
               {fusekiStatus === 'checking' ? (
@@ -361,86 +346,95 @@ LIMIT 50`,
                 Fuseki: {fusekiStatus === 'online' ? 'Hoạt động' : fusekiStatus === 'offline' ? 'Offline' : 'Đang kiểm tra...'}
               </span>
             </div>
+            {/* Environment Indicator */}
+            <div className={`px-3 py-2 rounded-lg flex items-center gap-2 ${
+              envInfo.env === 'local' 
+                ? 'bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400'
+                : 'bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400'
+            }`}>
+              <Zap className="w-4 h-4" />
+              <span className="text-xs font-medium uppercase">{envInfo.env}</span>
+            </div>
             <button
               onClick={checkFusekiStatus}
-              className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+              className="p-2 bg-card border border-border rounded-lg hover:bg-muted"
             >
-              <RefreshCw className="w-5 h-5 text-gray-600" />
+              <RefreshCw className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
         </div>
       </div>
 
       {/* Fuseki Credentials Card */}
-      <div className="bg-white rounded-xl border border-gray-200 p-4 mb-6">
+      <div className="bg-card rounded-xl border border-border p-4 mb-6">
         <button
           onClick={() => setShowCredentials(!showCredentials)}
           className="flex items-center justify-between w-full"
         >
           <div className="flex items-center gap-2">
-            <Key className="w-5 h-5 text-green-600" />
-            <span className="font-semibold text-gray-900">Thông tin Kết nối Fuseki</span>
+            <Key className="w-5 h-5 text-green-600 dark:text-green-500" />
+            <span className="font-semibold text-foreground">Thông tin Kết nối Fuseki</span>
           </div>
           {showCredentials ? (
-            <ChevronUp className="w-5 h-5 text-gray-400" />
+            <ChevronUp className="w-5 h-5 text-muted-foreground" />
           ) : (
-            <ChevronDown className="w-5 h-5 text-gray-400" />
+            <ChevronDown className="w-5 h-5 text-muted-foreground" />
           )}
         </button>
 
         {showCredentials && (
           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <div className="text-sm text-gray-500 mb-1">Endpoint URL</div>
+            <div className="bg-muted p-3 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-1">Endpoint URL</div>
               <div className="flex items-center gap-2">
-                <code className="text-sm font-mono text-gray-900">{FUSEKI_CONFIG.endpoint}</code>
+                <code className="text-sm font-mono text-foreground truncate max-w-[200px]">{envInfo.fusekiUrl}</code>
                 <button
-                  onClick={() => copyToClipboard(FUSEKI_CONFIG.endpoint)}
-                  className="p-1 hover:bg-gray-200 rounded"
+                  onClick={() => copyToClipboard(envInfo.fusekiUrl)}
+                  className="p-1 hover:bg-background rounded"
                 >
-                  <Copy className="w-4 h-4 text-gray-500" />
+                  <Copy className="w-4 h-4 text-muted-foreground" />
                 </button>
               </div>
             </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <div className="text-sm text-gray-500 mb-1">Admin Panel</div>
+            <div className="bg-muted p-3 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-1">Admin Panel</div>
               <div className="flex items-center gap-2">
                 <a
                   href={FUSEKI_CONFIG.adminEndpoint}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm font-mono text-green-600 hover:text-green-700 flex items-center gap-1"
+                  className="text-sm font-mono text-green-600 dark:text-green-500 hover:text-green-700 dark:hover:text-green-400 flex items-center gap-1"
                 >
                   {FUSEKI_CONFIG.adminEndpoint}
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </div>
             </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <div className="text-sm text-gray-500 mb-1">Tên đăng nhập</div>
+            <div className="bg-muted p-3 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-1">Tên đăng nhập</div>
               <div className="flex items-center gap-2">
-                <code className="text-sm font-mono text-gray-900 bg-green-100 px-2 py-1 rounded">
+                <code className="text-sm font-mono text-foreground bg-green-100 dark:bg-green-950/30 px-2 py-1 rounded">
                   {FUSEKI_CONFIG.username}
                 </code>
                 <button
                   onClick={() => copyToClipboard(FUSEKI_CONFIG.username)}
-                  className="p-1 hover:bg-gray-200 rounded"
+                  className="p-1 hover:bg-background rounded"
                 >
-                  <Copy className="w-4 h-4 text-gray-500" />
+                  <Copy className="w-4 h-4 text-muted-foreground" />
                 </button>
               </div>
             </div>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <div className="text-sm text-gray-500 mb-1">Mật khẩu</div>
+            <div className="bg-muted p-3 rounded-lg">
+              <div className="text-sm text-muted-foreground mb-1">Mật khẩu</div>
               <div className="flex items-center gap-2">
-                <code className="text-sm font-mono text-gray-900 bg-green-100 px-2 py-1 rounded">
+                <code className="text-sm font-mono text-foreground bg-green-100 dark:bg-green-950/30 px-2 py-1 rounded">
                   {FUSEKI_CONFIG.password}
                 </code>
                 <button
                   onClick={() => copyToClipboard(FUSEKI_CONFIG.password)}
-                  className="p-1 hover:bg-gray-200 rounded"
+                  className="p-1 hover:bg-background rounded"
                 >
-                  <Copy className="w-4 h-4 text-gray-500" />
+                  <Copy className="w-4 h-4 text-muted-foreground" />
                 </button>
               </div>
             </div>
@@ -449,13 +443,13 @@ LIMIT 50`,
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 flex-wrap">
         <button
           onClick={() => setActiveTab('datasets')}
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
             activeTab === 'datasets'
               ? 'bg-green-600 text-white'
-              : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+              : 'bg-card border border-border text-foreground hover:bg-muted'
           }`}
         >
           <div className="flex items-center gap-2">
@@ -468,7 +462,7 @@ LIMIT 50`,
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
             activeTab === 'query'
               ? 'bg-green-600 text-white'
-              : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+              : 'bg-card border border-border text-foreground hover:bg-muted'
           }`}
         >
           <div className="flex items-center gap-2">
@@ -481,7 +475,7 @@ LIMIT 50`,
           className={`px-4 py-2 rounded-lg font-medium transition-colors ${
             activeTab === 'compliance'
               ? 'bg-green-600 text-white'
-              : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+              : 'bg-card border border-border text-foreground hover:bg-muted'
           }`}
         >
           <div className="flex items-center gap-2">
@@ -489,6 +483,16 @@ LIMIT 50`,
             5-Star Compliance
           </div>
         </button>
+        
+        {/* Community Link */}
+        <Link
+          href="/admin/lod-cloud/community"
+          className="px-4 py-2 rounded-lg font-medium transition-colors bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 flex items-center gap-2 shadow-md"
+        >
+          <Users className="w-4 h-4" />
+          <Heart className="w-3 h-3" />
+          LOD Community Hub
+        </Link>
       </div>
 
       {/* Datasets Tab */}
@@ -499,17 +503,17 @@ LIMIT 50`,
             {datasets.map((dataset) => (
               <div
                 key={dataset.id}
-                className={`bg-white rounded-xl border p-5 transition-all cursor-pointer ${
+                className={`bg-card rounded-xl border p-5 transition-all cursor-pointer ${
                   selectedDataset === dataset.id
-                    ? 'border-green-500 ring-2 ring-green-100'
-                    : 'border-gray-200 hover:border-green-300'
+                    ? 'border-green-500 ring-2 ring-green-100 dark:ring-green-900'
+                    : 'border-border hover:border-green-300 dark:hover:border-green-700'
                 }`}
                 onClick={() => setSelectedDataset(dataset.id)}
               >
                 <div className="flex items-start justify-between mb-3">
                   <div>
-                    <h3 className="font-semibold text-gray-900">{dataset.name}</h3>
-                    <p className="text-sm text-gray-500">{dataset.description}</p>
+                    <h3 className="font-semibold text-foreground">{dataset.name}</h3>
+                    <p className="text-sm text-muted-foreground">{dataset.description}</p>
                   </div>
                   <div
                     className={`w-3 h-3 rounded-full ${
@@ -524,27 +528,27 @@ LIMIT 50`,
 
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Số Triple:</span>
-                    <span className="font-medium text-gray-900">
+                    <span className="text-muted-foreground">Số Triple:</span>
+                    <span className="font-medium text-foreground">
                       {dataset.triples.toLocaleString()}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Namespace:</span>
-                    <code className="text-xs text-green-600 truncate max-w-[150px]">
+                    <span className="text-muted-foreground">Namespace:</span>
+                    <code className="text-xs text-green-600 dark:text-green-500 truncate max-w-[150px]">
                       {dataset.namespace}
                     </code>
                   </div>
                 </div>
 
                 {/* Linked Datasets */}
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <div className="text-xs text-gray-500 mb-2">Liên kết với:</div>
+                <div className="mt-3 pt-3 border-t border-border">
+                  <div className="text-xs text-muted-foreground mb-2">Liên kết với:</div>
                   <div className="flex flex-wrap gap-1">
                     {dataset.linkedTo.map((link) => (
                       <span
                         key={link}
-                        className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded-full"
+                        className="px-2 py-1 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-xs rounded-full"
                       >
                         {link}
                       </span>
@@ -558,14 +562,14 @@ LIMIT 50`,
                     href={dataset.sparqlEndpoint}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-muted text-foreground rounded-lg text-sm hover:bg-muted/80"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <ExternalLink className="w-4 h-4" />
                     SPARQL
                   </a>
                   <button
-                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200"
+                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-lg text-sm hover:bg-green-200 dark:hover:bg-green-950/50"
                     onClick={(e) => {
                       e.stopPropagation();
                       // Trigger RDF download
@@ -581,12 +585,12 @@ LIMIT 50`,
           </div>
 
           {/* Dataset Links Visualization */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Link2 className="w-5 h-5 text-green-600" />
+          <div className="bg-card rounded-xl border border-border p-6">
+            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Link2 className="w-5 h-5 text-green-600 dark:text-green-500" />
               Sơ đồ Liên kết Dữ liệu
             </h3>
-            <div className="relative h-64 bg-gray-50 rounded-lg overflow-hidden">
+            <div className="relative h-64 bg-muted rounded-lg overflow-hidden">
               {/* Simple visualization */}
               <svg className="w-full h-full" viewBox="0 0 600 250">
                 {/* Nodes */}
@@ -645,9 +649,9 @@ LIMIT 50`,
           </div>
 
           {/* External Links */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-              <Globe className="w-5 h-5 text-green-600" />
+          <div className="bg-card rounded-xl border border-border p-6">
+            <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
+              <Globe className="w-5 h-5 text-green-600 dark:text-green-500" />
               Liên kết Bên ngoài
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -662,14 +666,14 @@ LIMIT 50`,
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="flex items-center gap-3 p-3 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
                 >
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Globe className="w-5 h-5 text-green-600" />
+                  <div className="w-10 h-10 bg-green-100 dark:bg-green-950/30 rounded-lg flex items-center justify-center">
+                    <Globe className="w-5 h-5 text-green-600 dark:text-green-500" />
                   </div>
                   <div>
-                    <div className="font-medium text-gray-900">{link.name}</div>
-                    <div className="text-sm text-gray-500">{link.desc}</div>
+                    <div className="font-medium text-foreground">{link.name}</div>
+                    <div className="text-sm text-muted-foreground">{link.desc}</div>
                   </div>
                 </a>
               ))}
@@ -682,18 +686,18 @@ LIMIT 50`,
       {activeTab === 'query' && (
         <div className="space-y-6">
           {/* Query Editor */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-card rounded-xl border border-border p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                <FileText className="w-5 h-5 text-green-600" />
+              <h3 className="font-semibold text-foreground flex items-center gap-2">
+                <FileText className="w-5 h-5 text-green-600 dark:text-green-500" />
                 Trình soạn thảo SPARQL
               </h3>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">Dataset:</span>
+                <span className="text-sm text-muted-foreground">Dataset:</span>
                 <select
                   value={selectedDataset}
                   onChange={(e) => setSelectedDataset(e.target.value)}
-                  className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                  className="px-3 py-1.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-card text-foreground"
                 >
                   {datasets.map((ds) => (
                     <option key={ds.id} value={ds.id}>
@@ -707,7 +711,7 @@ LIMIT 50`,
             <textarea
               value={sparqlQuery}
               onChange={(e) => setSparqlQuery(e.target.value)}
-              className="w-full h-64 p-4 font-mono text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50"
+              className="w-full h-64 p-4 font-mono text-sm border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-muted text-foreground"
               placeholder="Nhập truy vấn SPARQL..."
             />
 
@@ -717,7 +721,7 @@ LIMIT 50`,
                   <button
                     key={idx}
                     onClick={() => setSparqlQuery(sample.query)}
-                    className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                    className="px-3 py-1.5 text-sm bg-muted text-foreground rounded-lg hover:bg-muted/80"
                   >
                     {sample.name}
                   </button>
@@ -751,15 +755,15 @@ LIMIT 50`,
 
           {/* Query Results */}
           {queryResult && (
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <div className="bg-card rounded-xl border border-border p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
-                  <Server className="w-5 h-5 text-green-600" />
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  <Server className="w-5 h-5 text-green-600 dark:text-green-500" />
                   Kết quả ({queryResult.results.bindings.length} bản ghi)
                 </h3>
                 <button
                   onClick={() => copyToClipboard(JSON.stringify(queryResult, null, 2))}
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm bg-muted text-foreground rounded-lg hover:bg-muted/80"
                 >
                   <Copy className="w-4 h-4" />
                   Sao chép JSON
@@ -769,9 +773,9 @@ LIMIT 50`,
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-200">
+                    <tr className="border-b border-border">
                       {queryResult.head.vars.map((v) => (
-                        <th key={v} className="text-left py-2 px-3 font-medium text-gray-700 bg-gray-50">
+                        <th key={v} className="text-left py-2 px-3 font-medium text-foreground bg-muted">
                           ?{v}
                         </th>
                       ))}
@@ -779,9 +783,9 @@ LIMIT 50`,
                   </thead>
                   <tbody>
                     {queryResult.results.bindings.slice(0, 100).map((binding, idx) => (
-                      <tr key={idx} className="border-b border-gray-100 hover:bg-gray-50">
+                      <tr key={idx} className="border-b border-border hover:bg-muted/50">
                         {queryResult.head.vars.map((v) => (
-                          <td key={v} className="py-2 px-3 font-mono text-xs">
+                          <td key={v} className="py-2 px-3 font-mono text-xs text-foreground">
                             {binding[v]?.value || '-'}
                           </td>
                         ))}
@@ -799,11 +803,11 @@ LIMIT 50`,
       {activeTab === 'compliance' && (
         <div className="space-y-6">
           {/* 5-Star Rating */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-card rounded-xl border border-border p-6">
             <div className="text-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900 mb-2">CityLens LOD Compliance</h3>
+              <h3 className="text-xl font-bold text-foreground mb-2">CityLens LOD Compliance</h3>
               <div className="text-4xl mb-2">★★★★★</div>
-              <p className="text-green-600 font-medium">5-Star Linked Open Data</p>
+              <p className="text-green-600 dark:text-green-500 font-medium">5-Star Linked Open Data</p>
             </div>
 
             <div className="space-y-4">
@@ -811,21 +815,21 @@ LIMIT 50`,
                 <div
                   key={idx}
                   className={`p-4 rounded-lg border ${
-                    item.status ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                    item.status ? 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800' : 'bg-muted border-border'
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     {item.status ? (
-                      <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />
+                      <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-500 mt-0.5" />
                     ) : (
-                      <XCircle className="w-5 h-5 text-gray-400 mt-0.5" />
+                      <XCircle className="w-5 h-5 text-muted-foreground mt-0.5" />
                     )}
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-gray-900">{item.principle}</h4>
+                        <h4 className="font-semibold text-foreground">{item.principle}</h4>
                       </div>
-                      <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                      <p className="text-sm text-green-700 mt-2 flex items-start gap-1">
+                      <p className="text-sm text-muted-foreground mt-1">{item.description}</p>
+                      <p className="text-sm text-green-700 dark:text-green-400 mt-2 flex items-start gap-1">
                         <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
                         {item.details}
                       </p>
@@ -837,8 +841,8 @@ LIMIT 50`,
           </div>
 
           {/* Ontologies Used */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="font-semibold text-gray-900 mb-4">Ontology được sử dụng</h3>
+          <div className="bg-card rounded-xl border border-border p-6">
+            <h3 className="font-semibold text-foreground mb-4">Ontology được sử dụng</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
                 {
@@ -866,15 +870,15 @@ LIMIT 50`,
                   desc: 'Geographic query language',
                 },
               ].map((onto) => (
-                <div key={onto.prefix} className="p-4 bg-gray-50 rounded-lg">
+                <div key={onto.prefix} className="p-4 bg-muted rounded-lg">
                   <div className="flex items-center gap-2 mb-1">
-                    <code className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded">
+                    <code className="px-2 py-0.5 bg-green-100 dark:bg-green-950/30 text-green-700 dark:text-green-400 text-xs rounded">
                       {onto.prefix}:
                     </code>
-                    <span className="font-medium text-gray-900">{onto.name}</span>
+                    <span className="font-medium text-foreground">{onto.name}</span>
                   </div>
-                  <code className="text-xs text-gray-500 block mb-1">{onto.uri}</code>
-                  <p className="text-sm text-gray-600">{onto.desc}</p>
+                  <code className="text-xs text-muted-foreground block mb-1">{onto.uri}</code>
+                  <p className="text-sm text-muted-foreground">{onto.desc}</p>
                 </div>
               ))}
             </div>
