@@ -6,10 +6,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useAuth } from "@/components/providers/auth-provider";
+import { authService } from "@/lib/auth-service";
+import toast from 'react-hot-toast';
 
 export default function LoginPage() {
-  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -30,9 +30,52 @@ export default function LoginPage() {
         return;
       }
 
-      login(formData.email);
-    } catch (err) {
-      setError("Đăng nhập thất bại. Vui lòng thử lại.");
+      console.log('Attempting login with:', formData.email);
+
+      // Call real API
+      const response = await authService.login({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      console.log('Login successful:', response.user);
+
+      // Check user status
+      if (response.user.status !== 'approved') {
+        const statusMessage = `Tài khoản đang ở trạng thái: ${response.user.status}. Vui lòng chờ admin duyệt.`;
+        toast.error(statusMessage, {
+          duration: 5000,
+          icon: '⏳',
+        });
+        setError(statusMessage);
+        setIsLoading(false);
+        return;
+      }
+
+      // Success - show toast and redirect
+      toast.success(`Chào mừng ${response.user.full_name}! Đang chuyển đến dashboard...`, {
+        icon: '👋',
+        style: {
+          background: '#10b981',
+          color: '#fff',
+        },
+      });
+      
+      console.log('Redirecting to dashboard...');
+      
+      // Delay redirect to show toast
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 800);
+    } catch (err: any) {
+      console.error('Login error:', err);
+      const errorMessage = err?.response?.data?.detail || "Đăng nhập thất bại. Vui lòng kiểm tra email và mật khẩu.";
+      
+      toast.error(errorMessage, {
+        icon: '❌',
+      });
+      
+      setError(errorMessage);
       setIsLoading(false);
     }
   };

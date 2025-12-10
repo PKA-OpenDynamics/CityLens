@@ -1,0 +1,132 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix wgs84: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+@prefix fiware: <https://uri.fiware.org/ns/data-models#> .
+@prefix citylens: <https://citylens.vn/ontology/> .
+@prefix cl-data: <https://citylens.vn/data/> .
+@prefix cl-place: <https://citylens.vn/place/> .
+
+
+# =============================================================================
+# Traffic Flow Observations - Hanoi Major Roads
+# =============================================================================
+
+cl-data:traffic-kimma-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Kim Ma Street"@en ;
+    rdfs:label "Lưu lượng giao thông đường Kim Mã"@vi ;
+    citylens:roadName "Kim Ma" ;
+    citylens:congestionLevel "moderate" ;
+    citylens:averageSpeed "25.5"^^xsd:double ;
+    citylens:vehicleCount "1250"^^xsd:integer ;
+    citylens:travelTime "480"^^xsd:integer ;
+    citylens:freeFlowSpeed "50"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T08:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:BaDinh ;
+    dct:source <https://developer.tomtom.com/> ;
+    wgs84:lat "21.0312"^^xsd:double ;
+    wgs84:long "105.8123"^^xsd:double .
+
+cl-data:traffic-giangvo-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Giang Vo Street"@en ;
+    citylens:roadName "Giang Vo" ;
+    citylens:congestionLevel "heavy" ;
+    citylens:averageSpeed "12.8"^^xsd:double ;
+    citylens:vehicleCount "2150"^^xsd:integer ;
+    citylens:travelTime "850"^^xsd:integer ;
+    citylens:freeFlowSpeed "50"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T08:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:DongDa ;
+    wgs84:lat "21.0219"^^xsd:double ;
+    wgs84:long "105.8245"^^xsd:double .
+
+cl-data:traffic-nguyen-trai-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Nguyen Trai Street"@en ;
+    citylens:roadName "Nguyen Trai" ;
+    citylens:congestionLevel "severe" ;
+    citylens:averageSpeed "8.2"^^xsd:double ;
+    citylens:vehicleCount "3500"^^xsd:integer ;
+    citylens:travelTime "1200"^^xsd:integer ;
+    citylens:freeFlowSpeed "50"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T08:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:ThanhXuan ;
+    wgs84:lat "20.9985"^^xsd:double ;
+    wgs84:long "105.8121"^^xsd:double .
+
+cl-data:traffic-lang-ha-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Lang Ha Street"@en ;
+    citylens:roadName "Lang Ha" ;
+    citylens:congestionLevel "light" ;
+    citylens:averageSpeed "42.5"^^xsd:double ;
+    citylens:vehicleCount "650"^^xsd:integer ;
+    citylens:travelTime "280"^^xsd:integer ;
+    citylens:freeFlowSpeed "50"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T10:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:DongDa ;
+    wgs84:lat "21.0152"^^xsd:double ;
+    wgs84:long "105.8187"^^xsd:double .
+
+cl-data:traffic-cau-giay-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Cau Giay Street"@en ;
+    citylens:roadName "Cau Giay" ;
+    citylens:congestionLevel "moderate" ;
+    citylens:averageSpeed "28.0"^^xsd:double ;
+    citylens:vehicleCount "1580"^^xsd:integer ;
+    citylens:travelTime "520"^^xsd:integer ;
+    citylens:freeFlowSpeed "50"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T08:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:CauGiay ;
+    wgs84:lat "21.0355"^^xsd:double ;
+    wgs84:long "105.7845"^^xsd:double .
+
+cl-data:traffic-tran-duy-hung-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Tran Duy Hung Street"@en ;
+    citylens:roadName "Tran Duy Hung" ;
+    citylens:congestionLevel "heavy" ;
+    citylens:averageSpeed "15.5"^^xsd:double ;
+    citylens:vehicleCount "2850"^^xsd:integer ;
+    citylens:travelTime "780"^^xsd:integer ;
+    citylens:freeFlowSpeed "50"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T08:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:CauGiay ;
+    wgs84:lat "21.0089"^^xsd:double ;
+    wgs84:long "105.7912"^^xsd:double .
+
+cl-data:traffic-le-van-luong-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Le Van Luong Street"@en ;
+    citylens:roadName "Le Van Luong" ;
+    citylens:congestionLevel "severe" ;
+    citylens:averageSpeed "6.5"^^xsd:double ;
+    citylens:vehicleCount "4200"^^xsd:integer ;
+    citylens:travelTime "1450"^^xsd:integer ;
+    citylens:freeFlowSpeed "50"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T17:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:ThanhXuan ;
+    wgs84:lat "20.9892"^^xsd:double ;
+    wgs84:long "105.7989"^^xsd:double .
+
+cl-data:traffic-pham-hung-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Pham Hung Street"@en ;
+    citylens:roadName "Pham Hung" ;
+    citylens:congestionLevel "moderate" ;
+    citylens:averageSpeed "32.0"^^xsd:double ;
+    citylens:vehicleCount "1850"^^xsd:integer ;
+    citylens:travelTime "420"^^xsd:integer ;
+    citylens:freeFlowSpeed "60"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T14:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:NamTuLiem ;
+    wgs84:lat "21.0245"^^xsd:double ;
+    wgs84:long "105.7652"^^xsd:double .

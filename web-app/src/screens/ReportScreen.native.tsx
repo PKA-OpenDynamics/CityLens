@@ -2,7 +2,7 @@
 
 // Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,125 +11,333 @@ import {
   ScrollView,
   FlatList,
   Image,
+  Alert,
+  ActivityIndicator,
+  RefreshControl,
+  Modal,
+  TextInput,
+  Dimensions,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import reportsService, { Report } from '../services/reports';
+import commentsService, { Comment } from '../services/comments';
+import { useAuth } from '../contexts/AuthContext';
 
-interface ReportItem {
-  id: string;
-  title: string;
-  address: string;
-  time: string;
-  status: string;
+interface ReportItem extends Report {
+  displayStatus: string;
+  displayTime: string;
   imageUrl: string;
-  category: string;
 }
 
 const ReportScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
+  const { user } = useAuth();
   const [bottomIndex, setBottomIndex] = useState(0); // 0: Cộng đồng, 1: Cá nhân
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
+  const [communityReports, setCommunityReports] = useState<ReportItem[]>([]);
+  const [personalReports, setPersonalReports] = useState<ReportItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedReport, setSelectedReport] = useState<ReportItem | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [submittingComment, setSubmittingComment] = useState(false);
+  const [playingVideo, setPlayingVideo] = useState<{ uri: string; index: number } | null>(null);
 
-  // Mock data
-  const communityReports: ReportItem[] = [
-    {
-      id: '1',
-      title: 'Tình trạng xả rác bừa bãi xảy ra thường xuyên tại khu đô thị mới',
-      address: '77 Trần Nhân Tông, Phường X',
-      time: '1 ngày trước',
-      status: 'Đã xử lý',
-      imageUrl: 'https://images.unsplash.com/photo-1528323273322-d81458248d40?auto=format&fit=crop&w=400&q=80',
-      category: 'Văn minh đô thị',
-    },
-    {
-      id: '2',
-      title: 'Xả rác thải dân dụng bừa bãi ở ngã tư vị trí thu gom rác thải',
-      address: '227 Phạm Văn Đồng, Phường Y',
-      time: '2 ngày trước',
-      status: 'Đã xử lý',
-      imageUrl: 'https://picsum.photos/seed/report2/400/200',
-      category: 'Văn minh đô thị',
-    },
-    {
-      id: '3',
-      title: 'Chưa xử lý việc lấn chiếm trồng cây, lấn chiếm vỉa hè',
-      address: '17 Trần Hữu Dực, Phường Z',
-      time: '4 ngày trước',
-      status: 'Đã xử lý',
-      imageUrl: 'https://images.unsplash.com/photo-1501183638710-841dd1904471?auto=format&fit=crop&w=400&q=80',
-      category: 'Văn minh đô thị',
-    },
-    {
-      id: '4',
-      title: 'Có người lạ đang hành vi đáng nghi tại khu vực công cộng',
-      address: '123 Nguyễn Trãi, Phường A',
-      time: '3 giờ trước',
-      status: 'Chờ xử lý',
-      imageUrl: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&w=400&q=80',
-      category: 'An ninh trật tự',
-    },
-    {
-      id: '5',
-      title: 'Phát hiện hành vi trộm cắp tại cửa hàng tiện lợi',
-      address: '456 Lê Lợi, Phường B',
-      time: '5 giờ trước',
-      status: 'Đã tiếp nhận',
-      imageUrl: 'https://picsum.photos/seed/report5/400/200',
-      category: 'An ninh trật tự',
-    },
-    {
-      id: '6',
-      title: 'Xe đạp để sai quy định gây cản trở giao thông',
-      address: '789 Hoàng Diệu, Phường C',
-      time: '6 giờ trước',
-      status: 'Đã xử lý',
-      imageUrl: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?auto=format&fit=crop&w=400&q=80',
-      category: 'Văn minh đô thị',
-    },
-    {
-      id: '7',
-      title: 'Quảng cáo, rao vặt dán trái phép trên cột điện',
-      address: '321 Trường Chinh, Phường D',
-      time: '1 ngày trước',
-      status: 'Chờ xử lý',
-      imageUrl: 'https://picsum.photos/seed/report7/400/200',
-      category: 'Văn minh đô thị',
-    },
-    {
-      id: '8',
-      title: 'Nhóm người tụ tập gây ồn ào vào ban đêm',
-      address: '654 Điện Biên Phủ, Phường E',
-      time: '2 ngày trước',
-      status: 'Đã tiếp nhận',
-      imageUrl: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=400&q=80',
-      category: 'An ninh trật tự',
-    },
-  ];
+  // Helper function to format time
+  const formatTime = (dateString: string): string => {
+    try {
+      // Parse date string - handle both UTC and ISO format
+      let date: Date;
+      if (typeof dateString === 'string') {
+        // If dateString doesn't have timezone info, assume it's UTC
+        if (dateString.endsWith('Z') || dateString.includes('+') || dateString.includes('-', 10)) {
+          date = new Date(dateString);
+        } else {
+          // If no timezone, append Z to indicate UTC
+          date = new Date(dateString + (dateString.includes('T') ? 'Z' : ''));
+        }
+      } else {
+        date = new Date(dateString);
+      }
+      
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      
+      // Handle negative diff (future dates) - should not happen but just in case
+      if (diffMs < 0) {
+        return 'Vừa xong';
+      }
+      
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
 
-  const communityCategories = ['Tất cả', 'An ninh trật tự', 'Văn minh đô thị', 'Giao thông'];
-  const personalCategories = ['Tất cả', 'Bản nháp', 'Chờ xử lý', 'Đã tiếp nhận'];
+      if (diffMins < 1) return 'Vừa xong';
+      if (diffMins < 60) return `${diffMins} phút trước`;
+      if (diffHours < 24) return `${diffHours} giờ trước`;
+      if (diffDays < 7) return `${diffDays} ngày trước`;
+      return date.toLocaleDateString('vi-VN');
+    } catch (error) {
+      console.error('Error formatting time:', error, dateString);
+      return dateString;
+    }
+  };
 
-  const renderReportItem = ({ item }: { item: ReportItem }) => (
-    <TouchableOpacity
-      style={styles.reportCard}
-      onPress={() => navigation.navigate('ReportDetail', { report: item })}
-    >
-      <Image source={{ uri: item.imageUrl }} style={styles.reportImage} />
-      <View style={styles.reportContent}>
-        <Text style={styles.reportTitle} numberOfLines={2}>
-          {item.title}
-        </Text>
-        <Text style={styles.reportAddress} numberOfLines={1}>
-          {item.address}
-        </Text>
-        <View style={styles.reportFooter}>
-          <Text style={styles.reportTime}>{item.time}</Text>
-          <Text style={styles.reportStatus}>{item.status}</Text>
+  // Helper function to map status
+  const mapStatus = (status: string): string => {
+    const statusMap: { [key: string]: string } = {
+      'pending': 'Chờ xử lý',
+      'processing': 'Đang xử lý',
+      'resolved': 'Đã xử lý',
+      'rejected': 'Đã từ chối',
+      'draft': 'Bản nháp',
+    };
+    return statusMap[status] || status;
+  };
+
+  // Helper function to get first media URL
+  const getFirstMediaUrl = (report: Report): string => {
+    if (report.media && report.media.length > 0) {
+      return report.media[0].uri;
+    }
+    return '';
+  };
+
+  // Transform report data
+  const transformReport = useCallback((report: Report): ReportItem => {
+    return {
+      ...report,
+      displayStatus: mapStatus(report.status),
+      displayTime: formatTime(report.createdAt),
+      imageUrl: getFirstMediaUrl(report),
+    };
+  }, []);
+
+  // Fetch reports from API
+  const fetchReports = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+    setError(null);
+
+    try {
+      if (bottomIndex === 0) {
+        // Community reports - no userId filter, but filter by status if needed
+        let statusFilter: string | undefined = undefined;
+        if (selectedCategory === 'Chờ xử lý') {
+          statusFilter = 'pending';
+        } else if (selectedCategory === 'Đang xử lý') {
+          statusFilter = 'processing';
+        } else if (selectedCategory === 'Đã xử lý') {
+          statusFilter = 'resolved';
+        }
+
+        const response = await reportsService.getReports({
+          limit: 50,
+          status: statusFilter,
+        });
+
+        if (response.success && response.data) {
+          const transformed = response.data.map(transformReport);
+          setCommunityReports(transformed);
+        } else {
+          setCommunityReports([]);
+        }
+      } else {
+        // Personal reports - filter by userId
+        if (!user?._id && !user?.id) {
+          setPersonalReports([]);
+          if (isRefresh) {
+            setRefreshing(false);
+          } else {
+            setLoading(false);
+          }
+          return;
+        }
+
+        const userId = user?._id || user?.id;
+        let statusFilter: string | undefined = undefined;
+        
+        if (selectedCategory === 'Bản nháp') {
+          statusFilter = 'draft';
+        } else if (selectedCategory === 'Chờ xử lý') {
+          statusFilter = 'pending';
+        } else if (selectedCategory === 'Đang xử lý') {
+          statusFilter = 'processing';
+        } else if (selectedCategory === 'Đã xử lý') {
+          statusFilter = 'resolved';
+        }
+
+        const response = await reportsService.getReports({
+          limit: 50,
+          userId: userId,
+          status: statusFilter,
+        });
+
+        if (response.success && response.data) {
+          const transformed = response.data.map(transformReport);
+          setPersonalReports(transformed);
+        } else {
+          setPersonalReports([]);
+        }
+      }
+    } catch (err: any) {
+      console.error('Error fetching reports:', err);
+      setError(err.message || 'Không thể tải danh sách báo cáo');
+      if (bottomIndex === 0) {
+        setCommunityReports([]);
+      } else {
+        setPersonalReports([]);
+      }
+    } finally {
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
+    }
+  }, [bottomIndex, selectedCategory, user, transformReport]);
+
+  // Show success message if coming from CreateReportScreen and refresh reports
+  useEffect(() => {
+    if (route.params?.showSuccessMessage) {
+      const message = route.params?.message || 'Tạo phản ánh thành công';
+      
+      // Refresh reports to show the newly created one
+      fetchReports(false);
+      
+      // Use setTimeout to ensure screen is fully mounted before showing alert
+      const timer = setTimeout(() => {
+        Alert.alert('Thành công', message, [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Clear params after alert is dismissed
+              navigation.setParams({ showSuccessMessage: false, message: undefined });
+            }
+          }
+        ]);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [route.params?.showSuccessMessage, route.params?.message, navigation, fetchReports]);
+
+  // Fetch reports when tab or category changes
+  useEffect(() => {
+    fetchReports();
+  }, [fetchReports]);
+
+  // Handle pull-to-refresh
+  const handleRefresh = useCallback(() => {
+    fetchReports(true);
+  }, [fetchReports]);
+
+  // Fetch comments for a report
+  const fetchComments = async (reportId: string) => {
+    if (!reportId) return;
+    
+    try {
+      const commentsData = await commentsService.getComments(reportId);
+      setComments(commentsData);
+    } catch (err) {
+      console.error('Error fetching comments:', err);
+      setComments([]);
+    }
+  };
+
+  // Submit a new comment
+  const handleSubmitComment = async () => {
+    if (!newComment.trim() || !selectedReport) return;
+    
+    setSubmittingComment(true);
+    try {
+      const userId = user?._id || user?.id;
+      const userName = user?.full_name || user?.username;
+      
+      const newCommentData = await commentsService.addComment(
+        selectedReport._id,
+        newComment.trim(),
+        userId || undefined,
+        userName || undefined
+      );
+      
+      // Add the new comment to the list
+      setComments([...comments, newCommentData]);
+      setNewComment('');
+    } catch (err: any) {
+      Alert.alert('Lỗi', err.message || 'Không thể thêm bình luận');
+    } finally {
+      setSubmittingComment(false);
+    }
+  };
+
+  const communityCategories = ['Tất cả', 'Chờ xử lý', 'Đang xử lý', 'Đã xử lý'];
+  const personalCategories = ['Tất cả', 'Bản nháp', 'Chờ xử lý', 'Đang xử lý', 'Đã xử lý'];
+
+  const renderReportItem = ({ item }: { item: ReportItem }) => {
+    const isVideo = item.media && item.media.length > 0 && item.media[0].type === 'video';
+    const address = item.addressDetail || item.ward || 'Không có địa chỉ';
+    
+    return (
+      <TouchableOpacity
+        style={styles.reportCard}
+        onPress={() => {
+          setSelectedReport(item);
+          setShowDetailModal(true);
+          fetchComments(item._id || '');
+        }}
+      >
+        <View style={styles.reportImageContainer}>
+          {isVideo ? (
+            <View style={styles.videoThumbnail}>
+              <MaterialIcons name="videocam" size={32} color="#FFFFFF" />
+              <View style={styles.videoBadge}>
+                <MaterialIcons name="play-circle-filled" size={20} color="#FFFFFF" />
+              </View>
+            </View>
+          ) : (
+            item.imageUrl ? (
+              <Image 
+                source={{ uri: item.imageUrl }} 
+                style={styles.reportImage}
+              />
+            ) : (
+              <View style={styles.placeholderImage}>
+                <MaterialIcons name="image" size={32} color="#9CA3AF" />
+              </View>
+            )
+          )}
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+        <View style={styles.reportContent}>
+          <Text style={styles.reportTitle} numberOfLines={2}>
+            {item.title || (item.content ? item.content.substring(0, 50) + (item.content.length > 50 ? '...' : '') : 'Không có tiêu đề')}
+          </Text>
+          {item.title ? (
+            <Text style={styles.reportContentText} numberOfLines={2}>
+              {item.content}
+            </Text>
+          ) : null}
+          <Text style={styles.reportAddress} numberOfLines={1}>
+            {address}
+          </Text>
+          <View style={styles.reportFooter}>
+            <Text style={styles.reportTime}>{item.displayTime}</Text>
+            <Text style={styles.reportStatus}>{item.displayStatus}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderCategoryChips = () => {
     const categories = bottomIndex === 0 ? communityCategories : personalCategories;
@@ -163,11 +371,7 @@ const ReportScreen: React.FC = () => {
     );
   };
 
-  const filteredReports = bottomIndex === 0
-    ? selectedCategory === 'Tất cả'
-      ? communityReports
-      : communityReports.filter(report => report.category === selectedCategory)
-    : [];
+  const filteredReports = bottomIndex === 0 ? communityReports : personalReports;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -186,20 +390,48 @@ const ReportScreen: React.FC = () => {
         <View style={styles.divider} />
 
         <View style={styles.tabContent}>
-          {bottomIndex === 0 ? (
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#20A957" />
+              <Text style={styles.loadingText}>Đang tải...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.emptyState}>
+              <MaterialIcons name="error-outline" size={48} color="#EF4444" />
+              <Text style={styles.errorText}>{error}</Text>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={() => fetchReports(false)}
+              >
+                <Text style={styles.retryButtonText}>Thử lại</Text>
+              </TouchableOpacity>
+            </View>
+          ) : filteredReports.length === 0 ? (
+            <View style={styles.emptyState}>
+              <MaterialIcons name="inbox" size={48} color="#9CA3AF" />
+              <Text style={styles.emptyText}>
+                {bottomIndex === 0 
+                  ? 'Chưa có phản ánh nào từ cộng đồng.'
+                  : 'Các phản ánh của bạn sẽ hiển thị tại đây.'}
+              </Text>
+            </View>
+          ) : (
             <FlatList
               data={filteredReports}
               renderItem={renderReportItem}
-              keyExtractor={(item) => item.id}
+              keyExtractor={(item, index) => item._id || `report-${index}`}
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={true}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={handleRefresh}
+                  colors={['#20A957']}
+                  tintColor="#20A957"
+                  progressBackgroundColor="#FFFFFF"
+                />
+              }
             />
-          ) : (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>
-                Các phản ánh của bạn sẽ hiển thị tại đây.
-              </Text>
-            </View>
           )}
         </View>
       </View>
@@ -208,7 +440,10 @@ const ReportScreen: React.FC = () => {
       <View style={styles.bottomNav}>
         <TouchableOpacity
           style={styles.bottomNavItem}
-          onPress={() => setBottomIndex(0)}
+          onPress={() => {
+            setBottomIndex(0);
+            setSelectedCategory('Tất cả');
+          }}
         >
           <MaterialIcons
             name="public"
@@ -226,16 +461,22 @@ const ReportScreen: React.FC = () => {
         </TouchableOpacity>
 
         {/* Floating Action Button - Tích hợp vào bottom nav */}
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => navigation.navigate('CreateReport')}
-        >
-          <MaterialIcons name="add" size={28} color="#FFFFFF" />
-        </TouchableOpacity>
+        <View style={styles.fabWrapper}>
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() => navigation.navigate('CreateReport')}
+          >
+            <MaterialIcons name="add" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.fabLabel}>Tạo phản ánh</Text>
+        </View>
 
         <TouchableOpacity
           style={styles.bottomNavItem}
-          onPress={() => setBottomIndex(1)}
+          onPress={() => {
+            setBottomIndex(1);
+            setSelectedCategory('Tất cả');
+          }}
         >
           <MaterialIcons
             name="person"
@@ -252,6 +493,213 @@ const ReportScreen: React.FC = () => {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Report Detail Modal */}
+      <Modal
+        visible={showDetailModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowDetailModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {selectedReport && (
+              <>
+                {/* Modal Header */}
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Chi tiết phản ánh</Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setShowDetailModal(false);
+                      setSelectedReport(null);
+                      setComments([]);
+                      setNewComment('');
+                    }}
+                  >
+                    <MaterialIcons name="close" size={24} color="#111827" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Modal Body */}
+                <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={true}>
+                  {/* Report Images/Media */}
+                  {selectedReport.media && selectedReport.media.length > 0 && (
+                    <ScrollView 
+                      horizontal 
+                      pagingEnabled 
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.mediaScrollView}
+                    >
+                      {selectedReport.media.map((media, index) => (
+                        <View key={index} style={styles.mediaItem}>
+                          {media.type === 'video' ? (
+                            <TouchableOpacity
+                              style={styles.videoContainer}
+                              onPress={() => setPlayingVideo({ uri: media.uri, index })}
+                              activeOpacity={0.8}
+                            >
+                              <MaterialIcons name="videocam" size={48} color="#FFFFFF" />
+                              <View style={styles.videoBadgeLarge}>
+                                <MaterialIcons name="play-circle-filled" size={32} color="#FFFFFF" />
+                              </View>
+                            </TouchableOpacity>
+                          ) : (
+                            <Image 
+                              source={{ uri: media.uri }} 
+                              style={styles.mediaImage}
+                              resizeMode="cover"
+                            />
+                          )}
+                        </View>
+                      ))}
+                    </ScrollView>
+                  )}
+
+                  {/* Report Content */}
+                  <View style={styles.modalReportContent}>
+                    <Text style={styles.modalReportTitle}>
+                      {selectedReport.title || 'Không có tiêu đề'}
+                    </Text>
+                    
+                    <Text style={styles.modalReportText}>
+                      {selectedReport.content}
+                    </Text>
+
+                    <View style={styles.modalReportInfo}>
+                      <View style={styles.modalInfoRow}>
+                        <MaterialIcons name="category" size={18} color="#6B7280" />
+                        <Text style={styles.modalInfoText}>{selectedReport.reportType}</Text>
+                      </View>
+                      <View style={styles.modalInfoRow}>
+                        <MaterialIcons name="place" size={18} color="#6B7280" />
+                        <Text style={styles.modalInfoText}>
+                          {selectedReport.addressDetail || selectedReport.ward || 'Không có địa chỉ'}
+                        </Text>
+                      </View>
+                      <View style={styles.modalInfoRow}>
+                        <MaterialIcons name="schedule" size={18} color="#6B7280" />
+                        <Text style={styles.modalInfoText}>{selectedReport.displayTime}</Text>
+                      </View>
+                      <View style={styles.modalInfoRow}>
+                        <MaterialIcons name="info" size={18} color="#6B7280" />
+                        <Text style={styles.modalInfoText}>{selectedReport.displayStatus}</Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  {/* Comments Section */}
+                  <View style={styles.commentsSection}>
+                    <Text style={styles.commentsTitle}>
+                      Bình luận ({comments.length})
+                    </Text>
+
+                    {/* Comments List */}
+                    {comments.length === 0 ? (
+                      <View style={styles.noComments}>
+                        <MaterialIcons name="comment" size={32} color="#9CA3AF" />
+                        <Text style={styles.noCommentsText}>Chưa có bình luận nào</Text>
+                      </View>
+                    ) : (
+                      <View style={styles.commentsList}>
+                        {comments.map((comment) => (
+                          <View key={comment._id} style={styles.commentItem}>
+                            <View style={styles.commentHeader}>
+                              <View style={styles.commentAvatar}>
+                                <MaterialIcons name="account-circle" size={32} color="#20A957" />
+                              </View>
+                              <View style={styles.commentContent}>
+                                <Text style={styles.commentAuthor}>
+                                  {comment.userName || 'Người dùng'}
+                                </Text>
+                                <Text style={styles.commentTime}>
+                                  {formatTime(comment.createdAt)}
+                                </Text>
+                              </View>
+                            </View>
+                            <Text style={styles.commentText}>{comment.content}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                </ScrollView>
+
+                {/* Comment Input */}
+                <View style={styles.commentInputContainer}>
+                  <TextInput
+                    style={styles.commentInput}
+                    placeholder="Viết bình luận..."
+                    placeholderTextColor="#9CA3AF"
+                    value={newComment}
+                    onChangeText={setNewComment}
+                    multiline
+                    maxLength={500}
+                  />
+                  <TouchableOpacity
+                    style={[
+                      styles.commentSendButton,
+                      (!newComment.trim() || submittingComment) && styles.commentSendButtonDisabled
+                    ]}
+                    onPress={handleSubmitComment}
+                    disabled={!newComment.trim() || submittingComment}
+                  >
+                    {submittingComment ? (
+                      <ActivityIndicator size="small" color="#FFFFFF" />
+                    ) : (
+                      <MaterialIcons name="send" size={20} color="#FFFFFF" />
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
+
+      {/* Video Player Modal */}
+      <Modal
+        visible={playingVideo !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPlayingVideo(null)}
+      >
+        <View style={styles.videoPlayerOverlay}>
+          <TouchableOpacity
+            style={styles.videoPlayerCloseButton}
+            onPress={() => setPlayingVideo(null)}
+          >
+            <MaterialIcons name="close" size={28} color="#FFFFFF" />
+          </TouchableOpacity>
+          
+          {playingVideo && (
+            <View style={styles.videoPlayerContainer}>
+              {Platform.OS === 'web' ? (
+                // @ts-ignore - HTML video element for web
+                <video
+                  style={styles.videoPlayer}
+                  controls
+                  autoPlay
+                  playsInline
+                  src={playingVideo.uri}
+                >
+                  Trình duyệt của bạn không hỗ trợ video.
+                </video>
+              ) : (
+                // For native platforms, show a message to use a video player library
+                <View style={styles.videoPlayerNative}>
+                  <MaterialIcons name="videocam" size={64} color="#FFFFFF" />
+                  <Text style={styles.videoPlayerNativeText}>
+                    Video: {playingVideo.uri.substring(0, 50)}...
+                  </Text>
+                  <Text style={styles.videoPlayerNativeHint}>
+                    Để phát video trên thiết bị di động, cần cài đặt thư viện video player
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -336,10 +784,40 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  reportImage: {
+  reportImageContainer: {
     width: 100,
     height: 80,
     backgroundColor: '#E5E7EB',
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  reportImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#E5E7EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoThumbnail: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#1F2937',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  videoBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 12,
+    padding: 4,
   },
   reportContent: {
     flex: 1,
@@ -350,6 +828,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#111827',
+    marginBottom: 4,
+  },
+  reportContentText: {
+    fontSize: 12,
+    color: '#6B7280',
     marginBottom: 4,
   },
   reportAddress: {
@@ -371,6 +854,17 @@ const styles = StyleSheet.create({
     color: '#10B981',
     fontWeight: '600',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B7280',
+  },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
@@ -381,6 +875,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
+    marginTop: 12,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#EF4444',
+    textAlign: 'center',
+    marginTop: 12,
+    marginBottom: 16,
+  },
+  retryButton: {
+    backgroundColor: '#20A957',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   fab: {
     width: 56,
@@ -396,9 +909,19 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     marginTop: -28, // Nổi lên trên navigation bar
   },
+  fabWrapper: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  fabLabel: {
+    marginTop: 6,
+    fontSize: 11,
+    color: '#20A957',
+    fontWeight: '600',
+  },
   bottomNav: {
     flexDirection: 'row',
-    height: 60,
+    height: 76,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 0.5,
     borderTopColor: '#E5E7EB',
@@ -419,6 +942,231 @@ const styles = StyleSheet.create({
   bottomNavLabelActive: {
     color: '#20A957',
     fontWeight: '600',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: Dimensions.get('window').height * 0.67, // 2/3 of screen
+    maxHeight: '67%',
+    flexDirection: 'column',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  modalBody: {
+    flex: 1,
+  },
+  mediaScrollView: {
+    maxHeight: 200,
+  },
+  mediaItem: {
+    width: Dimensions.get('window').width,
+    height: 200,
+  },
+  mediaImage: {
+    width: '100%',
+    height: '100%',
+  },
+  videoContainer: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#1F2937',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  videoBadgeLarge: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 20,
+    padding: 8,
+  },
+  modalReportContent: {
+    padding: 16,
+  },
+  modalReportTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+  },
+  modalReportText: {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  modalReportInfo: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 12,
+  },
+  modalInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalInfoText: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginLeft: 8,
+    flex: 1,
+  },
+  commentsSection: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    marginTop: 16,
+  },
+  commentsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 16,
+  },
+  noComments: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 32,
+  },
+  noCommentsText: {
+    fontSize: 14,
+    color: '#9CA3AF',
+    marginTop: 8,
+  },
+  commentsList: {
+    gap: 16,
+  },
+  commentItem: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+  },
+  commentHeader: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  commentAvatar: {
+    marginRight: 8,
+  },
+  commentContent: {
+    flex: 1,
+  },
+  commentAuthor: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  commentTime: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  commentText: {
+    fontSize: 14,
+    color: '#374151',
+    lineHeight: 20,
+  },
+  commentInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
+  },
+  commentInput: {
+    flex: 1,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    maxHeight: 100,
+    fontSize: 14,
+    color: '#111827',
+    marginRight: 8,
+  },
+  commentSendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#20A957',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  commentSendButtonDisabled: {
+    opacity: 0.5,
+  },
+  // Video Player Modal styles
+  videoPlayerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoPlayerCloseButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoPlayerContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  videoPlayer: {
+    width: '100%',
+    maxWidth: Dimensions.get('window').width,
+    height: 'auto',
+    maxHeight: Dimensions.get('window').height * 0.7,
+    backgroundColor: '#000000',
+  },
+  videoPlayerNative: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  videoPlayerNativeText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  videoPlayerNativeHint: {
+    color: '#9CA3AF',
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: 'center',
   },
 });
 

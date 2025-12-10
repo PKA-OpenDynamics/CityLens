@@ -7,6 +7,7 @@ import './globals.css';
 import 'leaflet/dist/leaflet.css';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { AuthProvider } from '@/components/providers/auth-provider';
+import { Toaster } from 'react-hot-toast';
 
 const inter = Inter({ 
   subsets: ['latin', 'vietnamese'],
@@ -37,6 +38,30 @@ export default function RootLayout({
           <AuthProvider>
             {children}
           </AuthProvider>
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                background: '#363636',
+                color: '#fff',
+              },
+              success: {
+                duration: 3000,
+                iconTheme: {
+                  primary: '#10b981',
+                  secondary: '#fff',
+                },
+              },
+              error: {
+                duration: 4000,
+                iconTheme: {
+                  primary: '#ef4444',
+                  secondary: '#fff',
+                },
+              },
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>

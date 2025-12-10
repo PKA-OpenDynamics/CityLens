@@ -5,70 +5,106 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { authService, UserProfile } from "@/lib/auth-service";
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  userEmail: string | null;
-  login: (email: string) => void;
+  user: UserProfile | null;
+  login: () => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
-  userEmail: null,
+  user: null,
   login: () => {},
   logout: () => {},
+  refreshUser: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     // Check authentication on mount
-    const authStatus = localStorage.getItem("isAuthenticated");
-    const email = localStorage.getItem("userEmail");
+    const checkAuth = async () => {
+      const isAuth = authService.isAuthenticated();
+      const storedUser = authService.getStoredUser();
 
-    if (authStatus === "true" && email) {
-      setIsAuthenticated(true);
-      setUserEmail(email);
-    }
+      if (isAuth && storedUser) {
+        setIsAuthenticated(true);
+        setUser(storedUser);
+        
+        // Optionally refresh user profile from server
+        try {
+          const freshUser = await authService.getProfile();
+          setUser(freshUser);
+        } catch (error) {
+          console.error('Failed to refresh user profile:', error);
+          // Keep using stored user if refresh fails
+        }
+      }
 
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    checkAuth();
   }, []);
 
   useEffect(() => {
     // Redirect logic
     if (isLoading) return;
 
-    const publicPaths = ["/login", "/signup"];
+    const publicPaths = ["/login", "/signup", "/"];
     const isPublicPath = publicPaths.includes(pathname);
 
+    // If not authenticated and trying to access protected route
     if (!isAuthenticated && !isPublicPath) {
       router.push("/login");
+      return;
     }
 
-    if (isAuthenticated && isPublicPath) {
+    // If authenticated and on login/signup page, redirect to dashboard
+    if (isAuthenticated && (pathname === "/login" || pathname === "/signup")) {
       router.push("/dashboard");
+      return;
     }
+
+    // Home page is handled by its own useEffect
   }, [isAuthenticated, pathname, router, isLoading]);
 
-  const login = (email: string) => {
-    localStorage.setItem("isAuthenticated", "true");
-    localStorage.setItem("userEmail", email);
-    setIsAuthenticated(true);
-    setUserEmail(email);
+  const login = () => {
+    // This is called after successful API login
+    const storedUser = authService.getStoredUser();
+    if (storedUser) {
+      setIsAuthenticated(true);
+      setUser(storedUser);
+    }
   };
 
   const logout = () => {
-    localStorage.removeItem("isAuthenticated");
-    localStorage.removeItem("userEmail");
+    authService.logout();
     setIsAuthenticated(false);
-    setUserEmail(null);
+    setUser(null);
     router.push("/login");
+  };
+
+  const refreshUser = async () => {
+    try {
+      const freshUser = await authService.getProfile();
+      setUser(freshUser);
+    } catch (error) {
+      console.error('Failed to refresh user:', error);
+      // If refresh fails with 401, logout
+      if ((error as any)?.response?.status === 401) {
+        logout();
+      }
+    }
   };
 
   if (isLoading) {
@@ -83,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, userEmail, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

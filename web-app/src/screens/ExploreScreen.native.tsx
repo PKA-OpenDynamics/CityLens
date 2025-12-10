@@ -25,6 +25,13 @@ import Avatar from '../components/Avatar';
 import { authService, User } from '../services/auth';
 import { weatherService, RealtimeWeatherResponse, ForecastPoint } from '../services/weather';
 
+// Ngã Tư Sở - Quận Thanh Xuân, Hà Nội
+const DEFAULT_LOCATION = {
+  lat: 21.003204,
+  lon: 105.819673,
+};
+const DEFAULT_LOCATION_NAME = 'Ngã Tư Sở, Quận Thanh Xuân, Hà Nội';
+
 /**
  * ExploreScreen (native)
  * Được port thủ công từ Flutter `lib/screens/explore_screen.dart`.
@@ -150,60 +157,22 @@ const ExploreScreen: React.FC = () => {
   const [weatherData, setWeatherData] = useState<RealtimeWeatherResponse | null>(null);
   const [forecastData, setForecastData] = useState<ForecastPoint[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null);
+  const [userLocation] = useState<{ lat: number; lon: number }>({
+    lat: DEFAULT_LOCATION.lat,
+    lon: DEFAULT_LOCATION.lon,
+  });
   const [locationId, setLocationId] = useState<string | null>(null);
 
   useEffect(() => {
     loadUserInfo();
-    getCurrentLocation();
+    loadWeatherData();
   }, []);
-
-  useEffect(() => {
-    if (userLocation) {
-      loadWeatherData();
-    }
-  }, [userLocation]);
 
   useEffect(() => {
     if (locationId) {
       loadForecastData();
     }
   }, [locationId]);
-
-  const getCurrentLocation = () => {
-    if (Platform.OS === 'web') {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            setUserLocation({
-              lat: position.coords.latitude,
-              lon: position.coords.longitude,
-            });
-          },
-          (error) => {
-            // Silently handle geolocation errors (user denied, timeout, etc.)
-            // Default to Hoàn Kiếm (Hồ Gươm), Hà Nội if geolocation fails
-            if (error.code !== 1) { // Only log if not user denied
-              console.warn('Geolocation error:', error.message);
-            }
-            setUserLocation({ lat: 21.0285, lon: 105.8542 }); // Hoàn Kiếm, Hà Nội
-          },
-          {
-            timeout: 10000,
-            maximumAge: 60000,
-            enableHighAccuracy: false
-          }
-        );
-      } else {
-        // Default to Hoàn Kiếm (Hồ Gươm), Hà Nội if geolocation not available
-        setUserLocation({ lat: 21.0285, lon: 105.8542 }); // Hoàn Kiếm, Hà Nội
-      }
-    } else {
-      // For native, you might want to use expo-location
-      // For now, default to Hoàn Kiếm (Hồ Gươm), Hà Nội
-      setUserLocation({ lat: 21.0285, lon: 105.8542 }); // Hoàn Kiếm, Hà Nội
-    }
-  };
 
   const loadUserInfo = async () => {
     try {
@@ -320,7 +289,7 @@ const ExploreScreen: React.FC = () => {
                 <View style={styles.headerTitleRow}>
                   <Text style={styles.headerTitle}>Explore CityLens</Text>
                 </View>
-                <Text style={styles.headerLocation}>Hoàn Kiếm, Hà Nội</Text>
+                <Text style={styles.headerLocation}>{DEFAULT_LOCATION_NAME}</Text>
               </View>
 
               <View style={styles.headerAvatarWrapper}>

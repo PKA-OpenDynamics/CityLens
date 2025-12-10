@@ -22,6 +22,7 @@ redis==5.0.1
 # Authentication & Security
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt==4.1.2
 email-validator==2.1.0
 
 # File Upload & Media
@@ -49,3 +50,7 @@ osmium==3.7.0
 
 # Python Environment
 python-dotenv==1.0.0
+
+# AI & ML
+google-genai>=0.2.0
+protobuf>=3.19.5,<5.0.0
