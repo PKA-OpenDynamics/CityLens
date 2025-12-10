@@ -20,19 +20,25 @@ const getRawApiBaseUrl = (): string => {
 };
 
 /**
- * Tự động upgrade HTTP sang HTTPS cho production (Cloudflare Tunnels)
- * Giữ nguyên HTTP cho localhost development
+ * Tự động upgrade HTTP sang HTTPS cho production
+ * - Giữ nguyên HTTP cho localhost development
+ * - Luôn upgrade sang HTTPS cho tất cả domain khác (đặc biệt Cloudflare Tunnels)
  */
 const ensureHttps = (url: string): string => {
   if (!url) return url;
+  
   // Giữ nguyên HTTP cho localhost development
   if (url.includes('localhost') || url.includes('127.0.0.1')) {
     return url;
   }
-  // Upgrade HTTP sang HTTPS cho production (Cloudflare Tunnels luôn hỗ trợ HTTPS)
-  if (url.startsWith('http://') && url.includes('.trycloudflare.com')) {
+  
+  // LUÔN upgrade HTTP sang HTTPS cho bất kỳ domain nào không phải localhost
+  // Điều này đảm bảo Mixed Content không xảy ra trên production
+  if (url.startsWith('http://')) {
+    console.log('[ENV] Upgrading HTTP to HTTPS:', url);
     return url.replace('http://', 'https://');
   }
+  
   return url;
 };
 
