@@ -19,13 +19,13 @@ export const TOMTOM_API_KEY =
  * Chỉ cần base URL (ví dụ: http://localhost:8000)
  * Code sẽ tự thêm /api/v1 nếu chưa có
  * 
- * Production (Cloudflare Tunnel): https://scholar-restrict-fisher-physician.trycloudflare.com
+ * Production (Cloudflare Tunnel): https://rooms-tools-kirk-nelson.trycloudflare.com
  * Local Development: http://localhost:8000
  */
 export const WEATHER_API_BASE_URL =
   (Constants.expoConfig?.extra as any)?.weatherApiBaseUrl ||
   (typeof process !== 'undefined' && process.env?.WEATHER_API_BASE_URL) ||
-  'https://scholar-restrict-fisher-physician.trycloudflare.com';
+  'https://rooms-tools-kirk-nelson.trycloudflare.com';
 
 /**
  * MongoDB Atlas Connection String
@@ -49,27 +49,27 @@ export const MONGODB_DB_NAME =
  * API Base URL for Reports (Backend API)
  * Now using FastAPI backend at /api/v1/app/reports
  * 
- * Production (Cloudflare Tunnel): https://scholar-restrict-fisher-physician.trycloudflare.com/api/v1/app
+ * Production (Cloudflare Tunnel): https://rooms-tools-kirk-nelson.trycloudflare.com/api/v1/app
  * Local Development: http://localhost:8000/api/v1/app
  */
 export const REPORTS_API_BASE_URL =
   (Constants.expoConfig?.extra as any)?.reportsApiBaseUrl ||
   (typeof process !== 'undefined' && process.env?.REPORTS_API_BASE_URL) ||
   process.env?.EXPO_PUBLIC_REPORTS_API_BASE_URL ||
-  'https://scholar-restrict-fisher-physician.trycloudflare.com/api/v1/app';
+  'https://rooms-tools-kirk-nelson.trycloudflare.com/api/v1/app';
 
 /**
  * API Base URL for Authentication (Backend API)
  * Now using FastAPI backend at /api/v1/app/auth
  * 
- * Production (Cloudflare Tunnel): https://scholar-restrict-fisher-physician.trycloudflare.com/api/v1/app
+ * Production (Cloudflare Tunnel): https://rooms-tools-kirk-nelson.trycloudflare.com/api/v1/app
  * Local Development: http://localhost:8000/api/v1/app
  */
 export const AUTH_API_BASE_URL =
   (Constants.expoConfig?.extra as any)?.authApiBaseUrl ||
   (typeof process !== 'undefined' && process.env?.AUTH_API_BASE_URL) ||
   process.env?.EXPO_PUBLIC_AUTH_API_BASE_URL ||
-  'https://scholar-restrict-fisher-physician.trycloudflare.com/api/v1/app';
+  'https://rooms-tools-kirk-nelson.trycloudflare.com/api/v1/app';
 
 /**
  * Kiểm tra xem API key đã được cấu hình chưa
