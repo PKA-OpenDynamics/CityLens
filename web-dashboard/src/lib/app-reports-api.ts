@@ -190,14 +190,67 @@ export const appReportsApi = {
   },
 
   /**
-   * Update report status (Admin only)
+   * Create a new report (Admin only)
+   * Uses admin authentication to create report in MongoDB Atlas
+   */
+  createReport: async (
+    data: {
+      reportType: string;
+      ward: string;
+      addressDetail?: string;
+      title?: string;
+      content: string;
+      location?: LocationData;
+      media?: MediaItem[];
+      userId?: string;
+    },
+    token?: string
+  ): Promise<AppReportResponse> => {
+    try {
+      const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null);
+      
+      const headers: Record<string, string> = {};
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+      
+      const response = await apiClient.post<AppReportResponse>(
+        '/app/reports/admin',
+        data,
+        { headers }
+      );
+      
+      // Invalidate cache after successful creation
+      if (response.success) {
+        apiCache.invalidatePattern(/^\/app\/reports/);
+      }
+      
+      return response;
+    } catch (error: any) {
+      console.error('Error creating report:', error);
+      return {
+        success: false,
+        data: {} as any,
+      };
+    }
+  },
+
+  /**
+   * Update report (Admin only)
    * Invalidates cache after successful update
    */
   updateStatus: async (
     reportId: string,
-    status: string,
+    status?: string,
     adminNote?: string,
-    token?: string
+    token?: string,
+    updateData?: {
+      title?: string;
+      content?: string;
+      reportType?: string;
+      ward?: string;
+      addressDetail?: string;
+    }
   ): Promise<AppReportResponse> => {
     try {
       // Get token from parameter or localStorage
@@ -210,7 +263,7 @@ export const appReportsApi = {
       
       const response = await apiClient.put<AppReportResponse>(
         `/app/reports/${reportId}`,
-        { status, adminNote },
+        { status, adminNote, ...updateData },
         { headers }
       );
       
@@ -221,8 +274,52 @@ export const appReportsApi = {
       
       return response;
     } catch (error: any) {
-      console.error('Error updating report status:', error);
+      console.error('Error updating report:', error);
       // Return error response instead of throwing to prevent logout
+      return {
+        success: false,
+        data: {} as any,
+      };
+    }
+  },
+
+  /**
+   * Update report full data (Admin only)
+   */
+  updateReport: async (
+    reportId: string,
+    data: {
+      title?: string;
+      content?: string;
+      reportType?: string;
+      ward?: string;
+      addressDetail?: string;
+      status?: string;
+      adminNote?: string;
+    },
+    token?: string
+  ): Promise<AppReportResponse> => {
+    try {
+      const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null);
+      
+      const headers: Record<string, string> = {};
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+      
+      const response = await apiClient.put<AppReportResponse>(
+        `/app/reports/${reportId}`,
+        data,
+        { headers }
+      );
+      
+      if (response.success) {
+        apiCache.invalidatePattern(/^\/app\/reports/);
+      }
+      
+      return response;
+    } catch (error: any) {
+      console.error('Error updating report:', error);
       return {
         success: false,
         data: {} as any,
@@ -234,12 +331,28 @@ export const appReportsApi = {
    * Delete a report (Admin only)
    */
   deleteReport: async (reportId: string, token?: string): Promise<{ success: boolean; message: string }> => {
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    try {
+      const authToken = token || (typeof window !== 'undefined' ? localStorage.getItem('admin_token') : null);
+      
+      const headers: Record<string, string> = {};
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`;
+      }
+      
+      const response = await apiClient.delete<{ success: boolean; message: string }>(`/app/reports/${reportId}`, { headers });
+      
+      if (response.success) {
+        apiCache.invalidatePattern(/^\/app\/reports/);
+      }
+      
+      return response;
+    } catch (error: any) {
+      console.error('Error deleting report:', error);
+      return {
+        success: false,
+        message: error.message || 'Không thể xóa báo cáo',
+      };
     }
-    
-    return apiClient.delete(`/app/reports/${reportId}`, { headers });
   },
 
   /**
