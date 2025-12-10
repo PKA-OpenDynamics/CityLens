@@ -53,7 +53,7 @@ class ReportsService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = REPORTS_API_BASE_URL || 'http://localhost:3001/api';
+    this.baseUrl = REPORTS_API_BASE_URL || 'http://localhost:8000/api/v1/app';
   }
 
   /**
@@ -88,12 +88,14 @@ class ReportsService {
     limit?: number;
     skip?: number;
     status?: string;
+    userId?: string;
   }): Promise<ApiResponse<Report[]>> {
     try {
       const params = new URLSearchParams();
       if (options?.limit) params.append('limit', options.limit.toString());
       if (options?.skip) params.append('skip', options.skip.toString());
       if (options?.status) params.append('status', options.status);
+      if (options?.userId) params.append('userId', options.userId);
 
       const queryString = params.toString();
       const url = `${this.baseUrl}/reports${queryString ? `?${queryString}` : ''}`;
@@ -223,6 +225,7 @@ class ReportsService {
 
     return preparedMedia;
   }
+
 }
 
 export default new ReportsService();

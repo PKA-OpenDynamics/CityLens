@@ -24,6 +24,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import reportsService from '../services/reports';
+import { useAuth } from '../contexts/AuthContext';
 
 const REPORT_TYPES = [
   'Ổ gà',
@@ -48,6 +49,7 @@ const WARDS = [
 
 const CreateReportScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const { user } = useAuth();
   const [reportType, setReportType] = useState<string | null>(null);
   const [ward, setWard] = useState<string | null>(null);
   const [addressDetail, setAddressDetail] = useState('');
@@ -469,6 +471,9 @@ const CreateReportScreen: React.FC = () => {
       // Prepare media files
       const preparedMedia = await reportsService.prepareMediaFiles(images);
 
+      // Get userId from auth context
+      const userId = user?._id || user?.id;
+
       // Create report data
       const reportData = {
         reportType: reportType!,
@@ -478,6 +483,7 @@ const CreateReportScreen: React.FC = () => {
         title: title || undefined,
         content: content,
         media: preparedMedia,
+        userId: userId || undefined,
       };
 
       // Submit report
