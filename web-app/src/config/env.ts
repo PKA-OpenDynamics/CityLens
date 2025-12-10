@@ -28,29 +28,6 @@ const getRawApiBaseUrl = (): string => {
 };
 
 /**
- * Force upgrade HTTP sang HTTPS cho production
- * - Giữ nguyên HTTP cho localhost development
- * - LUÔN upgrade sang HTTPS cho tất cả domain khác (đặc biệt Cloudflare Tunnels)
- * - Sử dụng regex đơn giản /^http:/i để match cả http: và HTTP:
- */
-const forceHttps = (url: string): string => {
-  if (!url) return url;
-  
-  // Giữ nguyên HTTP cho localhost development
-  if (url.includes('localhost') || url.includes('127.0.0.1')) {
-    return url;
-  }
-  
-  // Force replace http: với https: (không cần match //)
-  // Regex /^http:/i match "http:" ở đầu URL, case-insensitive
-  const result = url.replace(/^http:/i, 'https:');
-  if (result !== url) {
-    console.log('[ENV] Forced HTTPS upgrade:', url, '->', result);
-  }
-  return result;
-};
-
-/**
  * Normalize API base URL - đảm bảo luôn kết thúc bằng /api/v1
  */
 const normalizeApiBase = (base: string): string => {
@@ -60,22 +37,20 @@ const normalizeApiBase = (base: string): string => {
 };
 
 /**
- * API Base URL - Đã normalize và đảm bảo HTTPS cho production
+ * API Base URL - Đã normalize
  * Đây là nguồn duy nhất cho tất cả các API endpoints
  * 
- * Ví dụ: https://your-tunnel.trycloudflare.com/api/v1
+ * Ví dụ: http://your-tunnel.trycloudflare.com/api/v1
  */
 const rawUrl = getRawApiBaseUrl();
 const normalizedUrl = normalizeApiBase(rawUrl);
-const httpsUrl = forceHttps(normalizedUrl);
 
 console.log('[ENV] URL processing:', {
   raw: rawUrl,
   normalized: normalizedUrl,
-  final: httpsUrl
 });
 
-export const API_BASE_URL = httpsUrl;
+export const API_BASE_URL = normalizedUrl;
 
 // =============================================================================
 // DERIVED API ENDPOINTS

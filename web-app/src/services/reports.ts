@@ -49,39 +49,20 @@ export interface ApiResponse<T> {
   count?: number;
 }
 
-/**
- * Helper để đảm bảo URL luôn dùng HTTPS (trừ localhost)
- * Được gọi ngay trước mỗi fetch request để đảm bảo không có Mixed Content
- */
-const forceHttps = (url: string): string => {
-  if (!url) return url;
-  // Giữ nguyên localhost
-  if (url.includes('localhost') || url.includes('127.0.0.1')) {
-    return url;
-  }
-  // Force replace http:// with https:// - handle any case
-  const result = url.replace(/^http:/i, 'https:');
-  if (result !== url) {
-    console.log('[ReportsService] Forced HTTPS upgrade:', url, '->', result);
-  }
-  return result;
-};
-
 class ReportsService {
   private baseUrl: string;
 
   constructor() {
     // Sử dụng REPORTS_API_BASE_URL từ env.ts
-    // Thêm forceHttps để đảm bảo không có Mixed Content
-    this.baseUrl = forceHttps(REPORTS_API_BASE_URL);
+    this.baseUrl = REPORTS_API_BASE_URL;
     console.log('[ReportsService] Base URL:', this.baseUrl);
   }
 
   /**
-   * Build full URL with HTTPS enforcement
+   * Build full URL
    */
   private buildUrl(path: string): string {
-    return forceHttps(`${this.baseUrl}${path}`);
+    return `${this.baseUrl}${path}`;
   }
 
   /**
