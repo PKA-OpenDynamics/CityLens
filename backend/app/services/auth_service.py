@@ -14,8 +14,22 @@ from fastapi import HTTPException, status
 from app.core.config import settings
 from app.schemas.user import TokenData, UserRole, UserStatus
 
-# Password hashing context
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Password hashing context - lazy initialization to avoid bcrypt 72-byte limit error
+_pwd_context = None
+
+def get_pwd_context():
+    """Get password context with lazy initialization"""
+    global _pwd_context
+    if _pwd_context is None:
+        try:
+            _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+        except (ValueError, AttributeError) as e:
+            # If initialization fails due to bcrypt bug detection or version issues,
+            # return None and we'll use bcrypt directly as fallback
+            print(f"Warning: Passlib initialization failed: {e}")
+            print("Falling back to bcrypt direct")
+            _pwd_context = None
+    return _pwd_context
 
 
 class AuthService:
@@ -24,12 +38,42 @@ class AuthService:
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
         """Verify plain password against hashed password"""
-        return pwd_context.verify(plain_password, hashed_password)
+        pwd_context = get_pwd_context()
+        if pwd_context:
+            try:
+                return pwd_context.verify(plain_password, hashed_password)
+            except Exception:
+                pass
+        
+        # Fallback to bcrypt direct
+        import bcrypt
+        try:
+            password_bytes = plain_password.encode('utf-8')
+            if len(password_bytes) > 72:
+                password_bytes = password_bytes[:72]
+            hashed_bytes = hashed_password.encode('utf-8') if isinstance(hashed_password, str) else hashed_password
+            return bcrypt.checkpw(password_bytes, hashed_bytes)
+        except Exception:
+            return False
     
     @staticmethod
     def get_password_hash(password: str) -> str:
         """Hash password using bcrypt"""
-        return pwd_context.hash(password)
+        pwd_context = get_pwd_context()
+        if pwd_context:
+            try:
+                return pwd_context.hash(password)
+            except Exception:
+                pass
+        
+        # Fallback to bcrypt direct
+        import bcrypt
+        password_bytes = password.encode('utf-8')
+        if len(password_bytes) > 72:
+            password_bytes = password_bytes[:72]
+        salt = bcrypt.gensalt()
+        hashed = bcrypt.hashpw(password_bytes, salt)
+        return hashed.decode('utf-8')
     
     @staticmethod
     def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:

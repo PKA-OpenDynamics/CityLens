@@ -53,6 +53,38 @@ if settings.BACKEND_CORS_ORIGINS:
         allow_headers=["*"],
     )
 
+# Add cache control middleware
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
+
+class CacheControlMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response: Response = await call_next(request)
+        
+        # Add cache headers for GET requests to reports and media endpoints
+        if request.method == "GET":
+            path = request.url.path
+            
+            # Cache reports list for 2 minutes
+            if "/app/reports" in path or "/app/alerts" in path:
+                response.headers["Cache-Control"] = "public, max-age=120"
+                response.headers["Vary"] = "Accept-Encoding"
+            
+            # Cache geographic data for 5 minutes
+            elif "/geographic" in path:
+                response.headers["Cache-Control"] = "public, max-age=300"
+                response.headers["Vary"] = "Accept-Encoding"
+            
+            # Cache static/media for 1 day
+            elif "/media" in path or "/uploads" in path or path.endswith(('.jpg', '.jpeg', '.png', '.gif', '.webp')):
+                response.headers["Cache-Control"] = "public, max-age=86400, immutable"
+                response.headers["Vary"] = "Accept-Encoding"
+        
+        return response
+
+app.add_middleware(CacheControlMiddleware)
+
 @app.get("/")
 def root():
     return {

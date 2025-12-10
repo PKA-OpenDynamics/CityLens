@@ -226,10 +226,13 @@ const RegisterScreen: React.FC = () => {
     setLoading(true);
     try {
       await authService.register(formData);
-      Alert.alert('Thành công', 'Đăng ký thành công! Vui lòng đăng nhập.', [
+      Alert.alert('Thành công', 'Đã đăng ký thành công', [
         {
           text: 'OK',
-          onPress: () => navigation.navigate('Login'),
+          onPress: () => {
+            // Navigate to login screen after alert is dismissed
+            navigation.navigate('Login');
+          },
         },
       ]);
     } catch (error: any) {

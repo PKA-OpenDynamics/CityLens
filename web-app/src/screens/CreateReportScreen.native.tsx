@@ -24,6 +24,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import reportsService from '../services/reports';
+import { useAuth } from '../contexts/AuthContext';
 
 const REPORT_TYPES = [
   'Ổ gà',
@@ -48,6 +49,7 @@ const WARDS = [
 
 const CreateReportScreen: React.FC = () => {
   const navigation = useNavigation<any>();
+  const { user } = useAuth();
   const [reportType, setReportType] = useState<string | null>(null);
   const [ward, setWard] = useState<string | null>(null);
   const [addressDetail, setAddressDetail] = useState('');
@@ -60,7 +62,9 @@ const CreateReportScreen: React.FC = () => {
   const [showWardModal, setShowWardModal] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  // Ngã Tư Sở - Quận Thanh Xuân, Hà Nội
+  const DEFAULT_LOCATION = { lat: 21.003204, lng: 105.819673 };
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number }>(DEFAULT_LOCATION);
   const mapModalRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const markerRef = useRef<any>(null);
@@ -279,46 +283,12 @@ const CreateReportScreen: React.FC = () => {
     };
   }, []);
 
-  // Get user's current location when modal opens
+  // Location is now fixed to default location - no geolocation needed
+  // userLocation is already set to DEFAULT_LOCATION in useState initialization
+
+  // Initialize map when modal opens
   useEffect(() => {
     if (showMapModal && typeof window !== 'undefined') {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            setUserLocation({
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            });
-          },
-          (error) => {
-            // Use default location (Hoan Kiem Lake) if geolocation fails
-            setUserLocation({
-              lat: 21.0285,
-              lng: 105.8542,
-            });
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 5000,
-            maximumAge: 0,
-          }
-        );
-      } else {
-        // If geolocation is not available, use default location
-        setUserLocation({
-          lat: 21.0285,
-          lng: 105.8542,
-        });
-      }
-    } else {
-      // Reset userLocation when modal closes
-      setUserLocation(null);
-    }
-  }, [showMapModal]);
-
-  // Initialize map when modal opens and userLocation is ready
-  useEffect(() => {
-    if (showMapModal && userLocation && typeof window !== 'undefined') {
       const loadLeaflet = async () => {
         // Load CSS if not already loaded
         if (!document.getElementById('leaflet-css')) {
@@ -365,12 +335,10 @@ const CreateReportScreen: React.FC = () => {
 
     const L = (window as any).L;
     
-    // Priority: selectedLocation > userLocation > default (Hoan Kiem Lake)
+    // Priority: selectedLocation > userLocation (Ngã Tư Sở)
     const defaultCenter: [number, number] = selectedLocation 
       ? [selectedLocation.lat, selectedLocation.lng]
-      : userLocation
-      ? [userLocation.lat, userLocation.lng]
-      : [21.0285, 105.8542]; // Hồ Hoàn Kiếm
+      : [userLocation.lat, userLocation.lng]; // Ngã Tư Sở - Quận Thanh Xuân, Hà Nội
 
     // Initialize map
     mapModalRef.current = L.map(mapContainerRef.current, {
@@ -469,6 +437,9 @@ const CreateReportScreen: React.FC = () => {
       // Prepare media files
       const preparedMedia = await reportsService.prepareMediaFiles(images);
 
+      // Get userId from auth context
+      const userId = user?._id || user?.id;
+
       // Create report data
       const reportData = {
         reportType: reportType!,
@@ -478,6 +449,7 @@ const CreateReportScreen: React.FC = () => {
         title: title || undefined,
         content: content,
         media: preparedMedia,
+        userId: userId || undefined,
       };
 
       // Submit report

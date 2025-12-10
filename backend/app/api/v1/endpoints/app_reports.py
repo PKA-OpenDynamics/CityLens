@@ -18,8 +18,12 @@ from app.schemas.app_report import (
     AppReportCreate,
     AppReportResponse,
     AppReportListResponse,
-    AppReportUpdate
+    AppReportUpdate,
+    AppCommentCreate,
+    AppCommentResponse,
+    AppCommentListResponse
 )
+from app.services.app_comment_service import AppCommentService
 
 router = APIRouter()
 
@@ -57,18 +61,55 @@ async def get_reports(
     userId: Optional[str] = Query(None, description="Filter by user ID"),
     limit: int = Query(20, ge=1, le=100, description="Number of reports to return"),
     skip: int = Query(0, ge=0, description="Number of reports to skip"),
+    include_media: bool = Query(True, description="Include media URLs (set to false for faster list loading)"),
     db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
 ):
     """
-    Lấy danh sách báo cáo (Mobile App)
+    Lấy danh sách báo cáo (Mobile App) - Optimized
     
     Supports filtering by status and userId, with pagination
+    Set include_media=false for faster loading (useful for map view)
     """
     report_service = AppReportService(db)
     
     reports = await report_service.get_reports(
         status=status,
         user_id=userId,
+        limit=limit,
+        skip=skip,
+        include_media=include_media
+    )
+    
+    # Get total count for pagination
+    total_count = await report_service.get_reports_count(
+        status=status,
+        user_id=userId
+    )
+    
+    return AppReportListResponse(
+        success=True,
+        data=reports,
+        count=total_count
+    )
+
+
+@router.get("/summary/all", response_model=AppReportListResponse)
+async def get_reports_summary(
+    status: Optional[str] = Query(None, description="Filter by status"),
+    limit: int = Query(100, ge=1, le=500, description="Number of reports to return"),
+    skip: int = Query(0, ge=0, description="Number of reports to skip"),
+    db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
+):
+    """
+    Lấy summary của báo cáo (tối ưu cho bản đồ - không có media)
+    
+    Optimized endpoint for map view - returns minimal data without media
+    Much faster than full report list
+    """
+    report_service = AppReportService(db)
+    
+    reports = await report_service.get_reports_summary(
+        status=status,
         limit=limit,
         skip=skip
     )
@@ -116,11 +157,10 @@ async def update_report(
     Cập nhật trạng thái báo cáo (Admin only)
     
     Supports:
-    - Bearer token in Authorization header
+    - Bearer token in Authorization header (from web dashboard or mobile app)
     - Token as query parameter
     """
-    # Verify admin token
-    auth_service = AppAuthService(db)
+    from app.services.auth_service import auth_service as web_auth_service
     
     # Get token from header or query param
     access_token = token
@@ -136,44 +176,49 @@ async def update_report(
             detail="Token không được cung cấp"
         )
     
-    try:
-        payload = auth_service.decode_token(access_token)
-        user_id = payload.get("userId")
-        
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token không hợp lệ"
-            )
-        
-        # Check if user is admin
-        user = await auth_service.get_user_by_id(user_id)
-        if not user or not user.is_admin:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Bạn không có quyền thực hiện hành động này"
-            )
-        
-        # Update report
-        report_service = AppReportService(db)
-        report = await report_service.update_report_status(
-            report_id=report_id,
-            new_status=update_data.status,
-            admin_note=update_data.adminNote
-        )
-        
-        return AppReportResponse(
-            success=True,
-            data=report
-        )
+    is_authorized = False
     
-    except HTTPException:
-        raise
-    except Exception as e:
+    # Try web dashboard token first
+    try:
+        token_data = web_auth_service.decode_token(access_token)
+        if token_data and token_data.email:
+            # Web dashboard admin token is valid
+            is_authorized = True
+    except Exception:
+        pass
+    
+    # If not authorized, try mobile app token
+    if not is_authorized:
+        try:
+            app_auth_service = AppAuthService(db)
+            payload = app_auth_service.decode_token(access_token)
+            user_id = payload.get("userId")
+            
+            if user_id:
+                user = await app_auth_service.get_user_by_id(user_id)
+                if user and user.is_admin:
+                    is_authorized = True
+        except Exception:
+            pass
+    
+    if not is_authorized:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token không hợp lệ"
+            detail="Token không hợp lệ hoặc không có quyền admin"
         )
+    
+    # Update report
+    report_service = AppReportService(db)
+    report = await report_service.update_report_status(
+        report_id=report_id,
+        new_status=update_data.status,
+        admin_note=update_data.adminNote
+    )
+    
+    return AppReportResponse(
+        success=True,
+        data=report
+    )
 
 
 @router.delete("/{report_id}", response_model=dict)
@@ -274,4 +319,91 @@ async def get_report_stats(
             "resolved": resolved,
             "rejected": rejected
         }
+    }
+
+
+# ============================================
+# COMMENT ENDPOINTS
+# ============================================
+
+@router.post("/{report_id}/comments", response_model=AppCommentResponse, status_code=status.HTTP_201_CREATED)
+async def create_comment(
+    report_id: str,
+    comment_data: AppCommentCreate,
+    db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
+):
+    """
+    Thêm bình luận vào báo cáo (Mobile App)
+    
+    - **report_id**: ID báo cáo
+    - **content**: Nội dung bình luận
+    - **userId**: ID người dùng (optional)
+    - **userName**: Tên người dùng (optional)
+    """
+    comment_service = AppCommentService(db)
+    
+    comment = await comment_service.create_comment(
+        report_id=report_id,
+        content=comment_data.content,
+        user_id=comment_data.userId,
+        user_name=comment_data.userName
+    )
+    
+    return AppCommentResponse(
+        success=True,
+        data=comment
+    )
+
+
+@router.get("/{report_id}/comments", response_model=AppCommentListResponse)
+async def get_comments(
+    report_id: str,
+    limit: int = Query(50, ge=1, le=200, description="Number of comments to return"),
+    skip: int = Query(0, ge=0, description="Number of comments to skip"),
+    db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
+):
+    """
+    Lấy danh sách bình luận của báo cáo (Mobile App)
+    
+    - **report_id**: ID báo cáo
+    - **limit**: Số lượng tối đa
+    - **skip**: Phân trang
+    """
+    comment_service = AppCommentService(db)
+    
+    comments = await comment_service.get_comments(
+        report_id=report_id,
+        limit=limit,
+        skip=skip
+    )
+    
+    return AppCommentListResponse(
+        success=True,
+        data=comments,
+        count=len(comments)
+    )
+
+
+@router.delete("/comments/{comment_id}", response_model=dict)
+async def delete_comment(
+    comment_id: str,
+    userId: Optional[str] = Query(None, description="User ID (required to verify ownership)"),
+    db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
+):
+    """
+    Xóa bình luận (Mobile App)
+    
+    - **comment_id**: ID bình luận
+    - **userId**: ID người dùng (required để xác minh quyền sở hữu)
+    """
+    comment_service = AppCommentService(db)
+    
+    deleted = await comment_service.delete_comment(
+        comment_id=comment_id,
+        user_id=userId
+    )
+    
+    return {
+        "success": True,
+        "message": "Comment deleted successfully"
     }
