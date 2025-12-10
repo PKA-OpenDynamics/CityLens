@@ -6,9 +6,10 @@ AI Chat API Endpoints
 Provides AI-powered chat using Google Gemini with integration to TomTom, OpenWeatherMap, and database
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi import APIRouter, Depends, HTTPException, status, Header, Query
 from typing import Optional
 from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime
 
 from app.core.database import get_db
 from app.services.ai_chat_service import AIChatService
@@ -81,6 +82,24 @@ async def chat_with_ai(
             db=db
         )
         
+        # Lưu lịch sử chat nếu có user_id và mongodb
+        if user_id is not None and mongodb is not None:
+            try:
+                doc = {
+                    "userId": user_id,
+                    "message": request.message,
+                    "response": result.get("response"),
+                    "sources": result.get("sources"),
+                    "metadata": result.get("metadata"),
+                    "timestamp": result.get("timestamp") or datetime.utcnow(),
+                    "createdAt": datetime.utcnow(),
+                }
+                await mongodb.get_collection("ai_chat_history").insert_one(doc)
+            except Exception as save_err:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Could not save chat history: {save_err}")
+        
         return ChatResponse(**result)
         
     except Exception as e:
@@ -93,6 +112,68 @@ async def chat_with_ai(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Lỗi khi xử lý câu hỏi: {str(e)}"
+        )
+
+
+@router.get("/history")
+async def get_chat_history(
+    limit: int = Query(20, ge=1, le=100),
+    skip: int = Query(0, ge=0),
+    user_id: Optional[str] = Query(None),
+    authorization: Optional[str] = Header(None),
+    mongodb: AsyncIOMotorDatabase = Depends(get_mongodb_atlas),
+):
+    """
+    Lấy lịch sử chat AI cho người dùng (MongoDB Atlas)
+    - Yêu cầu xác định user_id (từ query hoặc token Bearer)
+    """
+    # Resolve user_id from token if not provided
+    if not user_id and authorization:
+        try:
+            token = authorization.replace("Bearer ", "")
+            auth_service = AppAuthService(mongodb)
+            payload = auth_service.decode_token(token)
+            user_id = payload.get("userId")
+        except Exception:
+            pass
+
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Thiếu user_id hoặc token để lấy lịch sử chat",
+        )
+
+    try:
+        collection = mongodb.get_collection("ai_chat_history")
+        cursor = (
+            collection.find({"userId": user_id})
+            .sort("timestamp", -1)
+            .skip(skip)
+            .limit(limit)
+        )
+        items = []
+        async for doc in cursor:
+            doc["_id"] = str(doc.get("_id"))
+            # Format datetime to ISO
+            if "timestamp" in doc and doc["timestamp"]:
+                try:
+                    doc["timestamp"] = doc["timestamp"].isoformat()
+                except Exception:
+                    pass
+            items.append(doc)
+
+        return {
+            "success": True,
+            "data": items,
+            "count": len(items),
+        }
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching chat history: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Không lấy được lịch sử chat",
         )
 
 
