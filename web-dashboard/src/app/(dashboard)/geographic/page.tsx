@@ -43,10 +43,6 @@ const CircleMarker = dynamic(
   () => import('react-leaflet').then(mod => mod.CircleMarker),
   { ssr: false }
 );
-const Marker = dynamic(
-  () => import('react-leaflet').then(mod => mod.Marker),
-  { ssr: false }
-);
 
 // Traffic Camera components
 import { TRAFFIC_CAMERAS, TrafficCameraPopup, type TrafficCamera } from '@/components/map/TrafficCamera';

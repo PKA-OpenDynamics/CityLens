@@ -6,7 +6,6 @@
 import { useState, useEffect } from 'react';
 import { 
   Users, 
-  Activity, 
   AlertTriangle, 
   TrendingUp,
   Cloud,

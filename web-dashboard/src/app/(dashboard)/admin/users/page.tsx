@@ -8,12 +8,10 @@ import {
   Users, 
   UserCheck,
   UserX,
-  Shield,
   Clock,
   CheckCircle,
   XCircle,
-  Search,
-  Filter
+  Search
 } from 'lucide-react';
 import { adminService } from '@/lib/admin-service';
 import toast from 'react-hot-toast';
@@ -30,14 +28,6 @@ interface User {
   position?: string;
   created_at: string;
 }
-
-const roleLabels: Record<string, string> = {
-  super_admin: 'Super Admin',
-  admin: 'Admin',
-  manager: 'Quản lý',
-  analyst: 'Phân tích viên',
-  viewer: 'Người xem'
-};
 
 const roleColors: Record<string, string> = {
   super_admin: 'bg-purple-100 text-purple-800',

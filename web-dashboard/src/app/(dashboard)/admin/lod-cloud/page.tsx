@@ -23,12 +23,11 @@ import {
   ChevronUp,
   Loader2,
   Zap,
-  BarChart3,
   Users,
   Heart,
 } from 'lucide-react';
-import { getFusekiUrl, isLocal, detectEnvironment } from '@/lib/environment';
-import { SparqlService, SAMPLE_QUERIES, FUSEKI_CONFIG as SPARQL_CONFIG } from '@/lib/sparql';
+import { getFusekiUrl, detectEnvironment } from '@/lib/environment';
+import { SparqlService, SAMPLE_QUERIES } from '@/lib/sparql';
 
 // Fuseki Configuration - Auto-detect environment
 const FUSEKI_CONFIG = {
