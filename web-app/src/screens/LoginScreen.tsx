@@ -21,6 +21,24 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 
+// Web-specific form wrapper to fix password field warning
+const FormWrapper: React.FC<{ children: React.ReactNode; onSubmit: () => void }> = ({ children, onSubmit }) => {
+  if (Platform.OS === 'web') {
+    return (
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit();
+        }}
+        style={{ width: '100%' }}
+      >
+        {children}
+      </form>
+    );
+  }
+  return <>{children}</>;
+};
+
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { login } = useAuth();
@@ -149,84 +167,86 @@ const LoginScreen: React.FC = () => {
               />
             </View>
 
-            <View style={styles.form}>
-              <View style={styles.inputGroup}>
-                <View style={[styles.inputContainer, errors.username && styles.inputError]}>
-                  <MaterialIcons name="person" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Tên đăng nhập hoặc email"
-                    placeholderTextColor="#9CA3AF"
-                    value={username}
-                    onChangeText={handleUsernameChange}
-                    onBlur={() => handleBlur('username')}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                </View>
-                {errors.username && touched.username && (
-                  <Text style={styles.errorText}>{errors.username}</Text>
-                )}
-              </View>
-
-              <View style={styles.inputGroup}>
-                <View style={[styles.inputContainer, errors.password && styles.inputError]}>
-                  <MaterialIcons name="lock" size={20} color="#9CA3AF" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Mật khẩu"
-                    placeholderTextColor="#9CA3AF"
-                    value={password}
-                    onChangeText={handlePasswordChange}
-                    onBlur={() => handleBlur('password')}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeIcon}
-                  >
-                    <MaterialIcons
-                      name={showPassword ? 'visibility' : 'visibility-off'}
-                      size={20}
-                      color="#9CA3AF"
+            <FormWrapper onSubmit={handleLogin}>
+              <View style={styles.form}>
+                <View style={styles.inputGroup}>
+                  <View style={[styles.inputContainer, errors.username && styles.inputError]}>
+                    <MaterialIcons name="person" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Tên đăng nhập hoặc email"
+                      placeholderTextColor="#9CA3AF"
+                      value={username}
+                      onChangeText={handleUsernameChange}
+                      onBlur={() => handleBlur('username')}
+                      autoCapitalize="none"
+                      autoCorrect={false}
                     />
+                  </View>
+                  {errors.username && touched.username && (
+                    <Text style={styles.errorText}>{errors.username}</Text>
+                  )}
+                </View>
+
+                <View style={styles.inputGroup}>
+                  <View style={[styles.inputContainer, errors.password && styles.inputError]}>
+                    <MaterialIcons name="lock" size={20} color="#9CA3AF" style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Mật khẩu"
+                      placeholderTextColor="#9CA3AF"
+                      value={password}
+                      onChangeText={handlePasswordChange}
+                      onBlur={() => handleBlur('password')}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(!showPassword)}
+                      style={styles.eyeIcon}
+                    >
+                      <MaterialIcons
+                        name={showPassword ? 'visibility' : 'visibility-off'}
+                        size={20}
+                        color="#9CA3AF"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {errors.password && touched.password && (
+                    <Text style={styles.errorText}>{errors.password}</Text>
+                  )}
+                </View>
+
+                <TouchableOpacity
+                  onPress={() => navigation.navigate('ForgotPassword')}
+                  style={styles.forgotPassword}
+                >
+                  <Text style={styles.forgotPasswordText}>Quên mật khẩu?</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[
+                    styles.loginButton,
+                    (loading || !isFormValid()) && styles.loginButtonDisabled
+                  ]}
+                  onPress={handleLogin}
+                  disabled={loading || !isFormValid()}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.loginButtonText}>Đăng nhập</Text>
+                  )}
+                </TouchableOpacity>
+
+                <View style={styles.registerContainer}>
+                  <Text style={styles.registerText}>Chưa có tài khoản? </Text>
+                  <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+                    <Text style={styles.registerLink}>Đăng ký</Text>
                   </TouchableOpacity>
                 </View>
-                {errors.password && touched.password && (
-                  <Text style={styles.errorText}>{errors.password}</Text>
-                )}
               </View>
-
-              <TouchableOpacity
-                onPress={() => navigation.navigate('ForgotPassword')}
-                style={styles.forgotPassword}
-              >
-                <Text style={styles.forgotPasswordText}>Quên mật khẩu?</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.loginButton,
-                  (loading || !isFormValid()) && styles.loginButtonDisabled
-                ]}
-                onPress={handleLogin}
-                disabled={loading || !isFormValid()}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FFFFFF" />
-                ) : (
-                  <Text style={styles.loginButtonText}>Đăng nhập</Text>
-                )}
-              </TouchableOpacity>
-
-              <View style={styles.registerContainer}>
-                <Text style={styles.registerText}>Chưa có tài khoản? </Text>
-                <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                  <Text style={styles.registerLink}>Đăng ký</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            </FormWrapper>
           </ScrollView>
         </KeyboardAvoidingView>
       </View>
