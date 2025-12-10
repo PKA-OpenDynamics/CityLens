@@ -72,6 +72,7 @@ class Settings(BaseSettings):
     OPENWEATHER_API_KEY: Optional[str] = None
     TOMTOM_API_KEY: Optional[str] = None
     AQICN_API_KEY: Optional[str] = None  # WAQI API token from https://aqicn.org/api/
+    GEMINI_API_KEY: Optional[str] = None  # Google Gemini API key for AI chat
     
     @property
     def REDIS_URL(self) -> str:

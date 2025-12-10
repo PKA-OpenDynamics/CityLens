@@ -10,7 +10,7 @@ from app.api.v1.endpoints import (
     reports, media, statistics, engagement, 
     assignments, notifications, geographic, realtime, ngsi_ld,
     auth, admin, admin_dashboard_v2 as admin_dashboard,
-    app_auth, app_reports
+    app_auth, app_reports, ai_chat
 )
 
 api_router = APIRouter()
@@ -18,6 +18,7 @@ api_router = APIRouter()
 # ============ Mobile App APIs (MongoDB Atlas) ============
 api_router.include_router(app_auth.router, prefix="/app/auth", tags=["Mobile App - Authentication"])
 api_router.include_router(app_reports.router, prefix="/app/reports", tags=["Mobile App - Reports"])
+api_router.include_router(ai_chat.router, prefix="/app/ai", tags=["Mobile App - AI Chat"])
 
 # ============ Web Dashboard APIs (MongoDB Docker) ============
 # Authentication & User Management

@@ -50,3 +50,7 @@ osmium==3.7.0
 
 # Python Environment
 python-dotenv==1.0.0
+
+# AI & ML
+google-genai>=0.2.0
+protobuf>=3.19.5,<5.0.0
