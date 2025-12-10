@@ -2,7 +2,7 @@
 
 // Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,10 +12,21 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
+  Alert,
+  PermissionsAndroid,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { aiChatService, ChatMessage as AIChatMessage } from '../services/aiChat';
+import { useAuth } from '../contexts/AuthContext';
+import { authService } from '../services/auth';
+
+// Ngã Tư Sở - Quận Thanh Xuân, Hà Nội
+const DEFAULT_LOCATION = {
+  latitude: 21.003204,
+  longitude: 105.819673,
+};
 
 type ChatMessage = {
   id: string;
@@ -25,42 +36,123 @@ type ChatMessage = {
 
 /**
  * AiAssistantScreen.native
- * Chat đơn giản port từ `AIAssistantScreen` Flutter:
- * - Lưu lịch sử message trong state.
- * - Trả lời bằng rule-based dummy giống Flutter.
+ * Chat với AI CityLens sử dụng Google Gemini
+ * Tích hợp với TomTom, OpenWeatherMap và database
  */
 
 const AiAssistantScreen: React.FC = () => {
+
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [userLocation] = useState<{ latitude: number; longitude: number }>(DEFAULT_LOCATION);
   const navigation = useNavigation<any>();
+  const { user, isAuthenticated } = useAuth();
+  const recognitionRef = useRef<any | null>(null);
 
-  const generateDummyAnswer = (question: string): string => {
-    const q = question.toLowerCase();
-    if (q.includes('ngập')) {
-      return 'Đoạn đường từ Hà Đông đến Ba Đình hiện có một số điểm ngập nhẹ vào giờ cao điểm.';
-    }
-    if (q.includes('camera')) {
-      return 'Camera gần nhất ở ngã tư Cầu Giấy, cách bạn khoảng 500m.';
-    }
-    if (q.includes('quán ăn')) {
-      return 'Gợi ý quán ăn đang mở gần bạn: Quán Bún Chả Hương Liên, Nhà hàng Phở Thìn.';
-    }
-    if (q.includes('tắc')) {
-      return 'Đường X hôm nay có tắc nhẹ vào buổi chiều.';
-    }
-    if (q.includes('trú mưa')) {
-      return 'Hiện tại có điểm trú mưa gần bạn tại công viên Cầu Giấy.';
-    }
-    return 'Xin lỗi, tôi chưa có thông tin cho câu hỏi này. Vui lòng thử lại với câu hỏi khác.';
-  };
+  // Cleanup voice recognition on unmount
+  useEffect(() => {
+    return () => {
+      stopVoiceInput();
+    };
+  }, []);
 
   const appendMessage = (msg: Omit<ChatMessage, 'id'>) => {
     setMessages((prev) => [
       ...prev,
       { ...msg, id: `${Date.now()}-${Math.random()}` },
     ]);
+  };
+
+  const stopVoiceInput = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (err) {
+        // ignore stop errors
+      }
+      recognitionRef.current = null;
+    }
+    setIsRecording(false);
+  };
+
+  const handleVoiceInput = async () => {
+    // Toggle off if already recording
+    if (isRecording) {
+      stopVoiceInput();
+      return;
+    }
+
+    // Native platforms: best-effort permission prompt, but speech recognition is web-only in this mock.
+    if (Platform.OS === 'android') {
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+        {
+          title: 'Cấp quyền micro',
+          message: 'Ứng dụng cần quyền micro để ghi âm và chuyển thành văn bản.',
+          buttonPositive: 'Đồng ý',
+          buttonNegative: 'Từ chối',
+        }
+      );
+
+      if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+        Alert.alert('Thông báo', 'Bạn cần cấp quyền micro để sử dụng tính năng này.');
+        return;
+      }
+    }
+
+    // Web speech recognition
+    if (typeof window === 'undefined') {
+      Alert.alert('Thông báo', 'Trình duyệt không hỗ trợ nhập giọng nói.');
+      return;
+    }
+
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      Alert.alert('Thông báo', 'Trình duyệt không hỗ trợ Web Speech API.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'vi-VN';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event: any) => {
+      let transcript = '';
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        if (event.results[i].isFinal) {
+          transcript += event.results[i][0].transcript;
+        }
+      }
+
+      if (transcript) {
+        const nextText = input ? `${input.trim()} ${transcript.trim()}` : transcript.trim();
+        setInput(nextText);
+      }
+    };
+
+    recognition.onerror = () => {
+      stopVoiceInput();
+      Alert.alert('Lỗi', 'Không thể nhận dạng giọng nói. Vui lòng thử lại.');
+    };
+
+    recognition.onend = () => {
+      stopVoiceInput();
+    };
+
+    recognitionRef.current = recognition;
+
+    try {
+      recognition.start();
+      setIsRecording(true);
+    } catch (err) {
+      recognitionRef.current = null;
+      Alert.alert('Lỗi', 'Không thể khởi động thu âm. Vui lòng thử lại.');
+    }
   };
 
   const handleSend = async () => {
@@ -70,12 +162,54 @@ const AiAssistantScreen: React.FC = () => {
     appendMessage({ text, isUser: true });
     setInput('');
 
-    // giả lập delay trả lời
-    setTimeout(() => {
-      const answer = generateDummyAnswer(text);
-      appendMessage({ text: answer, isUser: false });
+    try {
+      // Get auth token if available
+      let token: string | undefined;
+      if (isAuthenticated) {
+        try {
+          const storedToken = await authService.getToken();
+          token = storedToken || undefined;
+        } catch (e) {
+          // Token not available, continue without it
+        }
+      }
+
+      // Build conversation history
+      const conversationHistory: AIChatMessage[] = messages
+        .slice(-10) // Last 10 messages
+        .map((msg) => ({
+          role: msg.isUser ? 'user' : 'assistant',
+          content: msg.text,
+        }));
+
+      // Call AI chat API
+      const response = await aiChatService.chat(
+        {
+          message: text,
+          conversation_history: conversationHistory,
+          user_location: userLocation,
+          user_id: user?.id || user?._id,
+        },
+        token
+      );
+
+      if (response.success && response.data) {
+        appendMessage({ text: response.data.response, isUser: false });
+      } else {
+        appendMessage({
+          text: response.error || 'Xin lỗi, đã xảy ra lỗi khi xử lý câu hỏi của bạn.',
+          isUser: false,
+        });
+      }
+    } catch (error: any) {
+      console.error('Error chatting with AI:', error);
+      appendMessage({
+        text: 'Xin lỗi, đã xảy ra lỗi khi kết nối với AI. Vui lòng thử lại sau.',
+        isUser: false,
+      });
+    } finally {
       setIsSending(false);
-    }, 800);
+    }
   };
 
   const renderItem = ({ item }: { item: ChatMessage }) => (
@@ -118,6 +252,17 @@ const AiAssistantScreen: React.FC = () => {
         </View>
 
         <View style={styles.inputWrapper}>
+          <TouchableOpacity
+            style={[styles.voiceButton, isRecording && styles.voiceButtonActive]}
+            onPress={handleVoiceInput}
+            disabled={isSending}
+          >
+            <MaterialIcons
+              name={isRecording ? "mic" : "mic-none"}
+              size={20}
+              color={isRecording ? "#EF4444" : "#6B7280"}
+            />
+          </TouchableOpacity>
           <TextInput
             style={styles.input}
             value={input}
@@ -126,17 +271,30 @@ const AiAssistantScreen: React.FC = () => {
             multiline
             onSubmitEditing={() => handleSend()}
           />
-          <TouchableOpacity
-            style={styles.sendButton}
-            onPress={handleSend}
-            disabled={isSending || !input.trim()}
-          >
-            <MaterialIcons
-              name="send"
-              size={20}
-              color="#FFFFFF"
-            />
-          </TouchableOpacity>
+          {isRecording ? (
+            <TouchableOpacity
+              style={styles.stopButton}
+              onPress={stopVoiceInput}
+            >
+              <MaterialIcons
+                name="stop"
+                size={20}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={styles.sendButton}
+              onPress={handleSend}
+              disabled={isSending || !input.trim()}
+            >
+              <MaterialIcons
+                name="send"
+                size={20}
+                color="#FFFFFF"
+              />
+            </TouchableOpacity>
+          )}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -254,6 +412,20 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
   },
+  voiceButton: {
+    marginRight: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  voiceButtonActive: {
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
   input: {
     flex: 1,
     maxHeight: 100,
@@ -270,6 +442,15 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: 22,
     backgroundColor: '#20A957',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stopButton: {
+    marginLeft: 8,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EF4444',
     alignItems: 'center',
     justifyContent: 'center',
   },
