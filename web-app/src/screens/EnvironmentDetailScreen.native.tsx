@@ -13,7 +13,6 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { weatherService, RealtimeWeatherResponse } from '../services/weather';
@@ -136,21 +135,22 @@ const EnvironmentDetailScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <LinearGradient
-        colors={['#20A957', '#7BE882']}
-        style={styles.header}
-      >
+      <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <MaterialIcons name="arrow-back" size={24} color="#FFFFFF" />
+          <MaterialIcons name="arrow-back" size={24} color="#20A957" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Môi trường</Text>
-        {locationName ? (
-          <Text style={styles.headerSubtitle}>{locationName}</Text>
-        ) : null}
-      </LinearGradient>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>Môi trường</Text>
+          {locationName ? (
+            <Text style={styles.headerSubtitle}>{locationName}</Text>
+          ) : null}
+        </View>
+        {/* spacer to balance center */}
+        <View style={{ width: 24 }} />
+      </View>
 
       {/* Tab Selector */}
       <View style={styles.tabContainer}>
@@ -393,24 +393,33 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 16,
-    paddingBottom: 24,
+    paddingBottom: 12,
     paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#E5E7EB',
   },
   backButton: {
-    alignSelf: 'flex-start',
-    marginBottom: 16,
     padding: 8,
   },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#20A957',
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: '#16A34A',
     opacity: 0.9,
-    marginTop: 4,
+    marginTop: 2,
   },
   tabContainer: {
     flexDirection: 'row',

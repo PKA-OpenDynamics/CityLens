@@ -18,7 +18,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { aiChatService, ChatMessage as AIChatMessage } from '../services/aiChat';
+import { aiChatService, ChatMessage as AIChatMessage, ChatHistoryItem } from '../services/aiChat';
 import { useAuth } from '../contexts/AuthContext';
 import { authService } from '../services/auth';
 
@@ -47,6 +47,7 @@ const AiAssistantScreen: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [userLocation] = useState<{ latitude: number; longitude: number }>(DEFAULT_LOCATION);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const navigation = useNavigation<any>();
   const { user, isAuthenticated } = useAuth();
   const recognitionRef = useRef<any | null>(null);
@@ -57,6 +58,58 @@ const AiAssistantScreen: React.FC = () => {
       stopVoiceInput();
     };
   }, []);
+
+  // Fetch chat history when screen mounts
+  useEffect(() => {
+    const fetchHistory = async () => {
+      setLoadingHistory(true);
+      try {
+        let token: string | undefined;
+        if (isAuthenticated) {
+          try {
+            const storedToken = await authService.getToken();
+            token = storedToken || undefined;
+          } catch {}
+        }
+
+        const userId = user?.id || user?._id;
+        const res = await aiChatService.getHistory(
+          { limit: 30, skip: 0, userId },
+          token
+        );
+        console.log('[AI Chat] History fetch:', res);
+        if (res.success && res.data) {
+          // reverse to oldest -> newest for display append order
+          const history = (res.data as ChatHistoryItem[]).slice().reverse();
+          const mapped = history.flatMap<ChatMessage>((item) => {
+            const items: ChatMessage[] = [];
+            if (item.message) {
+              items.push({
+                id: `${item._id}-q`,
+                text: item.message,
+                isUser: true,
+              });
+            }
+            if (item.response) {
+              items.push({
+                id: `${item._id}-a`,
+                text: item.response,
+                isUser: false,
+              });
+            }
+            return items;
+          });
+          setMessages(mapped);
+        }
+      } catch (err) {
+        console.warn('[AI Chat] Failed to load history:', err);
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+
+    fetchHistory();
+  }, [isAuthenticated, user]);
 
   const appendMessage = (msg: Omit<ChatMessage, 'id'>) => {
     setMessages((prev) => [
@@ -283,17 +336,17 @@ const AiAssistantScreen: React.FC = () => {
               />
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity
-              style={styles.sendButton}
-              onPress={handleSend}
-              disabled={isSending || !input.trim()}
-            >
-              <MaterialIcons
-                name="send"
-                size={20}
-                color="#FFFFFF"
-              />
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.sendButton}
+            onPress={handleSend}
+            disabled={isSending || !input.trim()}
+          >
+            <MaterialIcons
+              name="send"
+              size={20}
+              color="#FFFFFF"
+            />
+          </TouchableOpacity>
           )}
         </View>
       </KeyboardAvoidingView>

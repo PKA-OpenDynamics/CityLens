@@ -1,0 +1,55 @@
+# CityLens Mobile Web App - Netlify Configuration
+
+[build]
+  # Build command
+  command = "npm run build:web"
+  
+  # Output directory (Expo export with --platform web)
+  publish = "dist"
+  
+  # Base directory
+  base = "web-app"
+
+[build.environment]
+  # Node version
+  NODE_VERSION = "20"
+  
+  # Expo CLI version
+  EXPO_CLI_VERSION = "latest"
+
+# Redirect rules for SPA (Single Page Application)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Headers for security and caching
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/static/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Environment variables (set these in Netlify Dashboard)
+# TOMTOM_API_KEY - API key for TomTom maps
+# WEATHER_API_BASE_URL - Backend API URL
+# REPORTS_API_BASE_URL - Backend API URL for reports
+# MONGODB_URI - MongoDB connection string (if needed in frontend)
+# MONGODB_DB_NAME - MongoDB database name

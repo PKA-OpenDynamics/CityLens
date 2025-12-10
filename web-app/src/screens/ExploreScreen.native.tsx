@@ -16,6 +16,7 @@ import {
   Image,
   Animated,
   PanResponder,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,6 +25,8 @@ import { useNavigation } from '@react-navigation/native';
 import Avatar from '../components/Avatar';
 import { authService, User } from '../services/auth';
 import { weatherService, RealtimeWeatherResponse, ForecastPoint } from '../services/weather';
+import reportsService, { Report } from '../services/reports';
+import { alertsService, AlertItem } from '../services/alerts';
 
 // Ngã Tư Sở - Quận Thanh Xuân, Hà Nội
 const DEFAULT_LOCATION = {
@@ -52,6 +55,7 @@ type NearbyCard = {
   distance?: string;
   category: 'Giao thông' | 'Môi trường' | 'Phản ánh';
   hasAiButton?: boolean;
+  report?: Report;
 };
 
 // Helper function to get weather icon from condition
@@ -92,6 +96,43 @@ const formatTime = (timestamp: string): string => {
   } catch {
     return '';
   }
+};
+
+// Helper function to calculate distance between two coordinates (Haversine formula)
+const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  const R = 6371; // km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
+const formatDistance = (distanceKm: number): string => {
+  if (distanceKm < 1) return `${Math.round(distanceKm * 1000)}m`;
+  return `${distanceKm.toFixed(1)}km`;
+};
+
+const mapReportTypeToCategory = (reportType: string): 'Giao thông' | 'Môi trường' | 'Phản ánh' => {
+  const type = reportType.toLowerCase();
+  if (type.includes('tắc') || type.includes('giao thông') || type.includes('đèn')) return 'Giao thông';
+  if (type.includes('rác') || type.includes('ô nhiễm') || type.includes('môi trường')) return 'Môi trường';
+  return 'Phản ánh';
+};
+
+const formatDateTime = (iso?: string): string => {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return '';
+  const hh = d.getHours().toString().padStart(2, '0');
+  const mm = d.getMinutes().toString().padStart(2, '0');
+  const dd = d.getDate().toString().padStart(2, '0');
+  const mo = (d.getMonth() + 1).toString().padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${hh}:${mm} ${dd}/${mo}/${yyyy}`;
 };
 
 const NEARBY_CARDS: NearbyCard[] = [
@@ -151,7 +192,11 @@ const ExploreScreen: React.FC = () => {
     })
   ).current;
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [selectedFilter, setSelectedFilter] = useState<string | null>('report');
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [bannerAlert, setBannerAlert] = useState<AlertItem | null>(null);
+  const bannerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastAlertIdRef = useRef<string | null>(null);
   
   // Weather data states
   const [weatherData, setWeatherData] = useState<RealtimeWeatherResponse | null>(null);
@@ -162,11 +207,54 @@ const ExploreScreen: React.FC = () => {
     lon: DEFAULT_LOCATION.lon,
   });
   const [locationId, setLocationId] = useState<string | null>(null);
+  const [selectedCard, setSelectedCard] = useState<NearbyCard | null>(null);
+  const [communityReports, setCommunityReports] = useState<NearbyCard[]>([]);
+  const [loadingCommunity, setLoadingCommunity] = useState(true);
+  const [hasLoadedCommunity, setHasLoadedCommunity] = useState(false);
 
   useEffect(() => {
     loadUserInfo();
     loadWeatherData();
+    loadCommunityReports();
   }, []);
+
+  // Poll alerts every 90s; if new -> show banner
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+
+    const fetchAlerts = async () => {
+      try {
+        const data = await alertsService.list();
+        setAlerts(data);
+        if (data.length > 0) {
+          const latest = data[0];
+          if (latest?._id && latest._id !== lastAlertIdRef.current) {
+            lastAlertIdRef.current = latest._id;
+            setBannerAlert(latest);
+            if (bannerTimeoutRef.current) clearTimeout(bannerTimeoutRef.current);
+            bannerTimeoutRef.current = setTimeout(() => setBannerAlert(null), 10000);
+          }
+        }
+      } catch (err) {
+        console.warn('Fetch alerts failed', err);
+      }
+    };
+
+    fetchAlerts();
+    interval = setInterval(fetchAlerts, 90000); // 1.5 phút
+
+    return () => {
+      if (interval) clearInterval(interval);
+      if (bannerTimeoutRef.current) clearTimeout(bannerTimeoutRef.current);
+    };
+  }, []);
+
+  // Khi người dùng bấm filter "Phản ánh" lần đầu thì đảm bảo đã load dữ liệu
+  useEffect(() => {
+    if (selectedFilter === 'report' && !hasLoadedCommunity) {
+      loadCommunityReports();
+    }
+  }, [selectedFilter, hasLoadedCommunity]);
 
   useEffect(() => {
     if (locationId) {
@@ -227,6 +315,54 @@ const ExploreScreen: React.FC = () => {
     }
   };
 
+  const loadCommunityReports = async () => {
+    try {
+      setLoadingCommunity(true);
+      console.log('[Explore] Fetching community reports...');
+      const response = await reportsService.getReports({ limit: 5 });
+      if (response.success && response.data) {
+          console.log('[Explore] Fetched reports:', response.data.length);
+        const cards: NearbyCard[] = response.data
+          .filter((report: Report) => report.location)
+          .map((report: Report) => {
+            const reportLat = report.location?.lat || 0;
+            const reportLon = report.location?.lng || 0;
+            const distanceKm = calculateDistance(
+              userLocation.lat,
+              userLocation.lon,
+              reportLat,
+              reportLon
+            );
+            return {
+              id: report._id,
+              title: report.title || report.reportType,
+              description: report.content || '',
+              distance: formatDistance(distanceKm),
+              category: mapReportTypeToCategory(report.reportType),
+              hasAiButton: false,
+              report,
+            };
+          })
+          .sort((a, b) => {
+            const da = parseFloat(a.distance?.replace('km', '') || '0');
+            const db = parseFloat(b.distance?.replace('km', '') || '0');
+            return da - db;
+          })
+          .slice(0, 5);
+        setCommunityReports(cards);
+      } else {
+        console.log('[Explore] No reports data');
+        setCommunityReports([]);
+      }
+    } catch (error) {
+      console.error('Error loading community reports:', error);
+      setCommunityReports([]);
+    } finally {
+      setLoadingCommunity(false);
+      setHasLoadedCommunity(true);
+    }
+  };
+
   const handleBackgroundPress = () => {
     Keyboard.dismiss();
   };
@@ -236,29 +372,21 @@ const ExploreScreen: React.FC = () => {
   };
 
   const handleFilterPress = (filter: string) => {
-    if (filter === 'environment') {
-      // Navigate to environment detail screen (weather + air quality)
-      navigation.navigate('EnvironmentDetail', {
-        locationId: locationId,
-        userLocation: userLocation,
-      });
-    } else if (filter === 'traffic') {
-      // Navigate to Map screen
-      navigation.navigate('Map');
-    } else if (filter === 'report') {
-      // Navigate to Report screen
-      navigation.navigate('Report');
-    } else {
+    // Toggle filter for nearby cards
     setSelectedFilter(selectedFilter === filter ? null : filter);
-    }
   };
 
+  const reportList = communityReports.length > 0 ? communityReports : NEARBY_CARDS;
+
   const handleCardPress = (card: NearbyCard) => {
-    // Navigate to detail or map based on card
-    navigation.navigate('Map', { 
-      layerType: card.category === 'Giao thông' ? 'traffic' : 
-                 card.category === 'Môi trường' ? 'environment' : 'reports' 
-    });
+    if (card.report?.media && card.report.media.length > 0) {
+      console.log('[Explore] Selected report media URIs:', card.report.media.map((m) => m.uri));
+    }
+    setSelectedCard(card);
+  };
+
+  const handleCloseCard = () => {
+    setSelectedCard(null);
   };
 
   const handleCardAiPress = (card: NearbyCard) => {
@@ -343,7 +471,7 @@ const ExploreScreen: React.FC = () => {
 
               {/* Right side: 3h forecast */}
               <View style={styles.forecastCol}>
-                <Text style={styles.forecastTitle}>Dự báo 3h</Text>
+                <Text style={styles.forecastTitle}>Dự báo</Text>
                 {loading ? (
                   <ActivityIndicator size="small" color="#FFFFFF" />
                 ) : (
@@ -371,7 +499,38 @@ const ExploreScreen: React.FC = () => {
                 )}
               </View>
             </View>
+
+        {/* Environment detail quick action (text link) */}
+        <TouchableOpacity
+          style={styles.envLink}
+          onPress={() =>
+            navigation.navigate('EnvironmentDetail', {
+              locationId: locationId,
+              userLocation: userLocation,
+            })
+          }
+        >
+          <Text style={styles.envLinkText}>Xem chi tiết thông tin môi trường</Text>
+        </TouchableOpacity>
           </LinearGradient>
+
+          {bannerAlert ? (
+            <TouchableOpacity
+              style={styles.alertBanner}
+              onPress={() => navigation.navigate('Notifications')}
+              activeOpacity={0.85}
+            >
+              <View style={styles.alertBannerRow}>
+                <MaterialIcons name="notifications-active" size={20} color="#0F5132" />
+                <Text style={styles.alertBannerTitle}>{bannerAlert.title}</Text>
+              </View>
+              {bannerAlert.description ? (
+                <Text style={styles.alertBannerDesc} numberOfLines={2}>
+                  {bannerAlert.description}
+                </Text>
+              ) : null}
+            </TouchableOpacity>
+          ) : null}
 
           {/* Search Bar */}
           <View style={styles.searchContainer}>
@@ -387,6 +546,28 @@ const ExploreScreen: React.FC = () => {
 
           {/* Filter Buttons */}
           <View style={styles.filterContainer}>
+            <TouchableOpacity
+              style={[
+                styles.filterButton,
+                selectedFilter === 'report' && styles.filterButtonActive,
+              ]}
+              onPress={() => handleFilterPress('report')}
+            >
+              <MaterialIcons
+                name="campaign"
+                size={20}
+                color={selectedFilter === 'report' ? '#FFFFFF' : '#20A957'}
+              />
+              <Text
+                style={[
+                  styles.filterText,
+                  selectedFilter === 'report' && styles.filterTextActive,
+                ]}
+              >
+                Phản ánh
+              </Text>
+            </TouchableOpacity>
+
             <TouchableOpacity
               style={styles.filterButton}
               onPress={() => handleFilterPress('traffic')}
@@ -422,40 +603,27 @@ const ExploreScreen: React.FC = () => {
                 Môi trường
               </Text>
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[
-                styles.filterButton,
-                selectedFilter === 'report' && styles.filterButtonActive,
-              ]}
-              onPress={() => handleFilterPress('report')}
-            >
-              <MaterialIcons
-                name="campaign"
-                size={20}
-                color={selectedFilter === 'report' ? '#FFFFFF' : '#20A957'}
-              />
-              <Text
-                style={[
-                  styles.filterText,
-                  selectedFilter === 'report' && styles.filterTextActive,
-                ]}
-              >
-                Phản ánh
-              </Text>
-            </TouchableOpacity>
           </View>
 
           {/* Gần bạn Section */}
           <View style={styles.nearbySection}>
             <View style={styles.nearbyHeader}>
               <Text style={styles.nearbyTitle}>Gần bạn</Text>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Report')}>
                 <Text style={styles.seeAllText}>Xem tất cả</Text>
               </TouchableOpacity>
             </View>
 
-            {NEARBY_CARDS.map((card) => (
+            {(selectedFilter === 'report' ? reportList : NEARBY_CARDS)
+              .filter((card) => {
+                if (!selectedFilter || selectedFilter === 'report') return true;
+                return card.category === (selectedFilter === 'traffic'
+                  ? 'Giao thông'
+                  : selectedFilter === 'environment'
+                  ? 'Môi trường'
+                  : 'Phản ánh');
+              })
+              .map((card) => (
               <TouchableOpacity
                 key={card.id}
                 style={styles.nearbyCard}
@@ -464,21 +632,26 @@ const ExploreScreen: React.FC = () => {
                 <View style={styles.cardContent}>
                   <Text style={styles.cardTitle}>{card.title}</Text>
                   <Text style={styles.cardDescription}>{card.description}</Text>
+                {card.report?.media && card.report.media.length > 0 && (
+                  <View style={styles.cardMediaPreview}>
+                    {card.report.media[0].type === 'video' ? (
+                      <View style={styles.videoContainerSmall}>
+                        <MaterialIcons name="videocam" size={28} color="#FFFFFF" />
+                        <View style={styles.videoBadgeSmall}>
+                          <MaterialIcons name="play-circle-filled" size={20} color="#FFFFFF" />
+                        </View>
+                      </View>
+                    ) : (
+                      <Image
+                        source={{ uri: card.report.media[0].uri }}
+                        style={styles.mediaImageSmall}
+                        resizeMode="cover"
+                      />
+                    )}
+                  </View>
+                )}
                   
                   <View style={styles.cardFooter}>
-                    {card.hasAiButton && (
-                      <TouchableOpacity
-                        style={styles.aiCardButton}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          handleCardAiPress(card);
-                        }}
-                      >
-                        <MaterialIcons name="auto-awesome" size={16} color="#FFFFFF" />
-                        <Text style={styles.aiCardButtonText}>AI CityLens</Text>
-                        <MaterialIcons name="close" size={14} color="#FFFFFF" style={styles.aiCloseIcon} />
-                      </TouchableOpacity>
-                    )}
                     {card.distance && (
                       <View style={styles.distanceContainer}>
                         <MaterialIcons name="location-on" size={16} color="#20A957" />
@@ -500,93 +673,29 @@ const ExploreScreen: React.FC = () => {
               <Text style={styles.suggestionsTitle}>Gợi ý chủ đề</Text>
             </View>
             <View style={styles.suggestionsGrid}>
-              <TouchableOpacity
-                style={styles.suggestionChip}
-                onPress={() => {
-                  // Navigate to places
-                  console.log('Navigate to places');
-                }}
-              >
-                <MaterialIcons name="place" size={20} color="#20A957" />
-                <Text style={styles.suggestionText}>Địa điểm</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.suggestionChip}
-                onPress={() => {
-                  // Navigate to services
-                  console.log('Navigate to services');
-                }}
-              >
-                <MaterialIcons name="room-service" size={20} color="#20A957" />
-                <Text style={styles.suggestionText}>Dịch vụ</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.suggestionChip}
-                onPress={() => {
-                  // Navigate to restaurants
-                  console.log('Navigate to restaurants');
-                }}
-              >
-                <MaterialIcons name="restaurant" size={20} color="#20A957" />
-                <Text style={styles.suggestionText}>Nhà hàng</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.suggestionChip}
-                onPress={() => {
-                  // Navigate to hotels
-                  console.log('Navigate to hotels');
-                }}
-              >
-                <MaterialIcons name="hotel" size={20} color="#20A957" />
-                <Text style={styles.suggestionText}>Khách sạn</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.suggestionChip}
-                onPress={() => {
-                  // Navigate to hospitals
-                  console.log('Navigate to hospitals');
-                }}
-              >
-                <MaterialIcons name="local-hospital" size={20} color="#20A957" />
-                <Text style={styles.suggestionText}>Bệnh viện</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.suggestionChip}
-                onPress={() => {
-                  // Navigate to schools
-                  console.log('Navigate to schools');
-                }}
-              >
-                <MaterialIcons name="school" size={20} color="#20A957" />
-                <Text style={styles.suggestionText}>Trường học</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.suggestionChip}
-                onPress={() => {
-                  // Navigate to shopping
-                  console.log('Navigate to shopping');
-                }}
-              >
-                <MaterialIcons name="shopping-cart" size={20} color="#20A957" />
-                <Text style={styles.suggestionText}>Mua sắm</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.suggestionChip}
-                onPress={() => {
-                  // Navigate to entertainment
-                  console.log('Navigate to entertainment');
-                }}
-              >
-                <MaterialIcons name="movie" size={20} color="#20A957" />
-                <Text style={styles.suggestionText}>Giải trí</Text>
-              </TouchableOpacity>
+              {[
+                { key: 'atm', label: 'ATM', icon: 'local-atm' },
+                { key: 'bank', label: 'Ngân hàng', icon: 'account-balance' },
+                { key: 'restaurant', label: 'Nhà hàng/Quán ăn', icon: 'restaurant' },
+                { key: 'cafe', label: 'Quán cafe', icon: 'local-cafe' },
+                { key: 'pharmacy', label: 'Hiệu thuốc', icon: 'medical-services' },
+                { key: 'hospital', label: 'Bệnh viện/Phòng khám', icon: 'local-hospital' },
+                { key: 'supermarket', label: 'Siêu thị', icon: 'shopping-cart' },
+                { key: 'mall', label: 'Trung tâm TM', icon: 'store-mall-directory' },
+                { key: 'shop', label: 'Cửa hàng', icon: 'storefront' },
+                { key: 'hotel', label: 'Khách sạn', icon: 'hotel' },
+                { key: 'attraction', label: 'Điểm tham quan', icon: 'flag' },
+                { key: 'park', label: 'Công viên', icon: 'park' },
+              ].map((item) => (
+                <TouchableOpacity
+                  key={item.key}
+                  style={styles.suggestionChip}
+                  onPress={() => navigation.navigate('Map', { poiCategory: item.key })}
+                >
+                  <MaterialIcons name={item.icon as any} size={20} color="#20A957" />
+                  <Text style={styles.suggestionText}>{item.label}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
         </ScrollView>
@@ -618,6 +727,111 @@ const ExploreScreen: React.FC = () => {
           </Animated.View>
         )}
       </View>
+
+      {/* Modal chi tiết phản ánh */}
+      <Modal
+        visible={!!selectedCard}
+        transparent
+        animationType="slide"
+        onRequestClose={handleCloseCard}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Chi tiết phản ánh</Text>
+              <TouchableOpacity onPress={handleCloseCard}>
+                <MaterialIcons name="close" size={24} color="#111827" />
+              </TouchableOpacity>
+            </View>
+            {selectedCard && (
+              <View style={styles.modalBody}>
+                <Text style={styles.cardTitle}>{selectedCard.title}</Text>
+                <Text style={styles.cardDescription}>{selectedCard.description}</Text>
+                <View style={styles.modalMeta}>
+                  <View style={[styles.categoryBadge, { marginRight: 8 }]}>
+                    <Text style={styles.categoryText}>#{selectedCard.category}</Text>
+                  </View>
+                  {selectedCard.distance && (
+                    <View style={styles.distanceContainer}>
+                      <MaterialIcons name="location-on" size={16} color="#20A957" />
+                      <Text style={styles.distanceText}>{selectedCard.distance}</Text>
+                    </View>
+                  )}
+                </View>
+                {selectedCard.report?.media && selectedCard.report.media.length > 0 ? (
+                  <View style={styles.mediaItem}>
+                    {selectedCard.report.media[0].type === 'video' ? (
+                      <View style={styles.videoContainer}>
+                        <MaterialIcons name="videocam" size={36} color="#FFFFFF" />
+                        <View style={styles.videoBadge}>
+                          <MaterialIcons name="play-circle-filled" size={28} color="#FFFFFF" />
+                        </View>
+                      </View>
+                    ) : (
+                      <Image
+                        source={{ uri: selectedCard.report.media[0].uri }}
+                        style={styles.mediaImage}
+                        resizeMode="cover"
+                      />
+                    )}
+                  </View>
+                ) : (
+                  <View style={styles.mediaPlaceholder}>
+                    <MaterialIcons name="image" size={36} color="#9CA3AF" />
+                    <Text style={styles.mediaPlaceholderText}>Không có ảnh/video</Text>
+                  </View>
+                )}
+                {selectedCard.report && (
+                  <View style={styles.modalInfoBox}>
+                    <View style={styles.modalInfoRow}>
+                      <MaterialIcons name="category" size={18} color="#6B7280" />
+                      <Text style={styles.modalInfoText}>
+                        {selectedCard.report.reportType || 'Không có loại'}
+                      </Text>
+                    </View>
+                    <View style={styles.modalInfoRow}>
+                      <MaterialIcons name="place" size={18} color="#6B7280" />
+                      <Text style={styles.modalInfoText}>
+                        {selectedCard.report.addressDetail ||
+                          selectedCard.report.ward ||
+                          'Không có địa chỉ'}
+                      </Text>
+                    </View>
+                    <View style={styles.modalInfoRow}>
+                      <MaterialIcons name="schedule" size={18} color="#6B7280" />
+                      <Text style={styles.modalInfoText}>
+                        {formatDateTime(selectedCard.report.createdAt) || '---'}
+                      </Text>
+                    </View>
+                    <View style={styles.modalInfoRow}>
+                      <MaterialIcons name="info" size={18} color="#6B7280" />
+                      <Text style={styles.modalInfoText}>
+                        {selectedCard.report.status || 'pending'}
+                      </Text>
+                    </View>
+                  </View>
+                )}
+                <TouchableOpacity
+                  style={styles.modalButton}
+                  onPress={() => {
+                    handleCloseCard();
+                    navigation.navigate('Map', {
+                      layerType:
+                        selectedCard.category === 'Giao thông'
+                          ? 'traffic'
+                          : selectedCard.category === 'Môi trường'
+                          ? 'environment'
+                          : 'reports',
+                    });
+                  }}
+                >
+                  <Text style={styles.modalButtonText}>Mở trên bản đồ</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -782,6 +996,32 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#111827',
   },
+  alertBanner: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    backgroundColor: '#D1E7DD',
+    borderColor: '#0F5132',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    gap: 6,
+  },
+  alertBannerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  alertBannerTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#0F5132',
+  },
+  alertBannerDesc: {
+    color: '#0F5132',
+    fontSize: 13,
+    lineHeight: 18,
+  },
   filterContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
@@ -941,6 +1181,157 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#20A957',
+  },
+  envLink: {
+    marginTop: 8,
+    marginLeft: 16,
+  },
+  envLinkText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    textDecorationLine: 'underline',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalContent: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  modalBody: {
+    gap: 12,
+  },
+  modalMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modalButton: {
+    marginTop: 8,
+    backgroundColor: '#20A957',
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  modalInfoBox: {
+    marginTop: 8,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 8,
+  },
+  modalInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  modalInfoText: {
+    fontSize: 14,
+    color: '#374151',
+    flexShrink: 1,
+  },
+  mediaScrollView: {
+    maxHeight: 220,
+    marginVertical: 8,
+  },
+  mediaItem: {
+    width: '100%',
+    height: 200,
+  },
+  mediaImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 12,
+  },
+  cardMediaPreview: {
+    height: 140,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  mediaImageSmall: {
+    width: '100%',
+    height: '100%',
+  },
+  videoContainerSmall: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#1F2937',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  videoBadgeSmall: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 12,
+    padding: 4,
+  },
+  videoContainer: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#1F2937',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    position: 'relative',
+  },
+  videoBadge: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 16,
+    padding: 6,
+  },
+  mediaPlaceholder: {
+    width: '100%',
+    height: 140,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginVertical: 8,
+  },
+  mediaPlaceholderText: {
+    fontSize: 13,
+    color: '#9CA3AF',
   },
   aiButton: {
     position: 'absolute',

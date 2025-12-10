@@ -127,7 +127,7 @@ class AIChatService:
                     sources.append("TomTom")
             
             if intent.get("facilities") or intent.get("services"):
-                if db:
+                if db is not None:
                     facilities_data = await self._get_facilities_nearby(
                         db, lat, lon, intent.get("facility_type")
                     )
@@ -136,7 +136,7 @@ class AIChatService:
                         sources.append("Database")
             
             if intent.get("routes") or intent.get("streets"):
-                if db:
+                if db is not None:
                     routes_data = await self._get_routes_nearby(db, lat, lon)
                     if routes_data:
                         context_data["routes"] = routes_data
@@ -163,6 +163,7 @@ class AIChatService:
             models_to_try = [self.model_name] + [m for m in model_names if m != self.model_name]
             response = None
             used_model = None
+            model_errors: List[str] = []
             
             for model_name in models_to_try:
                 try:
@@ -177,20 +178,22 @@ class AIChatService:
                         logger.info(f"Switched to model: {model_name}")
                     break
                 except Exception as model_error:
-                    logger.debug(f"Model {model_name} failed: {model_error}")
+                    logger.warning(f"Model {model_name} failed: {model_error}")
+                    model_errors.append(f"{model_name}: {model_error}")
                     continue
             
             if not response:
-                raise Exception(f"All models failed. Tried: {models_to_try}")
+                raise Exception(f"All models failed. Tried: {models_to_try}. Errors: {model_errors}")
             
             return {
-                "response": response.text,
+                "response": self._sanitize_response(response.text),
                 "sources": sources,
                 "timestamp": datetime.utcnow(),
                 "metadata": {
                     "intent": intent,
                     "has_location": user_location is not None,
-                    "model": used_model
+                    "model": used_model,
+                    "model_errors": model_errors
                 }
             }
         except Exception as e:
@@ -199,12 +202,13 @@ class AIChatService:
             logger.error(f"Error generating AI response: {e}")
             logger.error(f"Traceback: {error_trace}")
             return {
-                "response": f"Xin lỗi, đã xảy ra lỗi khi xử lý câu hỏi của bạn: {str(e)}. Vui lòng thử lại sau.",
+                "response": self._sanitize_response(f"Xin lỗi, đã xảy ra lỗi khi xử lý câu hỏi của bạn: {str(e)}. Vui lòng thử lại sau."),
                 "sources": sources,
                 "timestamp": datetime.utcnow(),
                 "metadata": {
                     "error": str(e),
-                    "error_type": type(e).__name__
+                    "error_type": type(e).__name__,
+                    "model_errors": model_errors if 'model_errors' in locals() else None
                 }
             }
     
@@ -493,4 +497,12 @@ Hãy luôn cung cấp thông tin hữu ích và thực tế dựa trên dữ li�
         prompt_parts.append("Hãy trả lời câu hỏi dựa trên dữ liệu trên một cách tự nhiên và hữu ích:")
         
         return "\n".join(prompt_parts)
+    
+    def _sanitize_response(self, text: str) -> str:
+        """Remove markdown bold/italics and trim whitespace"""
+        if not text:
+            return text
+        sanitized = text.replace("**", "").replace("__", "")
+        sanitized = sanitized.strip()
+        return sanitized
 
