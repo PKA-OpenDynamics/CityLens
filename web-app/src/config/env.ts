@@ -16,16 +16,21 @@ export const TOMTOM_API_KEY =
 
 /**
  * API base URL cho backend (weather/forecast realtime)
- * Chỉ cần base URL (ví dụ: http://localhost:8000)
- * Code sẽ tự thêm /api/v1 nếu chưa có
+ * Tự động derive từ EXPO_PUBLIC_API_BASE_URL bằng cách bỏ /api/v1
  * 
- * Production (Cloudflare Tunnel): https://rooms-tools-kirk-nelson.trycloudflare.com
+ * Production: Chỉ cần set EXPO_PUBLIC_API_BASE_URL=https://your-tunnel.trycloudflare.com/api/v1
  * Local Development: http://localhost:8000
  */
-export const WEATHER_API_BASE_URL =
-  (Constants.expoConfig?.extra as any)?.weatherApiBaseUrl ||
-  (typeof process !== 'undefined' && process.env?.WEATHER_API_BASE_URL) ||
-  'https://rooms-tools-kirk-nelson.trycloudflare.com';
+const getApiBaseUrl = () => {
+  const apiUrl = 
+    (Constants.expoConfig?.extra as any)?.apiBaseUrl ||
+    (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) ||
+    'http://localhost:8000/api/v1';
+  // Remove /api/v1 to get base URL
+  return apiUrl.replace(/\/api\/v1$/, '');
+};
+
+export const WEATHER_API_BASE_URL = getApiBaseUrl();
 
 /**
  * MongoDB Atlas Connection String
@@ -47,29 +52,29 @@ export const MONGODB_DB_NAME =
 
 /**
  * API Base URL for Reports (Backend API)
- * Now using FastAPI backend at /api/v1/app/reports
+ * Tự động derive từ EXPO_PUBLIC_API_BASE_URL + /app
  * 
- * Production (Cloudflare Tunnel): https://rooms-tools-kirk-nelson.trycloudflare.com/api/v1/app
+ * Production: Chỉ cần set EXPO_PUBLIC_API_BASE_URL
  * Local Development: http://localhost:8000/api/v1/app
  */
-export const REPORTS_API_BASE_URL =
-  (Constants.expoConfig?.extra as any)?.reportsApiBaseUrl ||
-  (typeof process !== 'undefined' && process.env?.REPORTS_API_BASE_URL) ||
-  process.env?.EXPO_PUBLIC_REPORTS_API_BASE_URL ||
-  'https://rooms-tools-kirk-nelson.trycloudflare.com/api/v1/app';
+const getReportsApiBaseUrl = () => {
+  const apiUrl = 
+    (Constants.expoConfig?.extra as any)?.apiBaseUrl ||
+    (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) ||
+    'http://localhost:8000/api/v1';
+  return `${apiUrl}/app`;
+};
+
+export const REPORTS_API_BASE_URL = getReportsApiBaseUrl();
 
 /**
  * API Base URL for Authentication (Backend API)
- * Now using FastAPI backend at /api/v1/app/auth
+ * Tự động derive từ EXPO_PUBLIC_API_BASE_URL + /app
  * 
- * Production (Cloudflare Tunnel): https://rooms-tools-kirk-nelson.trycloudflare.com/api/v1/app
+ * Production: Chỉ cần set EXPO_PUBLIC_API_BASE_URL
  * Local Development: http://localhost:8000/api/v1/app
  */
-export const AUTH_API_BASE_URL =
-  (Constants.expoConfig?.extra as any)?.authApiBaseUrl ||
-  (typeof process !== 'undefined' && process.env?.AUTH_API_BASE_URL) ||
-  process.env?.EXPO_PUBLIC_AUTH_API_BASE_URL ||
-  'https://rooms-tools-kirk-nelson.trycloudflare.com/api/v1/app';
+export const AUTH_API_BASE_URL = REPORTS_API_BASE_URL; // Same as reports
 
 /**
  * Kiểm tra xem API key đã được cấu hình chưa
