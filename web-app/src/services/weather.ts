@@ -1,27 +1,14 @@
 // Copyright (c) 2025 CityLens Contributors
-
 // Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
 /**
  * Weather Service for fetching weather and AQI data from MongoDB Atlas
  */
 
-// Prefer explicit weather base; fallback to general API base
-// Docs host: https://rich-slide-junior-advisory.trycloudflare.com/docs#/
-// Set EXPO_PUBLIC_WEATHER_API_BASE_URL to https://rich-slide-junior-advisory.trycloudflare.com/api/v1
-const WEATHER_API_BASE_RAW =
-  process.env.EXPO_PUBLIC_WEATHER_API_BASE_URL ||
-  process.env.EXPO_PUBLIC_API_BASE_URL ||
-  'https://refine-capitol-fixtures-efforts.trycloudflare.com/docs/api/v1';
+import { API_BASE_URL, WEATHER_API_BASE_URL } from '../config/env';
 
-// Ensure base URL always ends with /api/v1 to match backend routes
-const normalizeApiBase = (base: string): string => {
-  const trimmed = base.replace(/\/+$/, '');
-  if (/\/api\/v1$/i.test(trimmed)) return trimmed;
-  return `${trimmed}/api/v1`;
-};
-
-const WEATHER_API_BASE = normalizeApiBase(WEATHER_API_BASE_RAW);
+// Sử dụng API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
+const WEATHER_API_BASE = API_BASE_URL;
 const OPENWEATHER_API_KEY = process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY;
 
 export interface WeatherData {

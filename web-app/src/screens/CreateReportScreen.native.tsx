@@ -26,20 +26,10 @@ import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import reportsService from '../services/reports';
 import { useAuth } from '../contexts/AuthContext';
+import { GEO_API_BASE_URL } from '../config/env';
 
-// API base cho geographic endpoints (dùng EXPO_PUBLIC_API_BASE_URL nếu có)
-const API_BASE_RAW =
-  (typeof process !== 'undefined' && (process.env as any)?.EXPO_PUBLIC_API_BASE_URL) ||
-  (typeof process !== 'undefined' && (process.env as any)?.WEATHER_API_BASE_URL) ||
-  'http://localhost:8000/api/v1';
-
-const normalizeApiBase = (base: string) => {
-  const trimmed = base.replace(/\/+$/, '');
-  if (/\/api\/v1$/i.test(trimmed)) return trimmed;
-  return `${trimmed}/api/v1`;
-};
-
-const API_BASE = normalizeApiBase(API_BASE_RAW);
+// Sử dụng GEO_API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
+const API_BASE = GEO_API_BASE_URL;
 
 const REPORT_TYPES = [
   'Ổ gà',

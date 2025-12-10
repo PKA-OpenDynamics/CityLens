@@ -1,27 +1,10 @@
 // Copyright (c) 2025 CityLens Contributors
-
 // Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
-import { WEATHER_API_BASE_URL } from '../config/env';
+import { API_BASE_URL } from '../config/env';
 
-/**
- * Normalize base URL:
- * - Trim trailing slash
- * - If chưa có /api/v1 thì tự thêm
- */
-const buildBaseUrl = () => {
-  let base = (WEATHER_API_BASE_URL || '').trim().replace(/\/+$/, '');
-  if (!base) return '';
-
-  // Nếu base chưa chứa /api/ thì thêm /api/v1
-  const hasApi = /\/api\/v\d+$/i.test(base) || /\/api\/v\d+\/?$/i.test(base);
-  if (!hasApi) {
-    base = `${base}/api/v1`;
-  }
-  return base;
-};
-
-const BASE_URL = buildBaseUrl();
+// Sử dụng API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
+const BASE_URL = API_BASE_URL;
 
 export type TrafficFlowResponse = {
   current_speed: number;
@@ -37,7 +20,7 @@ export type TrafficFlowResponse = {
 
 async function get<T>(path: string, params?: Record<string, string | number | boolean | undefined>): Promise<T> {
   if (!BASE_URL) {
-    throw new Error('WEATHER_API_BASE_URL chưa được cấu hình');
+    throw new Error('API_BASE_URL chưa được cấu hình');
   }
 
   // Đảm bảo path có leading slash

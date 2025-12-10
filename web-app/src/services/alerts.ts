@@ -1,13 +1,10 @@
-const normalizeApiBase = (base: string): string => {
-  if (!base) return '';
-  if (base.endsWith('/')) return base.slice(0, -1);
-  return base;
-};
+// Copyright (c) 2025 CityLens Contributors
+// Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
-const API_BASE = normalizeApiBase(
-  (typeof process !== 'undefined' && (process.env as any)?.EXPO_PUBLIC_API_BASE_URL) ||
-  'http://localhost:8000/api/v1'
-);
+import { ALERTS_API_BASE_URL } from '../config/env';
+
+// Sử dụng ALERTS_API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
+const API_BASE = ALERTS_API_BASE_URL;
 
 export type AlertItem = {
   _id: string;
@@ -29,8 +26,7 @@ class AlertsService {
   async list(): Promise<AlertItem[]> {
     const base = API_BASE.replace(/\/$/, '');
     const urls = [
-      `${base}/app/alerts`, // Mobile app alerts endpoint
-      `${base}/alerts`, // Fallback
+      `${base}/alerts`, // Primary: /api/v1/app/alerts
     ];
 
     for (let i = 0; i < urls.length; i++) {
