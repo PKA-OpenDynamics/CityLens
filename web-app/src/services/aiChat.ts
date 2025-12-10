@@ -1,7 +1,7 @@
 // Copyright (c) 2025 CityLens Contributors
 // Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
-import { AUTH_API_BASE_URL } from '../config/env';
+import { AI_API_BASE_URL } from '../config/env';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -51,19 +51,8 @@ class AIChatService {
   private baseUrl: string;
 
   constructor() {
-    const authBase = AUTH_API_BASE_URL || 'http://localhost:8000/api/v1/app';
-    // Build AI chat base URL from auth API base URL
-    if (authBase.includes('/auth')) {
-      this.baseUrl = authBase.replace('/auth', '/ai');
-    } else if (authBase.endsWith('/app')) {
-      this.baseUrl = `${authBase}/ai`;
-    } else {
-      this.baseUrl = `${authBase}/ai`;
-    }
-    // Fallback to default
-    if (!this.baseUrl || this.baseUrl === '/ai') {
-      this.baseUrl = 'http://localhost:8000/api/v1/app/ai';
-    }
+    // Sử dụng AI_API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
+    this.baseUrl = AI_API_BASE_URL;
   }
 
   /**

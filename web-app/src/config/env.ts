@@ -1,13 +1,110 @@
 // Copyright (c) 2025 CityLens Contributors
-
 // Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
 import Constants from 'expo-constants';
 
+// =============================================================================
+// CORE API URL HELPERS
+// =============================================================================
+
 /**
- * Lấy TomTom API Key từ environment variables
- * Key được cấu hình trong file .env và truyền qua app.config.js
- * Trên web, có thể đọc trực tiếp từ process.env nếu expo-constants không hoạt động
+ * Đọc biến môi trường EXPO_PUBLIC_API_BASE_URL từ nhiều nguồn
+ * Priority: 1. Expo Constants 2. process.env 3. localhost fallback
+ */
+const getRawApiBaseUrl = (): string => {
+  return (
+    (Constants.expoConfig?.extra as any)?.apiBaseUrl ||
+    (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) ||
+    'http://localhost:8000/api/v1'
+  );
+};
+
+/**
+ * Tự động upgrade HTTP sang HTTPS cho production (Cloudflare Tunnels)
+ * Giữ nguyên HTTP cho localhost development
+ */
+const ensureHttps = (url: string): string => {
+  if (!url) return url;
+  // Giữ nguyên HTTP cho localhost development
+  if (url.includes('localhost') || url.includes('127.0.0.1')) {
+    return url;
+  }
+  // Upgrade HTTP sang HTTPS cho production (Cloudflare Tunnels luôn hỗ trợ HTTPS)
+  if (url.startsWith('http://') && url.includes('.trycloudflare.com')) {
+    return url.replace('http://', 'https://');
+  }
+  return url;
+};
+
+/**
+ * Normalize API base URL - đảm bảo luôn kết thúc bằng /api/v1
+ */
+const normalizeApiBase = (base: string): string => {
+  const trimmed = base.replace(/\/+$/, '');
+  if (/\/api\/v1$/i.test(trimmed)) return trimmed;
+  return `${trimmed}/api/v1`;
+};
+
+/**
+ * API Base URL - Đã normalize và đảm bảo HTTPS cho production
+ * Đây là nguồn duy nhất cho tất cả các API endpoints
+ * 
+ * Ví dụ: https://your-tunnel.trycloudflare.com/api/v1
+ */
+export const API_BASE_URL = ensureHttps(normalizeApiBase(getRawApiBaseUrl()));
+
+// =============================================================================
+// DERIVED API ENDPOINTS
+// =============================================================================
+
+/**
+ * Weather API Base URL (không có /api/v1)
+ * Dùng cho: weather, forecast realtime endpoints
+ * Ví dụ: https://your-tunnel.trycloudflare.com
+ */
+export const WEATHER_API_BASE_URL = API_BASE_URL.replace(/\/api\/v1$/, '');
+
+/**
+ * Reports API Base URL  
+ * Dùng cho: /app/reports, /app/comments endpoints
+ * Ví dụ: https://your-tunnel.trycloudflare.com/api/v1/app
+ */
+export const REPORTS_API_BASE_URL = `${API_BASE_URL}/app`;
+
+/**
+ * Auth API Base URL
+ * Dùng cho: /app/auth/login, /app/auth/register endpoints
+ * Ví dụ: https://your-tunnel.trycloudflare.com/api/v1/app
+ */
+export const AUTH_API_BASE_URL = REPORTS_API_BASE_URL;
+
+/**
+ * AI Chat API Base URL
+ * Dùng cho: /app/ai/chat, /app/ai/history endpoints
+ * Ví dụ: https://your-tunnel.trycloudflare.com/api/v1/app/ai
+ */
+export const AI_API_BASE_URL = `${API_BASE_URL}/app/ai`;
+
+/**
+ * Alerts API Base URL
+ * Dùng cho: /app/alerts endpoints
+ * Ví dụ: https://your-tunnel.trycloudflare.com/api/v1/app
+ */
+export const ALERTS_API_BASE_URL = `${API_BASE_URL}/app`;
+
+/**
+ * Geographic API Base URL
+ * Dùng cho: /geographic/buildings, /geographic/pois endpoints
+ * Ví dụ: https://your-tunnel.trycloudflare.com/api/v1
+ */
+export const GEO_API_BASE_URL = API_BASE_URL;
+
+// =============================================================================
+// OTHER CONFIGS
+// =============================================================================
+
+/**
+ * TomTom API Key
  */
 export const TOMTOM_API_KEY =
   Constants.expoConfig?.extra?.tomtomApiKey ||
@@ -15,30 +112,12 @@ export const TOMTOM_API_KEY =
   '';
 
 /**
- * API base URL cho backend (weather/forecast realtime)
- * Tự động derive từ EXPO_PUBLIC_API_BASE_URL bằng cách bỏ /api/v1
- * 
- * Production: Chỉ cần set EXPO_PUBLIC_API_BASE_URL=https://your-tunnel.trycloudflare.com/api/v1
- * Local Development: http://localhost:8000
- */
-const getApiBaseUrl = () => {
-  const apiUrl = 
-    (Constants.expoConfig?.extra as any)?.apiBaseUrl ||
-    (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) ||
-    'http://localhost:8000/api/v1';
-  // Remove /api/v1 to get base URL
-  return apiUrl.replace(/\/api\/v1$/, '');
-};
-
-export const WEATHER_API_BASE_URL = getApiBaseUrl();
-
-/**
  * MongoDB Atlas Connection String
  */
 export const MONGODB_URI =
   (Constants.expoConfig?.extra as any)?.mongodbUri ||
   (typeof process !== 'undefined' && process.env?.MONGODB_URI) ||
-  process.env?.EXPO_PUBLIC_MONGODB_URI ||
+  (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_MONGODB_URI) ||
   '';
 
 /**
@@ -47,37 +126,11 @@ export const MONGODB_URI =
 export const MONGODB_DB_NAME =
   (Constants.expoConfig?.extra as any)?.mongodbDbName ||
   (typeof process !== 'undefined' && process.env?.MONGODB_DB_NAME) ||
-  process.env?.EXPO_PUBLIC_MONGODB_DB_NAME ||
+  (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_MONGODB_DB_NAME) ||
   'citylens';
 
 /**
- * API Base URL for Reports (Backend API)
- * Tự động derive từ EXPO_PUBLIC_API_BASE_URL + /app
- * 
- * Production: Chỉ cần set EXPO_PUBLIC_API_BASE_URL
- * Local Development: http://localhost:8000/api/v1/app
- */
-const getReportsApiBaseUrl = () => {
-  const apiUrl = 
-    (Constants.expoConfig?.extra as any)?.apiBaseUrl ||
-    (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) ||
-    'http://localhost:8000/api/v1';
-  return `${apiUrl}/app`;
-};
-
-export const REPORTS_API_BASE_URL = getReportsApiBaseUrl();
-
-/**
- * API Base URL for Authentication (Backend API)
- * Tự động derive từ EXPO_PUBLIC_API_BASE_URL + /app
- * 
- * Production: Chỉ cần set EXPO_PUBLIC_API_BASE_URL
- * Local Development: http://localhost:8000/api/v1/app
- */
-export const AUTH_API_BASE_URL = REPORTS_API_BASE_URL; // Same as reports
-
-/**
- * Kiểm tra xem API key đã được cấu hình chưa
+ * Kiểm tra xem TomTom API key đã được cấu hình chưa
  */
 export const isTomTomApiKeyConfigured = (): boolean => {
   return (
@@ -85,5 +138,26 @@ export const isTomTomApiKeyConfigured = (): boolean => {
     TOMTOM_API_KEY !== 'YOUR_TOMTOM_API_KEY_HERE' &&
     TOMTOM_API_KEY.length >= 32
   );
+};
+
+// =============================================================================
+// DEBUG HELPERS
+// =============================================================================
+
+/**
+ * Log tất cả API URLs (chỉ dùng cho debug)
+ */
+export const logApiUrls = (): void => {
+  if (typeof console !== 'undefined') {
+    console.log('[ENV] API URLs:', {
+      API_BASE_URL,
+      WEATHER_API_BASE_URL,
+      REPORTS_API_BASE_URL,
+      AUTH_API_BASE_URL,
+      AI_API_BASE_URL,
+      ALERTS_API_BASE_URL,
+      GEO_API_BASE_URL,
+    });
+  }
 };
 

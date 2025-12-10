@@ -25,7 +25,8 @@ class CommentsService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = REPORTS_API_BASE_URL || 'http://localhost:8000/api/v1/app';
+    // Sử dụng REPORTS_API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
+    this.baseUrl = REPORTS_API_BASE_URL;
   }
 
   /**

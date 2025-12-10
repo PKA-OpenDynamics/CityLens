@@ -14,21 +14,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { TOMTOM_API_KEY, isTomTomApiKeyConfigured } from '../config/env';
+import { TOMTOM_API_KEY, isTomTomApiKeyConfigured, GEO_API_BASE_URL } from '../config/env';
 
-// Backend API base (for geographic layers)
-const API_BASE_RAW =
-  (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) ||
-  (typeof process !== 'undefined' && process.env?.WEATHER_API_BASE_URL) ||
-  'https://refine-capitol-fixtures-efforts.trycloudflare.com/api/v1';
-
-const normalizeApiBase = (base: string): string => {
-  const trimmed = base.replace(/\/+$/, '');
-  if (/\/api\/v1$/i.test(trimmed)) return trimmed;
-  return `${trimmed}/api/v1`;
-};
-
-const API_BASE = normalizeApiBase(API_BASE_RAW);
+// Sử dụng GEO_API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
+const API_BASE = GEO_API_BASE_URL;
 
 // Ngã Tư Sở - Quận Thanh Xuân, Hà Nội
 const NGA_TU_SO_COORDS: [number, number] = [21.003204, 105.819673];
