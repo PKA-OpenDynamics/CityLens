@@ -80,10 +80,10 @@ export const AUTH_API_BASE_URL = REPORTS_API_BASE_URL;
 
 /**
  * AI Chat API Base URL
- * Dùng cho: /app/ai/chat, /app/ai/history endpoints
- * Ví dụ: https://your-tunnel.trycloudflare.com/api/v1/app/ai
+ * Dùng cho: /ai/chat, /ai/history endpoints
+ * Ví dụ: https://your-tunnel.trycloudflare.com/api/v1/ai
  */
-export const AI_API_BASE_URL = `${API_BASE_URL}/app/ai`;
+export const AI_API_BASE_URL = `${API_BASE_URL}/ai`;
 
 /**
  * Alerts API Base URL
