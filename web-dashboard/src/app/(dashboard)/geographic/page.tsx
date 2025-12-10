@@ -7,7 +7,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { 
   RefreshCw, PanelRightOpen, PanelRightClose,
-  Map as MapIcon, Satellite
+  Map as MapIcon, Satellite, Camera
 } from 'lucide-react';
 import { 
   geographicApi, 
@@ -38,6 +38,64 @@ const Popup = dynamic(
 );
 const CircleMarker = dynamic(
   () => import('react-leaflet').then(mod => mod.CircleMarker),
+  { ssr: false }
+);
+const Marker = dynamic(
+  () => import('react-leaflet').then(mod => mod.Marker),
+  { ssr: false }
+);
+
+// Traffic Camera components
+import { TRAFFIC_CAMERAS, TrafficCameraPopup, type TrafficCamera } from '@/components/map/TrafficCamera';
+
+// Camera Marker component for use with react-leaflet
+const CameraMarkerWithPopup = dynamic(
+  () => Promise.resolve(({ camera }: { camera: TrafficCamera }) => {
+    const L = typeof window !== 'undefined' ? require('leaflet') : null;
+    const { Marker: LeafletMarker, Popup: LeafletPopup } = require('react-leaflet');
+    
+    if (!L) return null;
+    
+    const cameraIcon = L.divIcon({
+      className: 'camera-marker',
+      html: `
+        <div class="relative flex flex-col items-center">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center shadow-lg ${
+            camera.status === 'online' ? 'bg-green-600' : 
+            camera.status === 'demo' ? 'bg-yellow-600' : 'bg-red-600'
+          } border-2 border-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+              <circle cx="12" cy="13" r="3"/>
+            </svg>
+          </div>
+          <span class="absolute -top-1 -right-1 w-3 h-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+          </span>
+        </div>
+      `,
+      iconSize: [44, 44],
+      iconAnchor: [22, 44],
+      popupAnchor: [0, -44],
+    });
+    
+    return (
+      <LeafletMarker 
+        position={camera.location}
+        icon={cameraIcon}
+      >
+        <LeafletPopup
+          closeButton={true}
+          maxWidth={350}
+          minWidth={320}
+          className="camera-popup"
+        >
+          <TrafficCameraPopup camera={camera} />
+        </LeafletPopup>
+      </LeafletMarker>
+    );
+  }),
   { ssr: false }
 );
 
@@ -107,6 +165,7 @@ interface LayerVisibility {
   districts: boolean;
   pois: boolean;
   traffic: boolean;
+  cameras: boolean;
 }
 
 // TomTom Traffic Flow layer (requires API key from environment)
@@ -276,6 +335,7 @@ export default function GeographicPage() {
     districts: true,
     pois: true,
     traffic: false,
+    cameras: true,
   });
   
   // Refs
@@ -531,13 +591,16 @@ export default function GeographicPage() {
           <button
             onClick={() => setShowDetailsPanel(!showDetailsPanel)}
             className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg",
-              "bg-card border border-border hover:bg-muted transition-colors",
-              showDetailsPanel && "bg-accent/10 border-accent"
+              "flex items-center gap-2 px-4 py-2 rounded-lg transition-all",
+              "bg-card border border-border hover:bg-green-50 dark:hover:bg-green-950/20",
+              showDetailsPanel ? "bg-green-50 dark:bg-green-950/30 border-green-500" : ""
             )}
             title={showDetailsPanel ? "Ẩn panel chi tiết" : "Hiện panel chi tiết"}
           >
-            {showDetailsPanel ? <PanelRightClose className="w-4 h-4" /> : <PanelRightOpen className="w-4 h-4" />}
+            {showDetailsPanel ? 
+              <PanelRightClose className="w-4 h-4 text-green-600 dark:text-green-500" /> : 
+              <PanelRightOpen className="w-4 h-4 hover:text-green-600 dark:hover:text-green-500" />
+            }
           </button>
           
           {/* Refresh Button */}
@@ -546,7 +609,7 @@ export default function GeographicPage() {
             disabled={refreshing}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-lg",
-              "bg-accent text-white hover:bg-accent/90 transition-colors",
+              "bg-green-600 text-white hover:bg-green-700 transition-colors",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
           >
@@ -619,24 +682,24 @@ export default function GeographicPage() {
                 className={cn(
                   "flex flex-col items-center gap-1 p-3 rounded-lg border transition-all",
                   activeMapLayer === 'satellite' 
-                    ? "border-accent bg-accent/10" 
-                    : "border-border hover:bg-muted"
+                    ? "border-green-500 bg-green-50 dark:bg-green-950/30 shadow-sm" 
+                    : "border-border hover:bg-green-50 dark:hover:bg-green-950/20 hover:border-green-400"
                 )}
               >
-                <Satellite className="w-5 h-5" />
-                <span className="text-xs">Vệ tinh</span>
+                <Satellite className={cn("w-5 h-5", activeMapLayer === 'satellite' ? "text-green-600" : "")} />
+                <span className={cn("text-xs", activeMapLayer === 'satellite' ? "text-green-600 font-medium" : "")}>Vệ tinh</span>
               </button>
               <button
                 onClick={() => setActiveMapLayer('osm')}
                 className={cn(
                   "flex flex-col items-center gap-1 p-3 rounded-lg border transition-all",
                   activeMapLayer === 'osm' 
-                    ? "border-accent bg-accent/10" 
-                    : "border-border hover:bg-muted"
+                    ? "border-green-500 bg-green-50 dark:bg-green-950/30 shadow-sm" 
+                    : "border-border hover:bg-green-50 dark:hover:bg-green-950/20 hover:border-green-400"
                 )}
               >
-                <MapIcon className="w-5 h-5" />
-                <span className="text-xs">Đường phố</span>
+                <MapIcon className={cn("w-5 h-5", activeMapLayer === 'osm' ? "text-green-600" : "")} />
+                <span className={cn("text-xs", activeMapLayer === 'osm' ? "text-green-600 font-medium" : "")}>Đường phố</span>
               </button>
             </div>
           </div>
@@ -650,10 +713,10 @@ export default function GeographicPage() {
                   type="checkbox"
                   checked={layerVisibility.boundaries}
                   onChange={() => toggleLayer('boundaries')}
-                  className="w-4 h-4 rounded border-border text-accent focus:ring-accent"
+                  className="w-4 h-4 rounded border-border text-green-600 focus:ring-green-500"
                 />
                 <div>
-                  <p className="text-sm text-foreground">Ranh giới Hà Nội</p>
+                  <p className={`text-sm ${layerVisibility.boundaries ? 'text-green-600 font-medium' : 'text-foreground'}`}>Ranh giới Hà Nội</p>
                   <p className="text-xs text-muted-foreground">Viền đỏ</p>
                 </div>
               </label>
@@ -662,10 +725,10 @@ export default function GeographicPage() {
                   type="checkbox"
                   checked={layerVisibility.districts}
                   onChange={() => toggleLayer('districts')}
-                  className="w-4 h-4 rounded border-border text-accent focus:ring-accent"
+                  className="w-4 h-4 rounded border-border text-green-600 focus:ring-green-500"
                 />
                 <div>
-                  <p className="text-sm text-foreground">Phường/Xã</p>
+                  <p className={`text-sm ${layerVisibility.districts ? 'text-green-600 font-medium' : 'text-foreground'}`}>Phường/Xã</p>
                   <p className="text-xs text-muted-foreground">{hanoiInfo?.num_wards || 126} đơn vị</p>
                 </div>
               </label>
@@ -674,10 +737,10 @@ export default function GeographicPage() {
                   type="checkbox"
                   checked={layerVisibility.pois}
                   onChange={() => toggleLayer('pois')}
-                  className="w-4 h-4 rounded border-border text-accent focus:ring-accent"
+                  className="w-4 h-4 rounded border-border text-green-600 focus:ring-green-500"
                 />
                 <div>
-                  <p className="text-sm text-foreground">Điểm POI</p>
+                  <p className={`text-sm ${layerVisibility.pois ? 'text-green-600 font-medium' : 'text-foreground'}`}>Điểm POI</p>
                   <p className="text-xs text-muted-foreground">Địa điểm quan trọng</p>
                 </div>
               </label>
@@ -686,11 +749,26 @@ export default function GeographicPage() {
                   type="checkbox"
                   checked={layerVisibility.traffic}
                   onChange={() => toggleLayer('traffic')}
-                  className="w-4 h-4 rounded border-border text-accent focus:ring-accent"
+                  className="w-4 h-4 rounded border-border text-green-600 focus:ring-green-500"
                 />
                 <div>
-                  <p className="text-sm text-foreground">Giao thông</p>
+                  <p className={`text-sm ${layerVisibility.traffic ? 'text-green-600 font-medium' : 'text-foreground'}`}>Giao thông</p>
                   <p className="text-xs text-muted-foreground">Tình trạng đường (TomTom)</p>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={layerVisibility.cameras}
+                  onChange={() => toggleLayer('cameras')}
+                  className="w-4 h-4 rounded border-border text-green-600 focus:ring-green-500"
+                />
+                <div>
+                  <p className="text-sm text-foreground flex items-center gap-1">
+                    <Camera className="w-3 h-3 text-green-500" />
+                    <span className={layerVisibility.cameras ? 'text-green-600 font-medium' : ''}>Camera giao thông</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">Xem video thực tế</p>
                 </div>
               </label>
             </div>
@@ -787,6 +865,27 @@ export default function GeographicPage() {
                 </div>
               </div>
             )}
+
+            {/* Camera Legend */}
+            {layerVisibility.cameras && (
+              <div className="border-t border-border pt-3 mt-3">
+                <p className="text-xs font-medium text-foreground mb-2 flex items-center gap-1">
+                  <Camera className="w-3 h-3 text-green-500" />
+                  <span className="text-green-600">Camera giao thông ({TRAFFIC_CAMERAS.length})</span>
+                </p>
+                <div className="space-y-1 text-[10px]">
+                  {TRAFFIC_CAMERAS.map((cam) => (
+                    <div key={cam.id} className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></div>
+                      <span className="truncate">{cam.name}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-[9px] text-muted-foreground mt-2 italic">
+                  Click vào marker để xem video
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -795,7 +894,7 @@ export default function GeographicPage() {
           {loading ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center">
-                <RefreshCw className="w-8 h-8 animate-spin text-accent mx-auto mb-2" />
+                <RefreshCw className="w-8 h-8 animate-spin text-green-600 mx-auto mb-2" />
                 <p className="text-muted-foreground">Đang tải bản đồ...</p>
               </div>
             </div>
@@ -936,6 +1035,11 @@ export default function GeographicPage() {
                   </CircleMarker>
                 );
               })}
+
+              {/* Traffic Camera Markers */}
+              {layerVisibility.cameras && TRAFFIC_CAMERAS.map((camera) => (
+                <CameraMarkerWithPopup key={camera.id} camera={camera} />
+              ))}
             </MapContainer>
           ) : (
             <div className="h-full flex items-center justify-center">
@@ -957,7 +1061,7 @@ export default function GeographicPage() {
           {(mapBounds || mapZoom !== DEFAULT_ZOOM) && (
             <button
               onClick={resetMapView}
-              className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 shadow-lg px-3 py-2 rounded-lg text-sm font-medium z-[1000] hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="absolute bottom-4 left-4 bg-white dark:bg-gray-800 shadow-lg px-3 py-2 rounded-lg text-sm font-medium z-[1000] hover:bg-green-50 dark:hover:bg-green-950/30 hover:text-green-600 hover:border-green-500 border border-transparent transition-all"
             >
               Xem toàn bộ Hà Nội
             </button>
