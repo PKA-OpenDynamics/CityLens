@@ -16,7 +16,9 @@ import {
   RefreshCw,
   Download,
   MapPin,
-  Bell
+  Bell,
+  Lightbulb,
+  Siren
 } from 'lucide-react';
 import { adminService, type DashboardOverview, type RealTimeMetrics, type Alert } from '@/lib/admin-service';
 import { cn } from '@/lib/utils';
@@ -93,10 +95,13 @@ function AlertItem({ alert, onAcknowledge }: { alert: Alert; onAcknowledge: (id:
     critical: 'bg-red-100 text-red-800 border-red-200'
   };
 
-  const severityIcons = {
-    info: '💡',
-    warning: '⚠️',
-    critical: '🚨'
+  const getSeverityIcon = (severity: string) => {
+    switch (severity) {
+      case 'info': return <Lightbulb className="h-5 w-5 text-blue-600" />;
+      case 'warning': return <AlertTriangle className="h-5 w-5 text-yellow-600" />;
+      case 'critical': return <Siren className="h-5 w-5 text-red-600" />;
+      default: return <Bell className="h-5 w-5" />;
+    }
   };
 
   return (
@@ -107,7 +112,7 @@ function AlertItem({ alert, onAcknowledge }: { alert: Alert; onAcknowledge: (id:
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-lg">{severityIcons[alert.severity]}</span>
+            {getSeverityIcon(alert.severity)}
             <h4 className="font-semibold text-sm">{alert.title}</h4>
           </div>
           <p className="text-xs opacity-90 mb-2">{alert.description}</p>
