@@ -7,8 +7,18 @@
 
 import { API_BASE_URL, WEATHER_API_BASE_URL } from '../config/env';
 
-// Sử dụng API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
-const WEATHER_API_BASE = API_BASE_URL;
+/**
+ * Helper để đảm bảo URL luôn dùng HTTPS (trừ localhost)
+ */
+const ensureHttpsUrl = (url: string): string => {
+  if (url.includes('localhost') || url.includes('127.0.0.1')) {
+    return url;
+  }
+  return url.replace(/^http:\/\//i, 'https://');
+};
+
+// Sử dụng API_BASE_URL từ env.ts và đảm bảo HTTPS
+const WEATHER_API_BASE = ensureHttpsUrl(API_BASE_URL);
 const OPENWEATHER_API_KEY = process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY;
 
 export interface WeatherData {

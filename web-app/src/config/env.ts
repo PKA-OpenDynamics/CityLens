@@ -65,7 +65,17 @@ const normalizeApiBase = (base: string): string => {
  * 
  * Ví dụ: https://your-tunnel.trycloudflare.com/api/v1
  */
-export const API_BASE_URL = ensureHttps(normalizeApiBase(getRawApiBaseUrl()));
+const rawUrl = getRawApiBaseUrl();
+const normalizedUrl = normalizeApiBase(rawUrl);
+const httpsUrl = ensureHttps(normalizedUrl);
+
+console.log('[ENV] URL processing:', {
+  raw: rawUrl,
+  normalized: normalizedUrl,
+  final: httpsUrl
+});
+
+export const API_BASE_URL = httpsUrl;
 
 // =============================================================================
 // DERIVED API ENDPOINTS
@@ -105,6 +115,15 @@ export const AI_API_BASE_URL = `${API_BASE_URL}/ai`;
  * Ví dụ: https://your-tunnel.trycloudflare.com/api/v1/app
  */
 export const ALERTS_API_BASE_URL = `${API_BASE_URL}/app`;
+
+// Log all derived URLs để debug
+console.log('[ENV] All API URLs:', {
+  API_BASE_URL,
+  WEATHER_API_BASE_URL,
+  REPORTS_API_BASE_URL,
+  ALERTS_API_BASE_URL,
+  AI_API_BASE_URL
+});
 
 /**
  * Geographic API Base URL

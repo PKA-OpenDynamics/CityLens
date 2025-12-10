@@ -3,6 +3,16 @@
 
 import { AI_API_BASE_URL } from '../config/env';
 
+/**
+ * Helper để đảm bảo URL luôn dùng HTTPS (trừ localhost)
+ */
+const ensureHttpsUrl = (url: string): string => {
+  if (url.includes('localhost') || url.includes('127.0.0.1')) {
+    return url;
+  }
+  return url.replace(/^http:\/\//i, 'https://');
+};
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -51,8 +61,8 @@ class AIChatService {
   private baseUrl: string;
 
   constructor() {
-    // Sử dụng AI_API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
-    this.baseUrl = AI_API_BASE_URL;
+    // Sử dụng AI_API_BASE_URL từ env.ts và đảm bảo HTTPS
+    this.baseUrl = ensureHttpsUrl(AI_API_BASE_URL);
   }
 
   /**

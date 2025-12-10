@@ -3,8 +3,18 @@
 
 import { API_BASE_URL } from '../config/env';
 
-// Sử dụng API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
-const BASE_URL = API_BASE_URL;
+/**
+ * Helper để đảm bảo URL luôn dùng HTTPS (trừ localhost)
+ */
+const ensureHttpsUrl = (url: string): string => {
+  if (url.includes('localhost') || url.includes('127.0.0.1')) {
+    return url;
+  }
+  return url.replace(/^http:\/\//i, 'https://');
+};
+
+// Sử dụng API_BASE_URL từ env.ts và đảm bảo HTTPS
+const BASE_URL = ensureHttpsUrl(API_BASE_URL);
 
 export type TrafficFlowResponse = {
   current_speed: number;

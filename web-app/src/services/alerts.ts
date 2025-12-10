@@ -3,8 +3,18 @@
 
 import { ALERTS_API_BASE_URL } from '../config/env';
 
+/**
+ * Helper để đảm bảo URL luôn dùng HTTPS (trừ localhost)
+ */
+const ensureHttpsUrl = (url: string): string => {
+  if (url.includes('localhost') || url.includes('127.0.0.1')) {
+    return url;
+  }
+  return url.replace(/^http:\/\//i, 'https://');
+};
+
 // Sử dụng ALERTS_API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
-const API_BASE = ALERTS_API_BASE_URL;
+const API_BASE = ensureHttpsUrl(ALERTS_API_BASE_URL);
 
 export type AlertItem = {
   _id: string;

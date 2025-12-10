@@ -9,6 +9,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AUTH_API_BASE_URL } from '../config/env';
 
+/**
+ * Helper để đảm bảo URL luôn dùng HTTPS (trừ localhost)
+ */
+const ensureHttpsUrl = (url: string): string => {
+  if (url.includes('localhost') || url.includes('127.0.0.1')) {
+    return url;
+  }
+  return url.replace(/^http:\/\//i, 'https://');
+};
+
+const API_BASE = ensureHttpsUrl(AUTH_API_BASE_URL);
 const TOKEN_KEY = '@citylens:access_token';
 
 export interface LoginCredentials {
@@ -49,7 +60,7 @@ export interface User {
 
 class AuthService {
   async login(credentials: LoginCredentials): Promise<LoginResponse> {
-    const response = await fetch(`${AUTH_API_BASE_URL}/auth/login`, {
+    const response = await fetch(`${API_BASE}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -87,9 +98,9 @@ class AuthService {
       phone: userData.phone,
     };
     
-    console.log('Register request:', { url: `${AUTH_API_BASE_URL}/auth/register`, body: { ...requestBody, password: '***' } });
+    console.log('Register request:', { url: `${API_BASE}/auth/register`, body: { ...requestBody, password: '***' } });
     
-    const response = await fetch(`${AUTH_API_BASE_URL}/auth/register`, {
+    const response = await fetch(`${API_BASE}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -128,7 +139,7 @@ class AuthService {
       throw new Error('Chưa đăng nhập');
     }
 
-    const response = await fetch(`${AUTH_API_BASE_URL}/auth/me`, {
+    const response = await fetch(`${API_BASE}/auth/me`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,

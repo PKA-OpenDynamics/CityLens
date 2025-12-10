@@ -6,6 +6,7 @@ version: '3.8'
 services:
   postgres:
     image: postgis/postgis:15-3.4
+    container_name: citylens-postgres-prod
     environment:
       POSTGRES_USER: citylens
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -17,6 +18,7 @@ services:
 
   mongodb:
     image: mongo:7.0
+    container_name: citylens-mongodb-prod
     ports:
       - "27017:27017"
     volumes:
@@ -24,11 +26,13 @@ services:
 
   redis:
     image: redis:7.2-alpine
+    container_name: citylens-redis-prod
     ports:
       - "6379:6379"
 
   backend:
     build: ./backend
+    container_name: citylens-backend-prod
     environment:
       - DATABASE_URL=postgresql://citylens:${POSTGRES_PASSWORD}@postgres:5432/citylens_db
       - MONGODB_URL=mongodb://mongodb:27017
