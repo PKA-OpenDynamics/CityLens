@@ -5,16 +5,25 @@ import { ALERTS_API_BASE_URL } from '../config/env';
 
 /**
  * Helper để đảm bảo URL luôn dùng HTTPS (trừ localhost)
+ * Được gọi ngay trước mỗi fetch request để đảm bảo không có Mixed Content
  */
-const ensureHttpsUrl = (url: string): string => {
+const forceHttps = (url: string): string => {
+  if (!url) return url;
+  // Giữ nguyên localhost
   if (url.includes('localhost') || url.includes('127.0.0.1')) {
     return url;
   }
-  return url.replace(/^http:\/\//i, 'https://');
+  // Force replace http:// with https:// - handle any case
+  const result = url.replace(/^http:/i, 'https:');
+  if (result !== url) {
+    console.log('[AlertsService] Forced HTTPS upgrade:', url, '->', result);
+  }
+  return result;
 };
 
-// Sử dụng ALERTS_API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
-const API_BASE = ensureHttpsUrl(ALERTS_API_BASE_URL);
+// Sử dụng ALERTS_API_BASE_URL từ env.ts
+const API_BASE = forceHttps(ALERTS_API_BASE_URL);
+console.log('[AlertsService] API_BASE:', API_BASE);
 
 export type AlertItem = {
   _id: string;
@@ -34,13 +43,15 @@ export type AlertItem = {
 
 class AlertsService {
   async list(): Promise<AlertItem[]> {
-    const base = API_BASE.replace(/\/$/, '');
+    const base = forceHttps(API_BASE.replace(/\/$/, ''));
     const urls = [
       `${base}/alerts`, // Primary: /api/v1/app/alerts
     ];
 
     for (let i = 0; i < urls.length; i++) {
-      const url = urls[i];
+      // Force HTTPS for each URL before fetch
+      const url = forceHttps(urls[i]);
+      console.log('[AlertsService] Fetching:', url);
       try {
         const res = await fetch(url);
         if (res.status === 404) {

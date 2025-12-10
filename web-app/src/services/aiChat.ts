@@ -5,12 +5,18 @@ import { AI_API_BASE_URL } from '../config/env';
 
 /**
  * Helper để đảm bảo URL luôn dùng HTTPS (trừ localhost)
+ * Force replace http: with https: để tránh Mixed Content
  */
-const ensureHttpsUrl = (url: string): string => {
+const forceHttps = (url: string): string => {
+  if (!url) return url;
   if (url.includes('localhost') || url.includes('127.0.0.1')) {
     return url;
   }
-  return url.replace(/^http:\/\//i, 'https://');
+  const result = url.replace(/^http:/i, 'https:');
+  if (result !== url) {
+    console.log('[AIChatService] Forced HTTPS upgrade:', url, '->', result);
+  }
+  return result;
 };
 
 export interface ChatMessage {
@@ -62,7 +68,8 @@ class AIChatService {
 
   constructor() {
     // Sử dụng AI_API_BASE_URL từ env.ts và đảm bảo HTTPS
-    this.baseUrl = ensureHttpsUrl(AI_API_BASE_URL);
+    this.baseUrl = forceHttps(AI_API_BASE_URL);
+    console.log('[AIChatService] baseUrl:', this.baseUrl);
   }
 
   /**

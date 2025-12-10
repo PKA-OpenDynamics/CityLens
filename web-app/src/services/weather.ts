@@ -9,16 +9,23 @@ import { API_BASE_URL, WEATHER_API_BASE_URL } from '../config/env';
 
 /**
  * Helper để đảm bảo URL luôn dùng HTTPS (trừ localhost)
+ * Force replace http: with https: để tránh Mixed Content
  */
-const ensureHttpsUrl = (url: string): string => {
+const forceHttps = (url: string): string => {
+  if (!url) return url;
   if (url.includes('localhost') || url.includes('127.0.0.1')) {
     return url;
   }
-  return url.replace(/^http:\/\//i, 'https://');
+  const result = url.replace(/^http:/i, 'https:');
+  if (result !== url) {
+    console.log('[WeatherService] Forced HTTPS upgrade:', url, '->', result);
+  }
+  return result;
 };
 
 // Sử dụng API_BASE_URL từ env.ts và đảm bảo HTTPS
-const WEATHER_API_BASE = ensureHttpsUrl(API_BASE_URL);
+const WEATHER_API_BASE = forceHttps(API_BASE_URL);
+console.log('[WeatherService] WEATHER_API_BASE:', WEATHER_API_BASE);
 const OPENWEATHER_API_KEY = process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY;
 
 export interface WeatherData {

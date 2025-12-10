@@ -5,12 +5,18 @@ import { REPORTS_API_BASE_URL } from '../config/env';
 
 /**
  * Helper để đảm bảo URL luôn dùng HTTPS (trừ localhost)
+ * Force replace http: with https: để tránh Mixed Content
  */
-const ensureHttpsUrl = (url: string): string => {
+const forceHttps = (url: string): string => {
+  if (!url) return url;
   if (url.includes('localhost') || url.includes('127.0.0.1')) {
     return url;
   }
-  return url.replace(/^http:\/\//i, 'https://');
+  const result = url.replace(/^http:/i, 'https:');
+  if (result !== url) {
+    console.log('[CommentsService] Forced HTTPS upgrade:', url, '->', result);
+  }
+  return result;
 };
 
 export interface Comment {
@@ -36,7 +42,8 @@ class CommentsService {
 
   constructor() {
     // Sử dụng REPORTS_API_BASE_URL từ env.ts và đảm bảo HTTPS
-    this.baseUrl = ensureHttpsUrl(REPORTS_API_BASE_URL);
+    this.baseUrl = forceHttps(REPORTS_API_BASE_URL);
+    console.log('[CommentsService] baseUrl:', this.baseUrl);
   }
 
   /**

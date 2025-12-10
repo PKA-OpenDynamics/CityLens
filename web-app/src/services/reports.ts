@@ -51,22 +51,37 @@ export interface ApiResponse<T> {
 
 /**
  * Helper để đảm bảo URL luôn dùng HTTPS (trừ localhost)
+ * Được gọi ngay trước mỗi fetch request để đảm bảo không có Mixed Content
  */
-const ensureHttpsUrl = (url: string): string => {
+const forceHttps = (url: string): string => {
+  if (!url) return url;
+  // Giữ nguyên localhost
   if (url.includes('localhost') || url.includes('127.0.0.1')) {
     return url;
   }
-  return url.replace(/^http:\/\//i, 'https://');
+  // Force replace http:// with https:// - handle any case
+  const result = url.replace(/^http:/i, 'https:');
+  if (result !== url) {
+    console.log('[ReportsService] Forced HTTPS upgrade:', url, '->', result);
+  }
+  return result;
 };
 
 class ReportsService {
   private baseUrl: string;
 
   constructor() {
-    // Sử dụng REPORTS_API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
-    // Thêm ensureHttpsUrl để double-check
-    this.baseUrl = ensureHttpsUrl(REPORTS_API_BASE_URL);
+    // Sử dụng REPORTS_API_BASE_URL từ env.ts
+    // Thêm forceHttps để đảm bảo không có Mixed Content
+    this.baseUrl = forceHttps(REPORTS_API_BASE_URL);
     console.log('[ReportsService] Base URL:', this.baseUrl);
+  }
+
+  /**
+   * Build full URL with HTTPS enforcement
+   */
+  private buildUrl(path: string): string {
+    return forceHttps(`${this.baseUrl}${path}`);
   }
 
   /**
@@ -74,7 +89,9 @@ class ReportsService {
    */
   async createReport(data: CreateReportData): Promise<ApiResponse<Report>> {
     try {
-      const response = await fetch(`${this.baseUrl}/reports`, {
+      const url = this.buildUrl('/reports');
+      console.log('[ReportsService] createReport URL:', url);
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -111,7 +128,8 @@ class ReportsService {
       if (options?.userId) params.append('userId', options.userId);
 
       const queryString = params.toString();
-      const url = `${this.baseUrl}/reports${queryString ? `?${queryString}` : ''}`;
+      const url = this.buildUrl(`/reports${queryString ? `?${queryString}` : ''}`);
+      console.log('[ReportsService] getReports URL:', url);
 
       const response = await fetch(url, {
         method: 'GET',
@@ -137,7 +155,9 @@ class ReportsService {
    */
   async getReportById(id: string): Promise<ApiResponse<Report>> {
     try {
-      const response = await fetch(`${this.baseUrl}/reports/${id}`, {
+      const url = this.buildUrl(`/reports/${id}`);
+      console.log('[ReportsService] getReportById URL:', url);
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

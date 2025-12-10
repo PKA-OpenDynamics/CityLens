@@ -28,11 +28,12 @@ const getRawApiBaseUrl = (): string => {
 };
 
 /**
- * Tự động upgrade HTTP sang HTTPS cho production
+ * Force upgrade HTTP sang HTTPS cho production
  * - Giữ nguyên HTTP cho localhost development
- * - Luôn upgrade sang HTTPS cho tất cả domain khác (đặc biệt Cloudflare Tunnels)
+ * - LUÔN upgrade sang HTTPS cho tất cả domain khác (đặc biệt Cloudflare Tunnels)
+ * - Sử dụng regex đơn giản /^http:/i để match cả http: và HTTP:
  */
-const ensureHttps = (url: string): string => {
+const forceHttps = (url: string): string => {
   if (!url) return url;
   
   // Giữ nguyên HTTP cho localhost development
@@ -40,14 +41,13 @@ const ensureHttps = (url: string): string => {
     return url;
   }
   
-  // LUÔN upgrade HTTP sang HTTPS cho bất kỳ domain nào không phải localhost
-  // Điều này đảm bảo Mixed Content không xảy ra trên production
-  if (url.startsWith('http://')) {
-    console.log('[ENV] Upgrading HTTP to HTTPS:', url);
-    return url.replace('http://', 'https://');
+  // Force replace http: với https: (không cần match //)
+  // Regex /^http:/i match "http:" ở đầu URL, case-insensitive
+  const result = url.replace(/^http:/i, 'https:');
+  if (result !== url) {
+    console.log('[ENV] Forced HTTPS upgrade:', url, '->', result);
   }
-  
-  return url;
+  return result;
 };
 
 /**
@@ -67,7 +67,7 @@ const normalizeApiBase = (base: string): string => {
  */
 const rawUrl = getRawApiBaseUrl();
 const normalizedUrl = normalizeApiBase(rawUrl);
-const httpsUrl = ensureHttps(normalizedUrl);
+const httpsUrl = forceHttps(normalizedUrl);
 
 console.log('[ENV] URL processing:', {
   raw: rawUrl,

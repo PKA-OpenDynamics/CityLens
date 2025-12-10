@@ -5,16 +5,23 @@ import { API_BASE_URL } from '../config/env';
 
 /**
  * Helper để đảm bảo URL luôn dùng HTTPS (trừ localhost)
+ * Force replace http: with https: để tránh Mixed Content
  */
-const ensureHttpsUrl = (url: string): string => {
+const forceHttps = (url: string): string => {
+  if (!url) return url;
   if (url.includes('localhost') || url.includes('127.0.0.1')) {
     return url;
   }
-  return url.replace(/^http:\/\//i, 'https://');
+  const result = url.replace(/^http:/i, 'https:');
+  if (result !== url) {
+    console.log('[TrafficService] Forced HTTPS upgrade:', url, '->', result);
+  }
+  return result;
 };
 
 // Sử dụng API_BASE_URL từ env.ts và đảm bảo HTTPS
-const BASE_URL = ensureHttpsUrl(API_BASE_URL);
+const BASE_URL = forceHttps(API_BASE_URL);
+console.log('[TrafficService] BASE_URL:', BASE_URL);
 
 export type TrafficFlowResponse = {
   current_speed: number;

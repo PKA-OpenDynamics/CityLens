@@ -11,15 +11,22 @@ import { AUTH_API_BASE_URL } from '../config/env';
 
 /**
  * Helper để đảm bảo URL luôn dùng HTTPS (trừ localhost)
+ * Force replace http: with https: để tránh Mixed Content
  */
-const ensureHttpsUrl = (url: string): string => {
+const forceHttps = (url: string): string => {
+  if (!url) return url;
   if (url.includes('localhost') || url.includes('127.0.0.1')) {
     return url;
   }
-  return url.replace(/^http:\/\//i, 'https://');
+  const result = url.replace(/^http:/i, 'https:');
+  if (result !== url) {
+    console.log('[AuthService] Forced HTTPS upgrade:', url, '->', result);
+  }
+  return result;
 };
 
-const API_BASE = ensureHttpsUrl(AUTH_API_BASE_URL);
+const API_BASE = forceHttps(AUTH_API_BASE_URL);
+console.log('[AuthService] API_BASE:', API_BASE);
 const TOKEN_KEY = '@citylens:access_token';
 
 export interface LoginCredentials {
