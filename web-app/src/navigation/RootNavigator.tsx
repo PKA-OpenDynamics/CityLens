@@ -18,6 +18,7 @@ import ExploreScreen from '../screens/ExploreScreen.native';
 import MapScreen from '../screens/MapScreen';
 import ReportScreen from '../screens/ReportScreen.native';
 import ProfileScreen from '../screens/ProfileScreen.native';
+import NotificationsScreen from '../screens/NotificationsScreen.native';
 import CreateReportScreen from '../screens/CreateReportScreen.native';
 import ReportDetailScreen from '../screens/ReportDetailScreen.native';
 import AiAssistantScreen from '../screens/AiAssistantScreen.native';
@@ -26,6 +27,8 @@ import PersonalInfoScreen from '../screens/PersonalInfoScreen';
 import WeatherDetailScreen from '../screens/WeatherDetailScreen.native';
 import AirQualityDetailScreen from '../screens/AirQualityDetailScreen.native';
 import EnvironmentDetailScreen from '../screens/EnvironmentDetailScreen.native';
+import SupportScreen from '../screens/SupportScreen.native';
+import TermsScreen from '../screens/TermsScreen.native';
 import { useAuth } from '../contexts/AuthContext';
 
 const Tab = createBottomTabNavigator();
@@ -113,6 +116,7 @@ function TabNavigator() {
             let iconName: keyof typeof MaterialIcons.glyphMap = 'public';
             if (route.name === 'Explore') iconName = 'explore';
             if (route.name === 'Map') iconName = 'map';
+            if (route.name === 'Notifications') iconName = 'notifications';
             if (route.name === 'Report') iconName = 'campaign';
             if (route.name === 'Profile') iconName = 'account-circle';
             return (
@@ -145,6 +149,13 @@ function TabNavigator() {
         }}
       />
       <Tab.Screen
+        name="Notifications"
+        component={NotificationsScreen}
+        options={{
+          tabBarLabel: 'Thông báo',
+        }}
+      />
+      <Tab.Screen
         name="Report"
         component={ReportStackNavigator}
         options={{
@@ -156,6 +167,13 @@ function TabNavigator() {
         component={ProfileScreen}
         options={{
           tabBarLabel: 'Hồ sơ',
+        }}
+      />
+      <Tab.Screen
+        name="NotificationsModal"
+        component={NotificationsScreen}
+        options={{
+          tabBarItemStyle: { display: 'none' },
         }}
       />
     </Tab.Navigator>
@@ -194,6 +212,9 @@ const RootNavigator: React.FC = () => {
             <RootStack.Screen name="WeatherDetail" component={WeatherDetailScreen} />
             <RootStack.Screen name="AirQualityDetail" component={AirQualityDetailScreen} />
             <RootStack.Screen name="EnvironmentDetail" component={EnvironmentDetailScreen} />
+            <RootStack.Screen name="Support" component={SupportScreen} />
+            <RootStack.Screen name="Terms" component={TermsScreen} />
+            <RootStack.Screen name="Notifications" component={NotificationsScreen} />
           </>
         )}
       </RootStack.Navigator>
