@@ -13,8 +13,22 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { TOMTOM_API_KEY, isTomTomApiKeyConfigured } from '../config/env';
+
+// Backend API base (for geographic layers)
+const API_BASE_RAW =
+  (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) ||
+  (typeof process !== 'undefined' && process.env?.WEATHER_API_BASE_URL) ||
+  'https://refine-capitol-fixtures-efforts.trycloudflare.com/api/v1';
+
+const normalizeApiBase = (base: string): string => {
+  const trimmed = base.replace(/\/+$/, '');
+  if (/\/api\/v1$/i.test(trimmed)) return trimmed;
+  return `${trimmed}/api/v1`;
+};
+
+const API_BASE = normalizeApiBase(API_BASE_RAW);
 
 // Ngã Tư Sở - Quận Thanh Xuân, Hà Nội
 const NGA_TU_SO_COORDS: [number, number] = [21.003204, 105.819673];
@@ -66,6 +80,18 @@ const CITIES = {
   },
 };
 
+const getBoundingBoxAroundPoint = (center: [number, number], radiusKm = 2) => {
+  const [lat, lon] = center;
+  const deltaLat = radiusKm / 111; // ≈ km per degree latitude
+  const deltaLon = radiusKm / (111 * Math.cos((lat * Math.PI) / 180));
+  return {
+    minLat: lat - deltaLat,
+    maxLat: lat + deltaLat,
+    minLon: lon - deltaLon,
+    maxLon: lon + deltaLon,
+  };
+};
+
 // Mapping camera names to video paths
 // Video files đã được copy vào public/videos/ để Expo Web có thể serve
 const CAMERA_VIDEO_MAP: Record<string, string> = {
@@ -111,6 +137,69 @@ type Incident = {
   magnitudeOfDelay?: number;
 };
 
+type SelectedBuilding = {
+  name: string;
+  type: string;
+  height?: number;
+  address?: string;
+  center?: [number, number];
+};
+
+const translateBuildingType = (raw?: string): string => {
+  if (!raw) return 'Chưa rõ';
+  const t = raw.toLowerCase();
+  switch (t) {
+    case 'university':
+    case 'school':
+    case 'college':
+      return 'Trường học';
+    case 'hospital':
+    case 'clinic':
+      return 'Bệnh viện / Phòng khám';
+    case 'stadium':
+      return 'Sân vận động';
+    case 'sports_centre':
+    case 'sport':
+      return 'Trung tâm thể thao';
+    case 'retail':
+    case 'commercial':
+    case 'shop':
+    case 'supermarket':
+    case 'mall':
+      return 'Thương mại / Bán lẻ';
+    case 'office':
+    case 'public':
+    case 'government':
+    case 'civic':
+      return 'Văn phòng / Cơ quan';
+    case 'residential':
+    case 'apartments':
+    case 'house':
+      return 'Khu dân cư';
+    case 'hotel':
+    case 'motel':
+    case 'guest_house':
+      return 'Lưu trú';
+    case 'industrial':
+    case 'factory':
+    case 'warehouse':
+      return 'Công nghiệp / Kho xưởng';
+    case 'parking':
+      return 'Bãi đỗ xe';
+    case 'library':
+      return 'Thư viện';
+    case 'church':
+    case 'temple':
+    case 'mosque':
+    case 'pagoda':
+      return 'Cơ sở tôn giáo';
+    case 'yes':
+      return 'Tòa nhà';
+    default:
+      return raw;
+  }
+};
+
 type Stats = {
   incidents: number;
   avgSpeed: number;
@@ -125,6 +214,25 @@ const MapScreen: React.FC = () => {
   const [showTrafficLayer, setShowTrafficLayer] = useState(false);
   const [showIncidentsLayer, setShowIncidentsLayer] = useState(false);
   const [showCameraLayer, setShowCameraLayer] = useState(false);
+  const [showBuildingLayer, setShowBuildingLayer] = useState(false);
+  const [showPoiLayer, setShowPoiLayer] = useState(false);
+  const [buildingGeojson, setBuildingGeojson] = useState<any | null>(null);
+  const [poiGeojson, setPoiGeojson] = useState<any | null>(null);
+  const POI_FILTERS: Array<{ key: string; label: string }> = [
+    { key: 'atm', label: 'ATM' },
+    { key: 'bank', label: 'Ngân hàng' },
+    { key: 'restaurant', label: 'Nhà hàng/Quán ăn' },
+    { key: 'cafe', label: 'Quán cafe' },
+    { key: 'pharmacy', label: 'Hiệu thuốc' },
+    { key: 'hospital', label: 'Bệnh viện/Phòng khám' },
+    { key: 'supermarket', label: 'Siêu thị' },
+    { key: 'mall', label: 'Trung tâm thương mại' },
+    { key: 'shop', label: 'Cửa hàng' },
+    { key: 'hotel', label: 'Khách sạn' },
+    { key: 'attraction', label: 'Điểm tham quan' },
+    { key: 'park', label: 'Công viên' },
+  ];
+  const [poiCategoryFilter, setPoiCategoryFilter] = useState<string | null>(null);
   const [showLayerDropdown, setShowLayerDropdown] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -135,6 +243,7 @@ const MapScreen: React.FC = () => {
     coordinate: [number, number];
     stats: { avgSpeed: number; density: number };
   } | null>(null);
+  const [selectedBuilding, setSelectedBuilding] = useState<SelectedBuilding | null>(null);
   const isChangingCameraRef = useRef(false); // Flag để track khi đang chuyển camera
 
   const [trafficFlows, setTrafficFlows] = useState<TrafficFlow[]>([]); // Flows từ layer giao thông (bán kính 2km)
@@ -156,11 +265,14 @@ const MapScreen: React.FC = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const navigation = useNavigation<any>();
+  const route = useRoute<any>();
   const isFetchingRef = useRef(false); // Để tránh fetch liên tục
   const layerDropdownButtonRef = useRef<any>(null);
   const layerDropdownMenuRef = useRef<any>(null);
   const cityDropdownButtonRef = useRef<any>(null);
   const cityDropdownMenuRef = useRef<any>(null);
+  const buildingCacheRef = useRef<Record<string, any>>({});
+  const poiCacheRef = useRef<Record<string, any>>({});
   const [layerDropdownPosition, setLayerDropdownPosition] = useState({ top: 82, left: 150 });
   const [cityDropdownPosition, setCityDropdownPosition] = useState({ top: 82, left: 12 });
   // Set default location ngay từ đầu để icon hiển thị luôn
@@ -489,6 +601,62 @@ const MapScreen: React.FC = () => {
     return icons[category] || '⚠️';
   };
 
+const getPoiIcon = (category?: string, subcategory?: string): string => {
+    const key = `${category || ''}:${subcategory || ''}`.toLowerCase();
+    const map: Record<string, string> = {
+      'amenity:restaurant': '🍽️',
+      'amenity:cafe': '☕',
+      'amenity:bank': '🏦',
+      'amenity:school': '🏫',
+      'amenity:hospital': '🏥',
+      'amenity:pharmacy': '💊',
+      'shop:supermarket': '🛒',
+      'shop:mall': '🏬',
+      'tourism:hotel': '🏨',
+      'tourism:attraction': '📍',
+      'leisure:park': '🌳',
+    };
+    return map[key] || map[`${category || ''}:`] || '📍';
+  };
+
+  const translatePoiType = (category?: string, subcategory?: string): string => {
+    const c = category?.toLowerCase();
+    const s = subcategory?.toLowerCase();
+    if (c === 'amenity') {
+      if (s === 'atm') return 'ATM';
+      if (s === 'bank') return 'Ngân hàng';
+      if (s === 'restaurant') return 'Nhà hàng / Quán ăn';
+      if (s === 'cafe') return 'Quán cafe';
+      if (s === 'pharmacy') return 'Hiệu thuốc';
+      if (s === 'hospital') return 'Bệnh viện';
+      if (s === 'clinic') return 'Phòng khám';
+      return 'Tiện ích';
+    }
+    if (c === 'shop') {
+      if (s === 'supermarket') return 'Siêu thị';
+      if (s === 'mall') return 'Trung tâm thương mại';
+      return 'Cửa hàng';
+    }
+    if (c === 'tourism') {
+      if (s === 'hotel') return 'Khách sạn';
+      if (s === 'attraction') return 'Điểm tham quan';
+      return 'Du lịch';
+    }
+    if (c === 'leisure') {
+      if (s === 'park') return 'Công viên';
+      return 'Giải trí';
+    }
+    return s || c || 'POI';
+  };
+
+  const normalizeText = (text: string) =>
+    text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+
+  // No search bar -> resolvePoiFilter not used
+
   const translateCategory = (category: number): string => {
     const translations: Record<number, string> = {
       0: 'Không xác định',
@@ -686,6 +854,89 @@ const MapScreen: React.FC = () => {
     }
   };
 
+  const fetchBuildingsGeojson = async (cityKey: string) => {
+    const cached = buildingCacheRef.current[cityKey];
+    if (cached) {
+      setBuildingGeojson(cached);
+      return;
+    }
+
+    setLoading(true);
+    showStatus('🔄 Đang tải bản đồ tòa nhà...');
+
+    try {
+      const url = `${API_BASE}/geographic/buildings/geojson`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Buildings API error ${res.status}`);
+      const data = await res.json();
+      buildingCacheRef.current[cityKey] = data;
+      setBuildingGeojson(data);
+      const count = Array.isArray(data?.features) ? data.features.length : 0;
+      showStatus(`✅ Đã tải ${count} tòa nhà`, 2000);
+    } catch (error) {
+      console.error('Error fetching buildings:', error);
+      showStatus('❌ Lỗi khi tải tòa nhà', 2000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPoisGeojson = async (cityKey: string) => {
+    const cached = poiCacheRef.current[cityKey];
+    if (cached) {
+      setPoiGeojson(cached);
+      return;
+    }
+
+    setLoading(true);
+    showStatus('🔄 Đang tải POI (điểm quan tâm)...');
+
+    try {
+      // Lấy POI trong bán kính ~2km quanh userLocation (hoặc center city nếu chưa có)
+      const center = userLocation || (CITIES as any)[cityKey].center;
+      const bbox = getBoundingBoxAroundPoint(center, 2);
+      const bboxParam = `${bbox.minLon},${bbox.minLat},${bbox.maxLon},${bbox.maxLat}`;
+      const params = new URLSearchParams();
+      params.set('limit', '300');
+      params.set('bbox', bboxParam);
+      // Map filter term to category/subcategory when có
+      const filterMap: Record<string, { category: string; subcategory?: string }> = {
+        atm: { category: 'amenity', subcategory: 'atm' },
+        bank: { category: 'amenity', subcategory: 'bank' },
+        restaurant: { category: 'amenity', subcategory: 'restaurant' },
+        cafe: { category: 'amenity', subcategory: 'cafe' },
+        pharmacy: { category: 'amenity', subcategory: 'pharmacy' },
+        hospital: { category: 'amenity', subcategory: 'hospital' },
+        clinic: { category: 'amenity', subcategory: 'clinic' },
+        supermarket: { category: 'shop', subcategory: 'supermarket' },
+        mall: { category: 'shop', subcategory: 'mall' },
+        shop: { category: 'shop' },
+        hotel: { category: 'tourism', subcategory: 'hotel' },
+        attraction: { category: 'tourism', subcategory: 'attraction' },
+        park: { category: 'leisure', subcategory: 'park' },
+      };
+      if (poiCategoryFilter && filterMap[poiCategoryFilter]) {
+        const f = filterMap[poiCategoryFilter];
+        params.set('category', f.category);
+        if (f.subcategory) params.set('subcategory', f.subcategory);
+      }
+
+      const url = `${API_BASE}/geographic/pois/geojson?${params.toString()}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`POIs API error ${res.status}`);
+      const data = await res.json();
+      poiCacheRef.current[cityKey] = data;
+      setPoiGeojson(data);
+      const count = Array.isArray(data?.features) ? data.features.length : 0;
+      showStatus(`Đã tải ${count} điểm POI`, 2000);
+    } catch (error) {
+      console.error('Error fetching POIs:', error);
+      showStatus('Lỗi khi tải POI', 2000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderLayers = () => {
     if (!mapRef.current || !(window as any).L) {
       console.log('Cannot render layers: map not ready', { 
@@ -741,11 +992,37 @@ const MapScreen: React.FC = () => {
       });
       (mapRef.current as any)._cameraLayers = [];
     }
+    if ((mapRef.current as any)._buildingLayers) {
+      (mapRef.current as any)._buildingLayers.forEach((layer: any) => {
+        if (mapRef.current && mapRef.current.hasLayer(layer)) {
+          mapRef.current.removeLayer(layer);
+        }
+      });
+      (mapRef.current as any)._buildingLayers = [];
+    }
+    if ((mapRef.current as any)._boundaryLayers) {
+      (mapRef.current as any)._boundaryLayers.forEach((layer: any) => {
+        if (mapRef.current && mapRef.current.hasLayer(layer)) {
+          mapRef.current.removeLayer(layer);
+        }
+      });
+      (mapRef.current as any)._boundaryLayers = [];
+    }
+    if ((mapRef.current as any)._poiLayers) {
+      (mapRef.current as any)._poiLayers.forEach((layer: any) => {
+        if (mapRef.current && mapRef.current.hasLayer(layer)) {
+          mapRef.current.removeLayer(layer);
+        }
+      });
+      (mapRef.current as any)._poiLayers = [];
+    }
 
     const trafficLayers: any[] = [];
     const incidentLayers: any[] = [];
     const clickLayers: any[] = [];
     const cameraLayers: any[] = [];
+    const buildingLayers: any[] = [];
+    const poiLayers: any[] = [];
 
     // Vẽ route line trước để người dùng thấy route chính xác
     if (routeCoordinates.length >= 2) {
@@ -981,11 +1258,137 @@ const MapScreen: React.FC = () => {
     }
     // Nếu showCameraLayer = false hoặc showTrafficLayer = false, cameraLayers sẽ là mảng rỗng và đã được clear ở đầu hàm
 
+    // Render building polygons (GeoJSON)
+    if (showBuildingLayer && buildingGeojson) {
+      const geoJsonLayer = L.geoJSON(buildingGeojson, {
+        style: () => ({
+          color: '#00000000', // no stroke
+          weight: 0,
+          fillColor: '#00000000', // transparent fill
+          fillOpacity: 0,
+        }),
+        onEachFeature: (feature: any, layer: any) => {
+          const name = feature?.properties?.name || 'Tòa nhà';
+          const typeRaw =
+            feature?.properties?.type ||
+            feature?.properties?.building_type ||
+            feature?.properties?.category ||
+            'Chưa rõ';
+          const type = translateBuildingType(typeRaw);
+          const height = feature?.properties?.height;
+          const rawAddress = feature?.properties?.address || feature?.properties?.location;
+          const address =
+            typeof rawAddress === 'object' && rawAddress !== null
+              ? [
+                  rawAddress.housenumber,
+                  rawAddress.street,
+                  rawAddress.district,
+                  rawAddress.city,
+                  rawAddress.country,
+                ]
+                  .filter(Boolean)
+                  .join(', ')
+              : rawAddress;
+          const center = layer.getBounds?.().getCenter?.();
+
+          const popup = `
+            <div style="min-width:220px;color:#111827;">
+              <div style="font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:6px;">
+                <span>🏢</span><span>${name}</span>
+              </div>
+              <div style="margin:2px 0;"><strong>Loại:</strong> ${type}</div>
+              ${
+                height
+                  ? `<div style="margin:2px 0;"><strong>Chiều cao:</strong> ${height} m</div>`
+                  : ''
+              }
+              ${
+                address
+                  ? `<div style="margin:2px 0;"><strong>Địa chỉ:</strong> ${address}</div>`
+                  : ''
+              }
+              <div style="margin-top:6px;color:#4F46E5;font-weight:600;">Nhấn để xem chi tiết</div>
+            </div>
+          `;
+          layer.bindPopup(popup);
+
+          layer.on('click', () => {
+            setSelectedBuilding({
+              name,
+              type,
+              height,
+              address,
+              center: center ? [center.lat, center.lng] : undefined,
+            });
+          });
+
+          // Thêm icon nhỏ ở tâm để dễ click
+          if (center) {
+            const marker = L.marker(center, {
+              icon: L.divIcon({
+                className: 'building-marker',
+                html: `<div style="background:rgba(255,255,255,0.0);border:none;border-radius:12px;padding:8px 10px;font-size:18px;color:#1F2937;box-shadow:none;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:6px;">🏢</div>`,
+              }),
+            }).addTo(mapRef.current);
+
+            marker.on('click', () => {
+              setSelectedBuilding({
+                name,
+                type,
+                height,
+                address,
+                center: center ? [center.lat, center.lng] : undefined,
+              });
+            });
+
+            buildingLayers.push(marker);
+          }
+        },
+      }).addTo(mapRef.current);
+      buildingLayers.push(geoJsonLayer);
+    }
+
+    // Render POIs
+    if (showPoiLayer && poiGeojson) {
+      const poiLayer = L.geoJSON(poiGeojson, {
+        pointToLayer: (feature: any, latlng: any) => {
+          const cat = feature?.properties?.category;
+          const sub = feature?.properties?.subcategory;
+          const icon = getPoiIcon(cat, sub);
+          return L.marker(latlng, {
+            icon: L.divIcon({
+              className: 'poi-marker',
+              html: `<div style="background: white; border: 2px solid #0EA5E9; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-size: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">${icon}</div>`,
+              iconSize: [32, 32],
+            }),
+          });
+        },
+        onEachFeature: (feature: any, layer: any) => {
+          const name = feature?.properties?.name || 'Điểm quan tâm';
+          const cat = feature?.properties?.category;
+          const sub = feature?.properties?.subcategory;
+          const address = feature?.properties?.address;
+          const typeLabel = translatePoiType(cat, sub);
+          const popup = `
+            <div style="min-width:220px;color:#111827;">
+              <div style="font-weight:700;margin-bottom:4px;">${getPoiIcon(cat, sub)} ${name}</div>
+              ${cat ? `<div>Loại: ${typeLabel}</div>` : ''}
+              ${address ? `<div>Địa chỉ: ${address}</div>` : ''}
+            </div>
+          `;
+          layer.bindPopup(popup);
+        },
+      }).addTo(mapRef.current);
+      poiLayers.push(poiLayer);
+    }
+
     // Store layers for next clear cycle
     (mapRef.current as any)._trafficLayers = trafficLayers;
     (mapRef.current as any)._incidentLayers = incidentLayers;
     (mapRef.current as any)._clickLayers = clickLayers;
     (mapRef.current as any)._cameraLayers = cameraLayers;
+    (mapRef.current as any)._buildingLayers = buildingLayers;
+    (mapRef.current as any)._poiLayers = poiLayers;
   };
 
   useEffect(() => {
@@ -993,7 +1396,58 @@ const MapScreen: React.FC = () => {
       console.log('useEffect renderLayers triggered, userLocation:', userLocation);
       renderLayers();
     }
-  }, [trafficFlows, routeFlows, incidents, showTrafficLayer, showIncidentsLayer, showCameraLayer, currentCity, userLocation, destination, routeCoordinates]);
+  }, [
+    trafficFlows,
+    routeFlows,
+    incidents,
+    showTrafficLayer,
+    showIncidentsLayer,
+    showCameraLayer,
+    showBuildingLayer,
+    showPoiLayer,
+    buildingGeojson,
+    poiGeojson,
+    currentCity,
+    userLocation,
+    destination,
+    routeCoordinates,
+  ]);
+
+  // Fetch building geojson when layer is turned on
+  useEffect(() => {
+    if (showBuildingLayer) {
+      const cached = buildingCacheRef.current[currentCity];
+      if (cached) {
+        setBuildingGeojson(cached);
+      }
+      fetchBuildingsGeojson(currentCity);
+    } else {
+      setBuildingGeojson(null);
+    }
+  }, [showBuildingLayer, currentCity]);
+
+  // Fetch POIs when layer toggled
+  useEffect(() => {
+    if (showPoiLayer) {
+      const cached = poiCacheRef.current[currentCity];
+      if (cached) {
+        setPoiGeojson(cached);
+      }
+      fetchPoisGeojson(currentCity);
+    } else {
+      setPoiGeojson(null);
+    }
+  }, [showPoiLayer, currentCity, poiCategoryFilter, userLocation]);
+
+  // Apply filter from navigation params (e.g., navigate('Map', { poiCategory: 'hospital' }))
+  useEffect(() => {
+    const paramFilter = (route.params as any)?.poiCategory as string | undefined;
+    if (paramFilter) {
+      setPoiCategoryFilter(paramFilter);
+      poiCacheRef.current[currentCity] = null as any; // clear cache to refetch with new filter
+      setShowPoiLayer(true);
+    }
+  }, [route.params, currentCity]);
 
   const fetchAllData = async () => {
     if (!isTomTomApiKeyConfigured() || isFetchingRef.current) return;
@@ -2314,8 +2768,43 @@ const MapScreen: React.FC = () => {
               </TouchableOpacity>
 
             </View>
+
+            {/* POI filter chips (hiển thị khi bật POI layer) */}
+            {showPoiLayer && (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+              >
+                {POI_FILTERS.map((f) => (
+                  <TouchableOpacity
+                    key={f.key}
+                    style={[
+                      styles.layerToggle,
+                      poiCategoryFilter === f.key && styles.clickModeActive,
+                    ]}
+                    onPress={() => {
+                      const next = poiCategoryFilter === f.key ? null : f.key;
+                      setPoiCategoryFilter(next);
+                      // Clear cache to refetch with new filter
+                      poiCacheRef.current[currentCity] = null as any;
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.layerDropdownItemText,
+                        { fontSize: 12 },
+                        poiCategoryFilter === f.key && styles.clickModeTextActive,
+                      ]}
+                    >
+                      {f.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
           </ScrollView>
-          
+
           {/* City Dropdown Menu */}
           {showCityDropdown && (
             <View 
@@ -2457,6 +2946,54 @@ const MapScreen: React.FC = () => {
                 data-layer-dropdown-item="true"
                 activeOpacity={0.7}
                 onPress={(e) => {
+                  e.stopPropagation();
+                  const newValue = !showBuildingLayer;
+                  setShowBuildingLayer(newValue);
+                }}
+                // @ts-ignore - web only
+                onClick={(e: any) => {
+                  e.stopPropagation();
+                  const newValue = !showBuildingLayer;
+                  setShowBuildingLayer(newValue);
+                }}
+              >
+                <MaterialIcons
+                  name={showBuildingLayer ? 'check-box' : 'check-box-outline-blank'}
+                  size={20}
+                  color={showBuildingLayer ? '#20A957' : '#757575'}
+                />
+                <Text style={styles.layerDropdownItemText}>Tòa nhà</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.layerDropdownItem}
+                data-layer-dropdown-item="true"
+                activeOpacity={0.7}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  const newValue = !showPoiLayer;
+                  setShowPoiLayer(newValue);
+                }}
+                // @ts-ignore - web only
+                onClick={(e: any) => {
+                  e.stopPropagation();
+                  const newValue = !showPoiLayer;
+                  setShowPoiLayer(newValue);
+                }}
+              >
+                <MaterialIcons
+                  name={showPoiLayer ? 'check-box' : 'check-box-outline-blank'}
+                  size={20}
+                  color={showPoiLayer ? '#20A957' : '#757575'}
+                />
+                <Text style={styles.layerDropdownItemText}>Điểm POI (nhà hàng, ngân hàng...)</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.layerDropdownItem}
+                data-layer-dropdown-item="true"
+                activeOpacity={0.7}
+                onPress={(e) => {
                   e.stopPropagation(); // Ngăn event bubble
                   console.log('Sự cố clicked, current:', showIncidentsLayer);
                   const newValue = !showIncidentsLayer;
@@ -2539,6 +3076,42 @@ const MapScreen: React.FC = () => {
           <View style={styles.loadingOverlay}>
             <ActivityIndicator size="large" color="#20A957" />
             <Text style={styles.loadingText}>Đang tải...</Text>
+          </View>
+        )}
+
+        {/* Building detail panel */}
+        {selectedBuilding && (
+          <View style={styles.buildingPanel}>
+            <View style={styles.buildingPanelHeader}>
+              <Text style={styles.buildingPanelTitle}>🏢 {selectedBuilding.name}</Text>
+              <TouchableOpacity onPress={() => setSelectedBuilding(null)}>
+                <MaterialIcons name="close" size={22} color="#4B5563" />
+              </TouchableOpacity>
+            </View>
+            <View style={styles.buildingPanelRow}>
+              <Text style={styles.buildingPanelLabel}>Loại:</Text>
+              <Text style={styles.buildingPanelValue}>{selectedBuilding.type}</Text>
+            </View>
+            {selectedBuilding.height ? (
+              <View style={styles.buildingPanelRow}>
+                <Text style={styles.buildingPanelLabel}>Chiều cao:</Text>
+                <Text style={styles.buildingPanelValue}>{selectedBuilding.height} m</Text>
+              </View>
+            ) : null}
+            {selectedBuilding.address ? (
+              <View style={styles.buildingPanelRow}>
+                <Text style={styles.buildingPanelLabel}>Địa chỉ:</Text>
+                <Text style={styles.buildingPanelValue}>{selectedBuilding.address}</Text>
+              </View>
+            ) : null}
+            {selectedBuilding.center ? (
+              <View style={styles.buildingPanelRow}>
+                <Text style={styles.buildingPanelLabel}>Tọa độ:</Text>
+                <Text style={styles.buildingPanelValue}>
+                  {selectedBuilding.center[0].toFixed(6)}, {selectedBuilding.center[1].toFixed(6)}
+                </Text>
+              </View>
+            ) : null}
           </View>
         )}
       </View>
@@ -3087,6 +3660,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  buildingPanel: {
+    position: 'absolute',
+    right: 12,
+    left: 12,
+    bottom: 90,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#E5E7EB',
+  },
+  buildingPanelHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  buildingPanelTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  buildingPanelRow: {
+    flexDirection: 'row',
+    marginBottom: 6,
+  },
+  buildingPanelLabel: {
+    width: 80,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  buildingPanelValue: {
+    flex: 1,
+    color: '#111827',
   },
 });
 
