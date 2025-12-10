@@ -61,7 +61,7 @@ class ReportsService {
    */
   async createReport(data: CreateReportData): Promise<ApiResponse<Report>> {
     try {
-      const response = await fetch(`${this.baseUrl}/reports`, {
+      const response = await fetch(`${this.baseUrl}/reports/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +96,7 @@ class ReportsService {
       if (options?.status) params.append('status', options.status);
 
       const queryString = params.toString();
-      const url = `${this.baseUrl}/reports${queryString ? `?${queryString}` : ''}`;
+      const url = `${this.baseUrl}/reports/${queryString ? `?${queryString}` : ''}`;
 
       const response = await fetch(url, {
         method: 'GET',
