@@ -43,7 +43,7 @@ const navigationGroups = [
   {
     title: 'System',
     items: [
-      { name: 'User Management', nameVi: 'Quản lý người dùng', href: '/users', icon: Users },
+      { name: 'User Management', nameVi: 'Quản lý người dùng', href: '/admin/user-management', icon: Users },
       { name: 'Settings', nameVi: 'Cài đặt', href: '/settings', icon: Settings },
     ],
   },
