@@ -4,18 +4,21 @@
 """
 User Management API Endpoints
 Full CRUD for Web Dashboard and Mobile App users
+- Web Dashboard users: MongoDB Docker (collection: users)
+- Mobile App users: MongoDB Atlas (collection: user_profile)
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import func
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
+from bson import ObjectId
 
-from app.db.postgres import get_db
-from app.models.user import User, UserRole
-from app.services.auth_service import auth_service as web_auth_service, get_password_hash
+from app.db.mongodb import get_mongodb
+from app.db.mongodb_atlas import get_mongodb_atlas
+from app.services.auth_service import auth_service as web_auth_service
+from app.services.app_auth_service import AppAuthService
 
 router = APIRouter()
 
@@ -27,7 +30,7 @@ class UserCreate(BaseModel):
     full_name: str
     phone: Optional[str] = None
     password: str
-    role: UserRole = UserRole.CITIZEN
+    role: str = 'citizen'  # 'admin', 'staff', 'viewer', 'citizen'
     source: str = 'dashboard'  # 'dashboard' or 'app'
     department: Optional[str] = None
     position: Optional[str] = None
@@ -38,7 +41,7 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     full_name: Optional[str] = None
     phone: Optional[str] = None
-    role: Optional[UserRole] = None
+    role: Optional[str] = None
     department: Optional[str] = None
     position: Optional[str] = None
     is_active: Optional[bool] = None
@@ -50,16 +53,19 @@ class UserResponse(BaseModel):
     email: str
     username: str
     full_name: str
-    phone: Optional[str]
+    phone: Optional[str] = None
     role: str
     source: str
     is_active: bool
     is_verified: bool
-    reports_count: int
-    points: int
-    level: int
+    reports_count: int = 0
+    points: int = 0
+    level: int = 1
     created_at: datetime
-    last_login: Optional[datetime]
+    last_login: Optional[datetime] = None
+    department: Optional[str] = None
+    position: Optional[str] = None
+    status: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -75,6 +81,52 @@ class UserStatsResponse(BaseModel):
     by_role: dict
 
 
+def normalize_dashboard_user(user: dict) -> UserResponse:
+    """Convert MongoDB Docker user to UserResponse"""
+    return UserResponse(
+        id=str(user.get('_id', '')),
+        email=user.get('email', ''),
+        username=user.get('email', '').split('@')[0],  # Dashboard users may not have username
+        full_name=user.get('full_name', ''),
+        phone=user.get('phone'),
+        role=user.get('role', 'viewer'),
+        source='dashboard',
+        is_active=user.get('status') in ['approved', 'active'],
+        is_verified=user.get('status') == 'approved',
+        reports_count=0,
+        points=0,
+        level=1,
+        created_at=user.get('created_at', datetime.utcnow()),
+        last_login=user.get('last_login'),
+        department=user.get('department'),
+        position=user.get('position'),
+        status=user.get('status', 'pending')
+    )
+
+
+def normalize_app_user(user: dict) -> UserResponse:
+    """Convert MongoDB Atlas user to UserResponse"""
+    return UserResponse(
+        id=str(user.get('_id', '')),
+        email=user.get('email', ''),
+        username=user.get('username', user.get('email', '').split('@')[0]),
+        full_name=user.get('full_name', user.get('fullName', '')),
+        phone=user.get('phone'),
+        role=user.get('role', 'citizen'),
+        source='app',
+        is_active=user.get('is_active', True),
+        is_verified=user.get('is_verified', user.get('emailVerified', False)),
+        reports_count=user.get('reports_count', user.get('reportsCount', 0)),
+        points=user.get('points', 0),
+        level=user.get('level', 1),
+        created_at=user.get('created_at', user.get('createdAt', datetime.utcnow())),
+        last_login=user.get('last_login', user.get('lastLogin')),
+        department=None,
+        position=None,
+        status='active' if user.get('is_active', True) else 'inactive'
+    )
+
+
 @router.get("/", response_model=List[UserResponse])
 async def get_all_users(
     skip: int = Query(0, ge=0),
@@ -83,92 +135,120 @@ async def get_all_users(
     source: Optional[str] = Query(None),
     is_active: Optional[bool] = Query(None),
     search: Optional[str] = Query(None),
-    db: Session = Depends(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_mongodb),
+    atlas_db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
 ):
     """
-    Get all users with filtering
+    Get all users from both sources with filtering
     
     - **role**: Filter by user role
     - **source**: Filter by source ('dashboard' or 'app')
     - **is_active**: Filter by active status
     - **search**: Search in email, username, full_name
     """
-    query = db.query(User)
-
-    # Apply filters
-    if role:
-        query = query.filter(User.role == role)
+    result = []
     
-    if source:
-        # Assuming source is stored in properties JSONB
-        query = query.filter(User.properties['source'].astext == source)
-    
-    if is_active is not None:
-        query = query.filter(User.is_active == is_active)
+    # Build query filters
+    dashboard_query = {}
+    app_query = {}
     
     if search:
-        search_pattern = f"%{search}%"
-        query = query.filter(
-            (User.email.ilike(search_pattern)) |
-            (User.username.ilike(search_pattern)) |
-            (User.full_name.ilike(search_pattern))
-        )
-
-    # Order by created_at desc
-    query = query.order_by(User.created_at.desc())
+        search_regex = {"$regex": search, "$options": "i"}
+        dashboard_query["$or"] = [
+            {"email": search_regex},
+            {"full_name": search_regex}
+        ]
+        app_query["$or"] = [
+            {"email": search_regex},
+            {"username": search_regex},
+            {"full_name": search_regex},
+            {"fullName": search_regex}
+        ]
     
-    users = query.offset(skip).limit(limit).all()
+    if role:
+        dashboard_query["role"] = role
+        app_query["role"] = role
     
-    # Add source from properties
-    result = []
-    for user in users:
-        user_dict = {
-            'id': str(user.id),
-            'email': user.email,
-            'username': user.username,
-            'full_name': user.full_name or user.username,
-            'phone': user.phone,
-            'role': user.role.value,
-            'source': user.properties.get('source', 'app') if user.properties else 'app',
-            'is_active': user.is_active,
-            'is_verified': user.is_verified,
-            'reports_count': user.reports_count,
-            'points': user.points,
-            'level': user.level,
-            'created_at': user.created_at,
-            'last_login': user.last_login,
-        }
-        result.append(UserResponse(**user_dict))
+    if is_active is not None:
+        if is_active:
+            dashboard_query["status"] = {"$in": ["approved", "active"]}
+            app_query["is_active"] = True
+        else:
+            dashboard_query["status"] = {"$in": ["pending", "rejected", "suspended", "inactive"]}
+            app_query["is_active"] = False
     
-    return result
+    # Get Dashboard users from MongoDB Docker
+    if source is None or source == 'dashboard':
+        try:
+            dashboard_users = await db.users.find(dashboard_query).sort("created_at", -1).skip(skip).limit(limit).to_list(length=limit)
+            for user in dashboard_users:
+                result.append(normalize_dashboard_user(user))
+        except Exception as e:
+            print(f"Error fetching dashboard users: {e}")
+    
+    # Get App users from MongoDB Atlas
+    if source is None or source == 'app':
+        try:
+            app_users = await atlas_db.user_profile.find(app_query).sort("created_at", -1).skip(skip).limit(limit).to_list(length=limit)
+            for user in app_users:
+                result.append(normalize_app_user(user))
+        except Exception as e:
+            print(f"Error fetching app users: {e}")
+    
+    # Sort combined result by created_at
+    result.sort(key=lambda x: x.created_at, reverse=True)
+    
+    return result[:limit]
 
 
 @router.get("/stats", response_model=UserStatsResponse)
-async def get_user_stats(db: Session = Depends(get_db)):
-    """Get user statistics"""
-    total = db.query(func.count(User.id)).scalar()
+async def get_user_stats(
+    db: AsyncIOMotorDatabase = Depends(get_mongodb),
+    atlas_db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
+):
+    """Get user statistics from both sources"""
     
-    # Count by source
-    dashboard_count = db.query(func.count(User.id)).filter(
-        User.properties['source'].astext == 'dashboard'
-    ).scalar() or 0
+    # Dashboard users stats (MongoDB Docker)
+    dashboard_total = 0
+    dashboard_active = 0
+    dashboard_by_role = {"admin": 0, "staff": 0, "viewer": 0}
     
-    app_count = total - dashboard_count
+    try:
+        dashboard_total = await db.users.count_documents({})
+        dashboard_active = await db.users.count_documents({"status": {"$in": ["approved", "active"]}})
+        
+        # Count by role
+        for role in ["admin", "staff", "viewer"]:
+            count = await db.users.count_documents({"role": role})
+            dashboard_by_role[role] = count
+    except Exception as e:
+        print(f"Error fetching dashboard stats: {e}")
     
-    # Count by status
-    active = db.query(func.count(User.id)).filter(User.is_active == True).scalar()
+    # App users stats (MongoDB Atlas)
+    app_total = 0
+    app_active = 0
+    app_by_role = {"citizen": 0}
+    
+    try:
+        app_total = await atlas_db.user_profile.count_documents({})
+        app_active = await atlas_db.user_profile.count_documents({"is_active": True})
+        
+        # App users are typically citizens
+        app_by_role["citizen"] = app_total
+    except Exception as e:
+        print(f"Error fetching app stats: {e}")
+    
+    # Combine stats
+    total = dashboard_total + app_total
+    active = dashboard_active + app_active
     inactive = total - active
     
-    # Count by role
-    by_role = {}
-    for role in UserRole:
-        count = db.query(func.count(User.id)).filter(User.role == role).scalar()
-        by_role[role.value] = count
+    by_role = {**dashboard_by_role, **app_by_role}
     
     return UserStatsResponse(
         total=total,
-        dashboard=dashboard_count,
-        app=app_count,
+        dashboard=dashboard_total,
+        app=app_total,
         active=active,
         inactive=inactive,
         by_role=by_role
@@ -178,197 +258,224 @@ async def get_user_stats(db: Session = Depends(get_db)):
 @router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     user_data: UserCreate,
-    db: Session = Depends(get_db)
+    db: AsyncIOMotorDatabase = Depends(get_mongodb),
+    atlas_db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
 ):
-    """Create a new user"""
+    """Create a new user in the appropriate database"""
     
-    # Check if user exists
-    existing_user = db.query(User).filter(
-        (User.email == user_data.email) | (User.username == user_data.username)
-    ).first()
-    
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email hoặc tên đăng nhập đã tồn tại"
-        )
-    
-    # Hash password
-    hashed_password = get_password_hash(user_data.password)
-    
-    # Create user
-    db_user = User(
-        email=user_data.email,
-        username=user_data.username,
-        hashed_password=hashed_password,
-        full_name=user_data.full_name,
-        phone=user_data.phone,
-        role=user_data.role,
-        is_active=True,
-        is_verified=True if user_data.source == 'dashboard' else False,
-        properties={
-            'source': user_data.source,
-            'department': user_data.department,
-            'position': user_data.position,
+    if user_data.source == 'dashboard':
+        # Create in MongoDB Docker
+        existing = await db.users.find_one({"email": user_data.email})
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email đã được đăng ký"
+            )
+        
+        hashed_password = web_auth_service.get_password_hash(user_data.password)
+        
+        user_doc = {
+            "email": user_data.email,
+            "hashed_password": hashed_password,
+            "full_name": user_data.full_name,
+            "phone": user_data.phone,
+            "department": user_data.department,
+            "position": user_data.position,
+            "role": user_data.role,
+            "status": "approved",  # Admin-created users are auto-approved
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+            "last_login": None,
         }
-    )
+        
+        result = await db.users.insert_one(user_doc)
+        user_doc["_id"] = result.inserted_id
+        
+        return normalize_dashboard_user(user_doc)
     
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    
-    return UserResponse(
-        id=str(db_user.id),
-        email=db_user.email,
-        username=db_user.username,
-        full_name=db_user.full_name,
-        phone=db_user.phone,
-        role=db_user.role.value,
-        source=user_data.source,
-        is_active=db_user.is_active,
-        is_verified=db_user.is_verified,
-        reports_count=db_user.reports_count,
-        points=db_user.points,
-        level=db_user.level,
-        created_at=db_user.created_at,
-        last_login=db_user.last_login,
-    )
+    else:
+        # Create in MongoDB Atlas
+        existing = await atlas_db.user_profile.find_one({"email": user_data.email})
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email đã được đăng ký"
+            )
+        
+        auth_service = AppAuthService(atlas_db)
+        hashed_password = auth_service.hash_password(user_data.password)
+        
+        user_doc = {
+            "email": user_data.email,
+            "username": user_data.username,
+            "hashed_password": hashed_password,
+            "full_name": user_data.full_name,
+            "phone": user_data.phone,
+            "role": "citizen",
+            "is_active": True,
+            "is_verified": True,
+            "reports_count": 0,
+            "points": 0,
+            "level": 1,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow(),
+        }
+        
+        result = await atlas_db.user_profile.insert_one(user_doc)
+        user_doc["_id"] = result.inserted_id
+        
+        return normalize_app_user(user_doc)
 
 
 @router.get("/{user_id}", response_model=UserResponse)
-async def get_user(user_id: str, db: Session = Depends(get_db)):
-    """Get user by ID"""
-    user = db.query(User).filter(User.id == user_id).first()
+async def get_user(
+    user_id: str,
+    source: str = Query('dashboard', description="User source: 'dashboard' or 'app'"),
+    db: AsyncIOMotorDatabase = Depends(get_mongodb),
+    atlas_db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
+):
+    """Get user by ID from specified source"""
     
-    if not user:
+    if not ObjectId.is_valid(user_id):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không tìm thấy người dùng"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ID không hợp lệ"
         )
     
-    return UserResponse(
-        id=str(user.id),
-        email=user.email,
-        username=user.username,
-        full_name=user.full_name,
-        phone=user.phone,
-        role=user.role.value,
-        source=user.properties.get('source', 'app') if user.properties else 'app',
-        is_active=user.is_active,
-        is_verified=user.is_verified,
-        reports_count=user.reports_count,
-        points=user.points,
-        level=user.level,
-        created_at=user.created_at,
-        last_login=user.last_login,
-    )
+    if source == 'dashboard':
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+        return normalize_dashboard_user(user)
+    else:
+        user = await atlas_db.user_profile.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+        return normalize_app_user(user)
 
 
 @router.put("/{user_id}", response_model=UserResponse)
 async def update_user(
     user_id: str,
     user_data: UserUpdate,
-    db: Session = Depends(get_db)
+    source: str = Query('dashboard', description="User source: 'dashboard' or 'app'"),
+    db: AsyncIOMotorDatabase = Depends(get_mongodb),
+    atlas_db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
 ):
     """Update user information"""
-    user = db.query(User).filter(User.id == user_id).first()
     
-    if not user:
+    if not ObjectId.is_valid(user_id):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không tìm thấy người dùng"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ID không hợp lệ"
         )
     
-    # Update fields
-    if user_data.email is not None:
-        # Check email uniqueness
-        existing = db.query(User).filter(
-            User.email == user_data.email,
-            User.id != user_id
-        ).first()
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email đã được sử dụng"
-            )
-        user.email = user_data.email
+    update_dict = user_data.model_dump(exclude_unset=True)
+    update_dict["updated_at"] = datetime.utcnow()
     
-    if user_data.full_name is not None:
-        user.full_name = user_data.full_name
+    # Convert is_active to status for dashboard users
+    if source == 'dashboard' and 'is_active' in update_dict:
+        is_active = update_dict.pop('is_active')
+        update_dict['status'] = 'approved' if is_active else 'suspended'
     
-    if user_data.phone is not None:
-        user.phone = user_data.phone
-    
-    if user_data.role is not None:
-        user.role = user_data.role
-    
-    if user_data.is_active is not None:
-        user.is_active = user_data.is_active
-    
-    # Update properties
-    if user_data.department is not None or user_data.position is not None:
-        if not user.properties:
-            user.properties = {}
-        if user_data.department is not None:
-            user.properties['department'] = user_data.department
-        if user_data.position is not None:
-            user.properties['position'] = user_data.position
-    
-    db.commit()
-    db.refresh(user)
-    
-    return UserResponse(
-        id=str(user.id),
-        email=user.email,
-        username=user.username,
-        full_name=user.full_name,
-        phone=user.phone,
-        role=user.role.value,
-        source=user.properties.get('source', 'app') if user.properties else 'app',
-        is_active=user.is_active,
-        is_verified=user.is_verified,
-        reports_count=user.reports_count,
-        points=user.points,
-        level=user.level,
-        created_at=user.created_at,
-        last_login=user.last_login,
-    )
+    if source == 'dashboard':
+        result = await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": update_dict}
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+        
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        return normalize_dashboard_user(user)
+    else:
+        result = await atlas_db.user_profile.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": update_dict}
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+        
+        user = await atlas_db.user_profile.find_one({"_id": ObjectId(user_id)})
+        return normalize_app_user(user)
 
 
 @router.delete("/{user_id}")
-async def delete_user(user_id: str, db: Session = Depends(get_db)):
-    """Delete user (soft delete by setting is_active to False)"""
-    user = db.query(User).filter(User.id == user_id).first()
+async def delete_user(
+    user_id: str,
+    source: str = Query('dashboard', description="User source: 'dashboard' or 'app'"),
+    db: AsyncIOMotorDatabase = Depends(get_mongodb),
+    atlas_db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
+):
+    """Delete user (soft delete by setting status/is_active)"""
     
-    if not user:
+    if not ObjectId.is_valid(user_id):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không tìm thấy người dùng"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ID không hợp lệ"
         )
     
-    # Soft delete
-    user.is_active = False
-    db.commit()
+    if source == 'dashboard':
+        result = await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"status": "suspended", "updated_at": datetime.utcnow()}}
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+    else:
+        result = await atlas_db.user_profile.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"is_active": False, "updated_at": datetime.utcnow()}}
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
     
     return {"success": True, "message": "Đã xóa người dùng"}
 
 
 @router.put("/{user_id}/toggle-status")
-async def toggle_user_status(user_id: str, db: Session = Depends(get_db)):
+async def toggle_user_status(
+    user_id: str,
+    source: str = Query('dashboard', description="User source: 'dashboard' or 'app'"),
+    db: AsyncIOMotorDatabase = Depends(get_mongodb),
+    atlas_db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
+):
     """Toggle user active status"""
-    user = db.query(User).filter(User.id == user_id).first()
     
-    if not user:
+    if not ObjectId.is_valid(user_id):
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Không tìm thấy người dùng"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ID không hợp lệ"
         )
     
-    user.is_active = not user.is_active
-    db.commit()
+    if source == 'dashboard':
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+        
+        current_status = user.get('status', 'pending')
+        new_status = 'suspended' if current_status in ['approved', 'active'] else 'approved'
+        
+        await db.users.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"status": new_status, "updated_at": datetime.utcnow()}}
+        )
+        
+        is_active = new_status in ['approved', 'active']
+    else:
+        user = await atlas_db.user_profile.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+        
+        is_active = not user.get('is_active', True)
+        
+        await atlas_db.user_profile.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"is_active": is_active, "updated_at": datetime.utcnow()}}
+        )
     
     return {
         "success": True,
-        "message": f"Đã {'mở khóa' if user.is_active else 'khóa'} tài khoản",
-        "is_active": user.is_active
+        "message": f"Đã {'mở khóa' if is_active else 'khóa'} tài khoản",
+        "is_active": is_active
     }

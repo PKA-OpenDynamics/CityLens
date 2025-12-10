@@ -193,9 +193,14 @@ class AppReportService:
         self,
         report_id: str,
         new_status: str,
-        admin_note: Optional[str] = None
+        admin_note: Optional[str] = None,
+        title: Optional[str] = None,
+        content: Optional[str] = None,
+        report_type: Optional[str] = None,
+        ward: Optional[str] = None,
+        address_detail: Optional[str] = None
     ) -> dict:
-        """Update report status (admin only)"""
+        """Update report (admin only)"""
         if not ObjectId.is_valid(report_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -203,12 +208,24 @@ class AppReportService:
             )
         
         update_data = {
-            "status": new_status,
             "updatedAt": datetime.utcnow(),
         }
         
-        if admin_note:
+        # Only update fields that are provided
+        if new_status:
+            update_data["status"] = new_status
+        if admin_note is not None:
             update_data["adminNote"] = admin_note
+        if title is not None:
+            update_data["title"] = title
+        if content is not None:
+            update_data["content"] = content
+        if report_type is not None:
+            update_data["reportType"] = report_type
+        if ward is not None:
+            update_data["ward"] = ward
+        if address_detail is not None:
+            update_data["addressDetail"] = address_detail
         
         result = await self.collection.update_one(
             {"_id": ObjectId(report_id)},

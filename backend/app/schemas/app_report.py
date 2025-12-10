@@ -72,9 +72,14 @@ class AppReportListResponse(BaseModel):
 
 
 class AppReportUpdate(BaseModel):
-    """Update report status (admin only)"""
+    """Update report (admin only)"""
     status: Optional[str] = None  # pending, processing, resolved, rejected
     adminNote: Optional[str] = None
+    title: Optional[str] = None
+    content: Optional[str] = None
+    reportType: Optional[str] = None
+    ward: Optional[str] = None
+    addressDetail: Optional[str] = None
 
 
 # Comment Schemas
