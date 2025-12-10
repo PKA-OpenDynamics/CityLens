@@ -12,11 +12,19 @@ import Constants from 'expo-constants';
  * Priority: 1. Expo Constants 2. process.env 3. localhost fallback
  */
 const getRawApiBaseUrl = (): string => {
-  return (
-    (Constants.expoConfig?.extra as any)?.apiBaseUrl ||
-    (typeof process !== 'undefined' && process.env?.EXPO_PUBLIC_API_BASE_URL) ||
-    'http://localhost:8000/api/v1'
-  );
+  const fromExpoConfig = (Constants.expoConfig?.extra as any)?.apiBaseUrl;
+  const fromProcessEnv = typeof process !== 'undefined' ? process.env?.EXPO_PUBLIC_API_BASE_URL : undefined;
+  
+  const result = fromExpoConfig || fromProcessEnv || 'http://localhost:8000/api/v1';
+  
+  // Debug log - sẽ hiển thị trong browser console
+  console.log('[ENV] API URL sources:', {
+    fromExpoConfig: fromExpoConfig || 'undefined',
+    fromProcessEnv: fromProcessEnv || 'undefined',
+    finalResult: result
+  });
+  
+  return result;
 };
 
 /**
