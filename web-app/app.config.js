@@ -33,11 +33,11 @@ module.exports = {
       favicon: './assets/logo.jpg',
     },
     extra: {
+      // Only need one API base URL, all others are derived automatically
+      apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1',
       tomtomApiKey: process.env.TOMTOM_API_KEY || '',
-      weatherApiBaseUrl: process.env.WEATHER_API_BASE_URL || 'http://localhost:8000',
       mongodbUri: process.env.MONGODB_URI || '',
       mongodbDbName: process.env.MONGODB_DB_NAME || 'citylens',
-      reportsApiBaseUrl: process.env.REPORTS_API_BASE_URL || 'http://localhost:3001/api',
     },
   },
 };
