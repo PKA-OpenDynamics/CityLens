@@ -9,8 +9,9 @@
 class ImageCacheService {
   private cache: Map<string, string> = new Map();
   private readonly CACHE_PREFIX = 'citylens_img_';
-  private readonly MAX_CACHE_SIZE = 100; // Maximum images before cleanup (reserved for future use)
-  private readonly CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours (reserved for future use)
+  // Reserved for future use:
+  // private readonly MAX_CACHE_SIZE = 100; // Maximum images before cleanup
+  // private readonly CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours
 
   constructor() {
     // Load cache from localStorage on initialization

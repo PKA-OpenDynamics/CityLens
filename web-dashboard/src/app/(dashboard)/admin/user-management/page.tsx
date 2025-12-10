@@ -5,8 +5,8 @@
 
 import { useState, useEffect } from 'react';
 import { 
-  Users, Search, Plus, Edit2, Trash2, Shield, RefreshCw, 
-  Filter, Download, Eye, UserCheck, UserX, Mail, Phone,
+  Users, Search, Plus, Trash2, Shield, RefreshCw, 
+  Filter, UserCheck, UserX, Phone,
   Calendar, MapPin, Activity
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -61,8 +61,6 @@ export default function UserManagementPage() {
 
   // Modals
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   // Add User Form
   const [newUser, setNewUser] = useState({
@@ -597,16 +595,6 @@ export default function UserManagementPage() {
                   </td>
                   <td className="py-3 px-4">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setShowEditModal(true);
-                        }}
-                        className="p-2 hover:bg-muted rounded-lg transition-colors"
-                        title="Chỉnh sửa"
-                      >
-                        <Edit2 className="h-4 w-4 text-blue-600" />
-                      </button>
                       <button
                         onClick={() => toggleUserStatus(user.id, user.is_active ? 'active' : 'inactive', user.source)}
                         className="p-2 hover:bg-muted rounded-lg transition-colors"

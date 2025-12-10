@@ -9,7 +9,7 @@
 /**
  * Create thumbnail URL from image URL (if supported by backend)
  */
-export const getThumbnailUrl = (url: string, width: number = 300): string => {
+export const getThumbnailUrl = (url: string, _width: number = 300): string => {
   // If using cloud storage with image transformation support
   // You can append query parameters for resizing
   // Example: Cloudinary, imgix, etc.
