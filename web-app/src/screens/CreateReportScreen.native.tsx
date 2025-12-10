@@ -14,6 +14,7 @@ import {
   Modal,
   FlatList,
   Image,
+  BackHandler,
   PermissionsAndroid,
   Platform,
   Dimensions,
@@ -26,6 +27,20 @@ import * as ImagePicker from 'expo-image-picker';
 import reportsService from '../services/reports';
 import { useAuth } from '../contexts/AuthContext';
 
+// API base cho geographic endpoints (dùng EXPO_PUBLIC_API_BASE_URL nếu có)
+const API_BASE_RAW =
+  (typeof process !== 'undefined' && (process.env as any)?.EXPO_PUBLIC_API_BASE_URL) ||
+  (typeof process !== 'undefined' && (process.env as any)?.WEATHER_API_BASE_URL) ||
+  'http://localhost:8000/api/v1';
+
+const normalizeApiBase = (base: string) => {
+  const trimmed = base.replace(/\/+$/, '');
+  if (/\/api\/v1$/i.test(trimmed)) return trimmed;
+  return `${trimmed}/api/v1`;
+};
+
+const API_BASE = normalizeApiBase(API_BASE_RAW);
+
 const REPORT_TYPES = [
   'Ổ gà',
   'Ngập',
@@ -36,16 +51,250 @@ const REPORT_TYPES = [
   'Khác',
 ];
 
-const WARDS = [
-  'Phường Cầu Giấy',
-  'Phường Dịch Vọng',
-  'Phường Mai Dịch',
-  'Phường Nghĩa Đô',
-  'Phường Nghĩa Tân',
-  'Phường Quan Hoa',
-  'Phường Trung Hòa',
-  'Phường Yên Hòa',
+// Danh sách quận/phường nội thành Hà Nội (tĩnh, không gọi API)
+const WARD_OPTIONS: string[] = [
+  // Ba Đình
+  'Ba Đình - Phường Cống Vị',
+  'Ba Đình - Phường Điện Biên',
+  'Ba Đình - Phường Đội Cấn',
+  'Ba Đình - Phường Giảng Võ',
+  'Ba Đình - Phường Kim Mã',
+  'Ba Đình - Phường Liễu Giai',
+  'Ba Đình - Phường Ngọc Hà',
+  'Ba Đình - Phường Ngọc Khánh',
+  'Ba Đình - Phường Nguyễn Trung Trực',
+  'Ba Đình - Phường Phúc Xá',
+  'Ba Đình - Phường Quán Thánh',
+  'Ba Đình - Phường Thành Công',
+  'Ba Đình - Phường Trúc Bạch',
+  'Ba Đình - Phường Vĩnh Phúc',
+  // Hoàn Kiếm
+  'Hoàn Kiếm - Phường Chương Dương',
+  'Hoàn Kiếm - Phường Cửa Đông',
+  'Hoàn Kiếm - Phường Cửa Nam',
+  'Hoàn Kiếm - Phường Đồng Xuân',
+  'Hoàn Kiếm - Phường Hàng Bạc',
+  'Hoàn Kiếm - Phường Hàng Bài',
+  'Hoàn Kiếm - Phường Hàng Bồ',
+  'Hoàn Kiếm - Phường Hàng Bông',
+  'Hoàn Kiếm - Phường Hàng Buồm',
+  'Hoàn Kiếm - Phường Hàng Đào',
+  'Hoàn Kiếm - Phường Hàng Gai',
+  'Hoàn Kiếm - Phường Hàng Mã',
+  'Hoàn Kiếm - Phường Hàng Trống',
+  'Hoàn Kiếm - Phường Lý Thái Tổ',
+  'Hoàn Kiếm - Phường Phan Chu Trinh',
+  'Hoàn Kiếm - Phường Phúc Tân',
+  'Hoàn Kiếm - Phường Tràng Tiền',
+  'Hoàn Kiếm - Phường Trần Hưng Đạo',
+  // Hai Bà Trưng
+  'Hai Bà Trưng - Phường Bạch Đằng',
+  'Hai Bà Trưng - Phường Bách Khoa',
+  'Hai Bà Trưng - Phường Bạch Mai',
+  'Hai Bà Trưng - Phường Cầu Dền',
+  'Hai Bà Trưng - Phường Đống Mác',
+  'Hai Bà Trưng - Phường Đồng Nhân',
+  'Hai Bà Trưng - Phường Đồng Tâm',
+  'Hai Bà Trưng - Phường Lê Đại Hành',
+  'Hai Bà Trưng - Phường Minh Khai',
+  'Hai Bà Trưng - Phường Ngô Thì Nhậm',
+  'Hai Bà Trưng - Phường Nguyễn Du',
+  'Hai Bà Trưng - Phường Phạm Đình Hổ',
+  'Hai Bà Trưng - Phường Phố Huế',
+  'Hai Bà Trưng - Phường Quỳnh Lôi',
+  'Hai Bà Trưng - Phường Quỳnh Mai',
+  'Hai Bà Trưng - Phường Thanh Lương',
+  'Hai Bà Trưng - Phường Thanh Nhàn',
+  'Hai Bà Trưng - Phường Trương Định',
+  // Đống Đa
+  'Đống Đa - Phường Cát Linh',
+  'Đống Đa - Phường Hàng Bột',
+  'Đống Đa - Phường Khâm Thiên',
+  'Đống Đa - Phường Khương Thượng',
+  'Đống Đa - Phường Kim Liên',
+  'Đống Đa - Phường Láng Hạ',
+  'Đống Đa - Phường Láng Thượng',
+  'Đống Đa - Phường Nam Đồng',
+  'Đống Đa - Phường Ngã Tư Sở',
+  'Đống Đa - Phường Ô Chợ Dừa',
+  'Đống Đa - Phường Phương Liên',
+  'Đống Đa - Phường Phương Mai',
+  'Đống Đa - Phường Quang Trung',
+  'Đống Đa - Phường Quốc Tử Giám',
+  'Đống Đa - Phường Thịnh Quang',
+  'Đống Đa - Phường Thổ Quan',
+  'Đống Đa - Phường Trung Liệt',
+  'Đống Đa - Phường Trung Phụng',
+  'Đống Đa - Phường Trung Tự',
+  'Đống Đa - Phường Văn Chương',
+  'Đống Đa - Phường Văn Miếu',
+  // Tây Hồ
+  'Tây Hồ - Phường Bưởi',
+  'Tây Hồ - Phường Nhật Tân',
+  'Tây Hồ - Phường Phú Thượng',
+  'Tây Hồ - Phường Quảng An',
+  'Tây Hồ - Phường Thụy Khuê',
+  'Tây Hồ - Phường Tứ Liên',
+  'Tây Hồ - Phường Xuân La',
+  'Tây Hồ - Phường Yên Phụ',
+  // Cầu Giấy
+  'Cầu Giấy - Phường Dịch Vọng',
+  'Cầu Giấy - Phường Dịch Vọng Hậu',
+  'Cầu Giấy - Phường Mai Dịch',
+  'Cầu Giấy - Phường Nghĩa Đô',
+  'Cầu Giấy - Phường Nghĩa Tân',
+  'Cầu Giấy - Phường Quan Hoa',
+  'Cầu Giấy - Phường Trung Hòa',
+  'Cầu Giấy - Phường Yên Hòa',
+  // Hoàng Mai
+  'Hoàng Mai - Phường Đại Kim',
+  'Hoàng Mai - Phường Định Công',
+  'Hoàng Mai - Phường Giáp Bát',
+  'Hoàng Mai - Phường Hoàng Liệt',
+  'Hoàng Mai - Phường Hoàng Văn Thụ',
+  'Hoàng Mai - Phường Lĩnh Nam',
+  'Hoàng Mai - Phường Mai Động',
+  'Hoàng Mai - Phường Tân Mai',
+  'Hoàng Mai - Phường Thanh Trì',
+  'Hoàng Mai - Phường Thịnh Liệt',
+  'Hoàng Mai - Phường Trần Phú',
+  'Hoàng Mai - Phường Tương Mai',
+  'Hoàng Mai - Phường Vĩnh Hưng',
+  'Hoàng Mai - Phường Yên Sở',
+  // Long Biên
+  'Long Biên - Phường Bồ Đề',
+  'Long Biên - Phường Cự Khối',
+  'Long Biên - Phường Đức Giang',
+  'Long Biên - Phường Gia Thụy',
+  'Long Biên - Phường Giang Biên',
+  'Long Biên - Phường Long Biên',
+  'Long Biên - Phường Ngọc Lâm',
+  'Long Biên - Phường Ngọc Thụy',
+  'Long Biên - Phường Phúc Đồng',
+  'Long Biên - Phường Phúc Lợi',
+  'Long Biên - Phường Sài Đồng',
+  'Long Biên - Phường Thạch Bàn',
+  'Long Biên - Phường Thượng Thanh',
+  'Long Biên - Phường Việt Hưng',
+  // Bắc Từ Liêm
+  'Bắc Từ Liêm - Phường Cổ Nhuế 1',
+  'Bắc Từ Liêm - Phường Cổ Nhuế 2',
+  'Bắc Từ Liêm - Phường Đông Ngạc',
+  'Bắc Từ Liêm - Phường Đức Thắng',
+  'Bắc Từ Liêm - Phường Liên Mạc',
+  'Bắc Từ Liêm - Phường Minh Khai',
+  'Bắc Từ Liêm - Phường Phú Diễn',
+  'Bắc Từ Liêm - Phường Phúc Diễn',
+  'Bắc Từ Liêm - Phường Tây Tựu',
+  'Bắc Từ Liêm - Phường Thượng Cát',
+  'Bắc Từ Liêm - Phường Thụy Phương',
+  'Bắc Từ Liêm - Phường Xuân Đỉnh',
+  'Bắc Từ Liêm - Phường Xuân Tảo',
+  // Nam Từ Liêm
+  'Nam Từ Liêm - Phường Cầu Diễn',
+  'Nam Từ Liêm - Phường Đại Mỗ',
+  'Nam Từ Liêm - Phường Mễ Trì',
+  'Nam Từ Liêm - Phường Mỹ Đình 1',
+  'Nam Từ Liêm - Phường Mỹ Đình 2',
+  'Nam Từ Liêm - Phường Phú Đô',
+  'Nam Từ Liêm - Phường Phương Canh',
+  'Nam Từ Liêm - Phường Tây Mỗ',
+  'Nam Từ Liêm - Phường Trung Văn',
+  'Nam Từ Liêm - Phường Xuân Phương',
+  // Hà Đông
+  'Hà Đông - Phường Biên Giang',
+  'Hà Đông - Phường Dương Nội',
+  'Hà Đông - Phường Đồng Mai',
+  'Hà Đông - Phường Hà Cầu',
+  'Hà Đông - Phường Kiến Hưng',
+  'Hà Đông - Phường La Khê',
+  'Hà Đông - Phường Mộ Lao',
+  'Hà Đông - Phường Nguyễn Trãi',
+  'Hà Đông - Phường Phú La',
+  'Hà Đông - Phường Phú Lãm',
+  'Hà Đông - Phường Phú Lương',
+  'Hà Đông - Phường Quang Trung',
+  'Hà Đông - Phường Vạn Phúc',
+  'Hà Đông - Phường Văn Quán',
+  'Hà Đông - Phường Yên Nghĩa',
+  'Hà Đông - Phường Yết Kiêu',
+  'Hà Đông - Phường An Hưng',
+  // Thanh Xuân
+  'Thanh Xuân - Phường Hạ Đình',
+  'Thanh Xuân - Phường Khương Đình',
+  'Thanh Xuân - Phường Khương Mai',
+  'Thanh Xuân - Phường Khương Trung',
+  'Thanh Xuân - Phường Kim Giang',
+  'Thanh Xuân - Phường Nhân Chính',
+  'Thanh Xuân - Phường Phương Liệt',
+  'Thanh Xuân - Phường Thanh Xuân Bắc',
+  'Thanh Xuân - Phường Thanh Xuân Nam',
+  'Thanh Xuân - Phường Thanh Xuân Trung',
+  'Thanh Xuân - Phường Thượng Đình',
 ];
+
+const normalizeText = (text: string) =>
+  text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+// Map quận -> danh sách phường
+const DISTRICT_WARD_MAP: Record<string, string[]> = WARD_OPTIONS.reduce(
+  (acc, entry) => {
+    const [district, ward] = entry.split('-').map((s) => s.trim());
+    if (!district || !ward) return acc;
+    if (!acc[district]) acc[district] = [];
+    acc[district].push(ward);
+    return acc;
+  },
+  {} as Record<string, string[]>
+);
+
+const DISTRICTS = Object.keys(DISTRICT_WARD_MAP).sort((a, b) => a.localeCompare(b, 'vi'));
+const WARD_TO_DISTRICT: Record<string, string> = Object.entries(DISTRICT_WARD_MAP).reduce(
+  (acc, [district, wards]) => {
+    wards.forEach((w) => {
+      acc[normalizeText(w)] = district;
+    });
+    return acc;
+  },
+  {} as Record<string, string>
+);
+
+const findDistrictByAddress = (addr: Record<string, any>): string | null => {
+  const districtNames = DISTRICTS;
+  const candidates = [
+    addr?.city_district,
+    addr?.district,
+    addr?.county,
+    addr?.state_district,
+    addr?.city,
+  ]
+    .filter(Boolean)
+    .map((x) => String(x));
+
+  for (const cand of candidates) {
+    const candNorm = normalizeText(cand);
+    const found = districtNames.find((d) => {
+      const dn = normalizeText(d);
+      return (
+        candNorm.includes(dn) ||
+        dn.includes(candNorm) ||
+        candNorm.includes(normalizeText('quan ' + d)) ||
+        candNorm.includes(normalizeText('quận ' + d))
+      );
+    });
+    if (found) return found;
+  }
+  return null;
+};
+
+const findDistrictByWardName = (wardName: string | null): string | null => {
+  if (!wardName) return null;
+  const norm = normalizeText(wardName.replace(/^phường\s+/i, '').trim());
+  return WARD_TO_DISTRICT[norm] || null;
+};
 
 const CreateReportScreen: React.FC = () => {
   const navigation = useNavigation<any>();
@@ -60,6 +309,7 @@ const CreateReportScreen: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showTypeModal, setShowTypeModal] = useState(false);
   const [showWardModal, setShowWardModal] = useState(false);
+  const [showDistrictModal, setShowDistrictModal] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
   // Ngã Tư Sở - Quận Thanh Xuân, Hà Nội
@@ -68,6 +318,8 @@ const CreateReportScreen: React.FC = () => {
   const mapModalRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const markerRef = useRef<any>(null);
+  const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
+  const [district, setDistrict] = useState<string | null>(null);
   const [errors, setErrors] = useState<{
     reportType?: string;
     ward?: string;
@@ -194,6 +446,30 @@ const CreateReportScreen: React.FC = () => {
     }
     setIsRecording(false);
   };
+
+  const handleBack = () => {
+    // Quay về trang danh sách hiện trường/ReportHome; fallback Explore nếu không có route
+    try {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'ReportHome' as never }],
+      });
+    } catch (err) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Explore' as never }],
+      });
+    }
+  };
+
+  // Chặn nút back cứng Android để về thẳng Explore
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleBack();
+      return true;
+    });
+    return () => sub.remove();
+  }, []);
 
   const handleVoiceInput = async () => {
     // Toggle off if already recording
@@ -330,6 +606,8 @@ const CreateReportScreen: React.FC = () => {
     };
   }, [showMapModal, userLocation]);
 
+  // Không gọi API lấy phường/xã – dùng danh sách tĩnh WARD_OPTIONS
+
   const initializeMap = () => {
     if (!mapContainerRef.current || !(window as any).L) return;
 
@@ -370,11 +648,88 @@ const CreateReportScreen: React.FC = () => {
     setSelectedLocation({ lat: defaultCenter[0], lng: defaultCenter[1] });
   };
 
-  const handleSaveLocation = () => {
-    if (selectedLocation) {
-      // Location is already saved in state
-      setShowMapModal(false);
+  const reverseGeocodeLocation = async (lat: number, lon: number) => {
+    try {
+      setIsReverseGeocoding(true);
+      const url = new URL('https://nominatim.openstreetmap.org/reverse');
+      url.searchParams.set('format', 'json');
+      url.searchParams.set('lat', String(lat));
+      url.searchParams.set('lon', String(lon));
+      url.searchParams.set('addressdetails', '1');
+      url.searchParams.set('zoom', '18');
+      url.searchParams.set('accept-language', 'vi');
+
+      const res = await fetch(url.toString(), {
+        headers: {
+          // Friendly UA per Nominatim requirements
+          'User-Agent': 'CityLens/1.0 (contact@citylens.local)',
+        },
+      });
+      if (!res.ok) throw new Error(`Reverse geocode error ${res.status}`);
+      const data = await res.json();
+      const address = data?.address || {};
+      console.log('[REVERSE] address', address);
+
+      // Ưu tiên các trường phường/xã/thị trấn
+      const wardCandidate =
+        address.suburb ||
+        address.village ||
+        address.town ||
+        address.hamlet ||
+        address.quarter ||
+        address.neighbourhood ||
+        address.city_district ||
+        address.county ||
+        address.state_district ||
+        null;
+
+      const houseNumber = address.house_number;
+      const road = address.road || address.footway || address.residential || '';
+      const hamlet = address.hamlet || address.quarter || '';
+      const neighbourhood = address.neighbourhood || '';
+
+      const detailParts = [
+        [houseNumber, road].filter(Boolean).join(' '),
+        hamlet,
+        neighbourhood,
+      ]
+        .filter(Boolean)
+        .join(', ');
+
+      let districtName = findDistrictByAddress(address);
+      if (!districtName) {
+        districtName = findDistrictByWardName(wardCandidate);
+      }
+      if (!districtName) {
+        console.log('[REVERSE] district not found from address fields or ward');
+      } else {
+        console.log('[REVERSE] matched district', districtName);
+      }
+
+      if (districtName) {
+        setDistrict(districtName);
+      }
+
+      if (wardCandidate) {
+      const wardValue = districtName ? `${districtName} - ${wardCandidate}` : wardCandidate;
+        setWard(wardValue);
+        validateField('ward', wardValue);
+      }
+      if (detailParts) {
+        setAddressDetail(detailParts);
+      }
+    } catch (err) {
+      console.error('Reverse geocode failed', err);
+      Alert.alert('Lỗi', 'Không lấy được địa chỉ từ bản đồ. Bạn có thể nhập tay.');
+    } finally {
+      setIsReverseGeocoding(false);
     }
+  };
+
+  const handleSaveLocation = async () => {
+    if (!selectedLocation) return;
+    await reverseGeocodeLocation(selectedLocation.lat, selectedLocation.lng);
+    setShowMapModal(false);
   };
 
   const handleCancelMap = () => {
@@ -390,10 +745,14 @@ const CreateReportScreen: React.FC = () => {
   };
 
   const handleWardSelect = (item: string) => {
-    setWard(item);
+    const value = district ? `${district} - ${item}` : item;
+    setWard(value);
     setTouched({ ...touched, ward: true });
-    validateField('ward', item);
+    validateField('ward', value);
   };
+
+  const wardList = district ? DISTRICT_WARD_MAP[district] || [] : [];
+  const selectedWardName = ward ? ward.split('-').pop()?.trim() || null : null;
 
   const handleContentChange = (text: string) => {
     setContent(text);
@@ -543,7 +902,7 @@ const CreateReportScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={handleBack}
           style={styles.backButton}
         >
           <MaterialIcons name="arrow-back" size={24} color="#20A957" />
@@ -561,7 +920,7 @@ const CreateReportScreen: React.FC = () => {
                 onPress={() => setShowTypeModal(true)}
               >
                 <Text style={[styles.dropdownText, !reportType && styles.dropdownPlaceholder]}>
-                  {reportType || 'Chọn loại phản ánh (mock)'}
+                  {reportType || 'Chọn loại phản ánh '}
                 </Text>
                 <MaterialIcons name="arrow-drop-down" size={24} color="#9CA3AF" />
               </TouchableOpacity>
@@ -570,14 +929,28 @@ const CreateReportScreen: React.FC = () => {
               )}
 
           <Text style={styles.label}>
-            Địa điểm <Text style={styles.requiredStar}>*</Text>
+            Quận <Text style={styles.requiredStar}>*</Text>
+          </Text>
+          <TouchableOpacity
+            style={[styles.dropdown, errors.ward && styles.inputError]}
+            onPress={() => setShowDistrictModal(true)}
+          >
+            <Text style={[styles.dropdownText, !district && styles.dropdownPlaceholder]}>
+              {district || 'Chọn quận'}
+            </Text>
+            <MaterialIcons name="arrow-drop-down" size={24} color="#9CA3AF" />
+          </TouchableOpacity>
+
+          <Text style={styles.label}>
+            Phường/Xã <Text style={styles.requiredStar}>*</Text>
           </Text>
           <TouchableOpacity
             style={[styles.dropdown, errors.ward && styles.inputError]}
             onPress={() => setShowWardModal(true)}
+            disabled={!district}
           >
             <Text style={[styles.dropdownText, !ward && styles.dropdownPlaceholder]}>
-              {ward || 'Chọn xã/phường (mock)'}
+              {ward || (district ? 'Chọn phường' : 'Chọn quận trước')}
             </Text>
             <MaterialIcons name="arrow-drop-down" size={24} color="#9CA3AF" />
           </TouchableOpacity>
@@ -732,10 +1105,23 @@ const CreateReportScreen: React.FC = () => {
       )}
 
       {renderDropdownModal(
+        showDistrictModal,
+        () => setShowDistrictModal(false),
+        DISTRICTS,
+        district,
+        (item) => {
+          setDistrict(item);
+          setWard(null);
+          setTouched({ ...touched, ward: true });
+        },
+        'Chọn quận'
+      )}
+
+      {renderDropdownModal(
         showWardModal,
         () => setShowWardModal(false),
-        WARDS,
-        ward,
+        wardList.length > 0 ? wardList : [],
+        selectedWardName,
         handleWardSelect,
         'Chọn xã/phường'
       )}
@@ -782,9 +1168,16 @@ const CreateReportScreen: React.FC = () => {
               <TouchableOpacity
                 style={[styles.mapSaveButton, !selectedLocation && styles.mapSaveButtonDisabled]}
                 onPress={handleSaveLocation}
-                disabled={!selectedLocation}
+                disabled={!selectedLocation || isReverseGeocoding}
               >
-                <Text style={styles.mapSaveButtonText}>Lưu</Text>
+                {isReverseGeocoding ? (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text style={styles.mapSaveButtonText}>Đang lấy địa chỉ...</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.mapSaveButtonText}>Lưu</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
