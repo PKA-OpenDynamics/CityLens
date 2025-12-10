@@ -7,7 +7,7 @@ const normalizeApiBase = (base: string): string => {
 const API_BASE = normalizeApiBase(
   (typeof process !== 'undefined' && (process.env as any)?.EXPO_PUBLIC_API_BASE_URL) ||
     (typeof process !== 'undefined' && (process.env as any)?.WEATHER_API_BASE_URL) ||
-    'https://rooms-tools-kirk-nelson.trycloudflare.com/api/v1'
+    'http://localhost:8000/api/v1'
 );
 
 export type AlertItem = {
