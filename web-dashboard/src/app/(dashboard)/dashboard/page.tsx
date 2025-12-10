@@ -157,6 +157,7 @@ export default function DashboardPage() {
   const [apiStatus, setApiStatus] = useState<'online' | 'offline' | 'checking'>('checking');
   
   const [statistics, setStatistics] = useState<ReportStatistics | null>(null);
+  const [appReports, setAppReports] = useState<{ total: number; pending: number; processing: number; resolved: number }>({ total: 0, pending: 0, processing: 0, resolved: 0 });
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [airQuality, setAirQuality] = useState<AirQualityData | null>(null);
   const [trafficHotspots, setTrafficHotspots] = useState<TrafficHotspot[]>([]);
@@ -171,6 +172,23 @@ export default function DashboardPage() {
       setApiStatus('online');
     } catch {
       setApiStatus('offline');
+    }
+
+    // Fetch MongoDB Atlas reports stats
+    try {
+      const appReportsResponse = await fetch('http://localhost:8000/api/v1/app/reports?limit=1000');
+      if (appReportsResponse.ok) {
+        const appReportsData = await appReportsResponse.json();
+        const reports = appReportsData.reports || [];
+        setAppReports({
+          total: reports.length,
+          pending: reports.filter((r: any) => r.status === 'pending').length,
+          processing: reports.filter((r: any) => r.status === 'processing').length,
+          resolved: reports.filter((r: any) => r.status === 'resolved').length,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch app reports:', error);
     }
 
     const [statsResult, weatherResult, aqiResult, trafficResult, geoResult] = await Promise.allSettled([
@@ -226,7 +244,7 @@ export default function DashboardPage() {
             disabled={refreshing}
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-lg",
-              "bg-accent text-white hover:bg-accent/90 transition-colors",
+              "bg-green-600 text-white hover:bg-green-700 transition-colors",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
           >
@@ -245,7 +263,8 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Tổng báo cáo</p>
-              <p className="text-xl font-bold text-foreground">{loading ? '...' : statistics?.total || 0}</p>
+              <p className="text-xl font-bold text-foreground">{loading ? '...' : (statistics?.total || 0) + appReports.total}</p>
+              <p className="text-[10px] text-muted-foreground">Web: {statistics?.total || 0} • App: {appReports.total}</p>
             </div>
           </div>
         </div>
@@ -257,19 +276,21 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Chờ xử lý</p>
-              <p className="text-xl font-bold text-foreground">{loading ? '...' : statistics?.pending || 0}</p>
+              <p className="text-xl font-bold text-foreground">{loading ? '...' : (statistics?.pending || 0) + appReports.pending}</p>
+              <p className="text-[10px] text-muted-foreground">Web: {statistics?.pending || 0} • App: {appReports.pending}</p>
             </div>
           </div>
         </div>
         
         <div className="bg-card rounded-xl border border-border p-4 hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-900/30">
-              <AlertTriangle className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            <div className="p-2 rounded-lg bg-green-50 dark:bg-green-900/30">
+              <AlertTriangle className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Đang xử lý</p>
-              <p className="text-xl font-bold text-foreground">{loading ? '...' : statistics?.in_progress || 0}</p>
+              <p className="text-xl font-bold text-foreground">{loading ? '...' : (statistics?.in_progress || 0) + appReports.processing}</p>
+              <p className="text-[10px] text-muted-foreground">Web: {statistics?.in_progress || 0} • App: {appReports.processing}</p>
             </div>
           </div>
         </div>
@@ -281,7 +302,8 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground">Đã giải quyết</p>
-              <p className="text-xl font-bold text-foreground">{loading ? '...' : statistics?.resolved || 0}</p>
+              <p className="text-xl font-bold text-foreground">{loading ? '...' : (statistics?.resolved || 0) + appReports.resolved}</p>
+              <p className="text-[10px] text-muted-foreground">Web: {statistics?.resolved || 0} • App: {appReports.resolved}</p>
             </div>
           </div>
         </div>

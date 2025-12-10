@@ -1,0 +1,92 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+@prefix sf: <http://www.opengis.net/ont/sf#> .
+@prefix wgs84: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+@prefix fiware: <https://uri.fiware.org/ns/data-models#> .
+@prefix citylens: <https://citylens.vn/ontology/> .
+@prefix cl-data: <https://citylens.vn/data/> .
+@prefix cl-place: <https://citylens.vn/place/> .
+
+@prefix dbpedia: <http://dbpedia.org/resource/> .
+
+
+# =============================================================================
+# Weather Observations - Hanoi
+# =============================================================================
+
+cl-data:weather-hanoi-001 a sosa:Observation ;
+    a fiware:WeatherObserved ;
+    rdfs:label "Weather Observation Hanoi"@en ;
+    rdfs:label "Quan trắc thời tiết Hà Nội"@vi ;
+    citylens:temperature "25.3"^^xsd:double ;
+    citylens:relativeHumidity "78.0"^^xsd:double ;
+    citylens:atmosphericPressure "1013.0"^^xsd:double ;
+    citylens:windSpeed "3.5"^^xsd:double ;
+    citylens:weatherType "Clear" ;
+    sosa:observedProperty <http://sweetontology.net/propTemperature/Temperature> ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs dbpedia:Weather ;
+    dct:source <https://openweathermap.org/> .
+
+cl-data:weather-hanoi-001_geom a sf:Point ;
+    geo:asWKT "POINT(105.8342 21.0278)"^^geo:wktLiteral .
+
+cl-data:weather-hanoi-001 geo:hasGeometry cl-data:weather-hanoi-001_geom ;
+    wgs84:lat "21.0278"^^xsd:double ;
+    wgs84:long "105.8342"^^xsd:double .
+
+cl-data:weather-hanoi-002 a sosa:Observation ;
+    a fiware:WeatherObserved ;
+    rdfs:label "Weather Observation Ba Dinh"@en ;
+    citylens:temperature "24.8"^^xsd:double ;
+    citylens:relativeHumidity "75.0"^^xsd:double ;
+    citylens:windSpeed "2.8"^^xsd:double ;
+    citylens:weatherType "Clouds" ;
+    sosa:resultTime "2025-01-10T15:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:BaDinh ;
+    wgs84:lat "21.0355"^^xsd:double ;
+    wgs84:long "105.8198"^^xsd:double .
+
+cl-data:weather-hanoi-003 a sosa:Observation ;
+    a fiware:WeatherObserved ;
+    rdfs:label "Weather Observation Hoan Kiem"@en ;
+    citylens:temperature "26.1"^^xsd:double ;
+    citylens:relativeHumidity "72.0"^^xsd:double ;
+    citylens:windSpeed "4.2"^^xsd:double ;
+    citylens:weatherType "Clear" ;
+    sosa:resultTime "2025-01-10T15:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HoanKiem ;
+    wgs84:lat "21.0285"^^xsd:double ;
+    wgs84:long "105.8542"^^xsd:double .
+
+cl-data:weather-hanoi-004 a sosa:Observation ;
+    a fiware:WeatherObserved ;
+    rdfs:label "Weather Observation Dong Da"@en ;
+    citylens:temperature "25.0"^^xsd:double ;
+    citylens:relativeHumidity "80.0"^^xsd:double ;
+    citylens:windSpeed "3.0"^^xsd:double ;
+    citylens:weatherType "Rain" ;
+    sosa:resultTime "2025-01-10T15:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:DongDa ;
+    wgs84:lat "21.0169"^^xsd:double ;
+    wgs84:long "105.8341"^^xsd:double .
+
+cl-data:weather-hanoi-005 a sosa:Observation ;
+    a fiware:WeatherObserved ;
+    rdfs:label "Weather Observation Cau Giay"@en ;
+    citylens:temperature "24.5"^^xsd:double ;
+    citylens:relativeHumidity "82.0"^^xsd:double ;
+    citylens:windSpeed "2.5"^^xsd:double ;
+    citylens:weatherType "Clouds" ;
+    sosa:resultTime "2025-01-10T15:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:CauGiay ;
+    wgs84:lat "21.0333"^^xsd:double ;
+    wgs84:long "105.7944"^^xsd:double .

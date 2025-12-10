@@ -1,0 +1,230 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix ssn: <http://www.w3.org/ns/ssn/> .
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+@prefix sf: <http://www.opengis.net/ont/sf#> .
+@prefix wgs84: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+@prefix ngsi-ld: <https://uri.etsi.org/ngsi-ld/> .
+@prefix fiware: <https://uri.fiware.org/ns/data-models#> .
+@prefix saref: <https://saref.etsi.org/core/> .
+@prefix schema: <https://schema.org/> .
+
+@prefix citylens: <https://citylens.vn/ontology/> .
+@prefix cl-data: <https://citylens.vn/data/> .
+@prefix cl-place: <https://citylens.vn/place/> .
+
+@prefix dbpedia: <http://dbpedia.org/resource/> .
+@prefix wd: <http://www.wikidata.org/entity/> .
+@prefix gn: <https://www.geonames.org/> .
+
+
+# =============================================================================
+# CityLens Ontology Definition
+# =============================================================================
+
+citylens:CityLens a owl:Ontology ;
+    rdfs:label "CityLens Ontology"@en ;
+    rdfs:label "Ontology CityLens"@vi ;
+    dct:title "CityLens Smart City Ontology" ;
+    dct:description "Ontology for CityLens Smart City Platform - Linked Open Data for Vietnamese cities"@en ;
+    dct:creator <https://citylens.vn/> ;
+    dct:created "2025-01-01"^^xsd:date ;
+    owl:versionInfo "1.0.0" ;
+    dct:license <https://www.gnu.org/licenses/gpl-3.0> .
+
+# Classes
+citylens:CivicIssue a owl:Class ;
+    rdfs:subClassOf schema:Report ;
+    rdfs:label "Civic Issue"@en ;
+    rdfs:label "Vấn đề đô thị"@vi ;
+    rdfs:comment "A report of urban infrastructure or service issue"@en .
+
+citylens:Place a owl:Class ;
+    rdfs:subClassOf geo:Feature ;
+    rdfs:label "Place"@en ;
+    rdfs:label "Địa điểm"@vi .
+
+citylens:District a owl:Class ;
+    rdfs:subClassOf citylens:Place ;
+    rdfs:label "District"@en ;
+    rdfs:label "Quận/Huyện"@vi .
+
+# Properties
+citylens:temperature a owl:DatatypeProperty ;
+    rdfs:domain sosa:Observation ;
+    rdfs:range xsd:double ;
+    rdfs:label "Temperature"@en ;
+    rdfs:label "Nhiệt độ"@vi ;
+    schema:unitCode "CEL" .
+
+citylens:airQualityIndex a owl:DatatypeProperty ;
+    rdfs:domain sosa:Observation ;
+    rdfs:range xsd:integer ;
+    rdfs:label "Air Quality Index"@en ;
+    rdfs:label "Chỉ số chất lượng không khí"@vi .
+
+citylens:pm25 a owl:DatatypeProperty ;
+    rdfs:domain sosa:Observation ;
+    rdfs:range xsd:double ;
+    rdfs:label "PM2.5"@en ;
+    schema:unitCode "ugm3" .
+
+citylens:pm10 a owl:DatatypeProperty ;
+    rdfs:domain sosa:Observation ;
+    rdfs:range xsd:double ;
+    rdfs:label "PM10"@en ;
+    schema:unitCode "ugm3" .
+
+citylens:relativeHumidity a owl:DatatypeProperty ;
+    rdfs:domain sosa:Observation ;
+    rdfs:range xsd:double ;
+    rdfs:label "Relative Humidity"@en ;
+    rdfs:label "Độ ẩm tương đối"@vi ;
+    schema:unitCode "percent" .
+
+citylens:congestionLevel a owl:DatatypeProperty ;
+    rdfs:domain sosa:Observation ;
+    rdfs:range xsd:double ;
+    rdfs:label "Congestion Level"@en ;
+    rdfs:label "Mức độ tắc nghẽn"@vi .
+
+citylens:category a owl:DatatypeProperty ;
+    rdfs:domain citylens:CivicIssue ;
+    rdfs:range xsd:string ;
+    rdfs:label "Category"@en .
+
+citylens:status a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "Status"@en .
+
+citylens:priority a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "Priority"@en .
+
+citylens:district a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "District"@en ;
+    rdfs:label "Quận"@vi .
+
+citylens:locatedIn a owl:ObjectProperty ;
+    rdfs:domain geo:Feature ;
+    rdfs:range citylens:Place ;
+    rdfs:label "Located in"@en .
+
+# Hanoi City Instance with external links
+cl-place:Hanoi a citylens:Place ;
+    rdfs:label "Hà Nội"@vi ;
+    rdfs:label "Hanoi"@en ;
+    owl:sameAs dbpedia:Hanoi ;
+    owl:sameAs wd:Q1581 ;
+    owl:sameAs gn:1581129 ;
+    wgs84:lat "21.0278"^^xsd:double ;
+    wgs84:long "105.8342"^^xsd:double .
+
+# Hanoi Districts with links
+cl-place:BaDinh a citylens:District ;
+    rdfs:label "Ba Đình"@vi ;
+    rdfs:label "Ba Dinh"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1853736 ;
+    wgs84:lat "21.0355"^^xsd:double ;
+    wgs84:long "105.8198"^^xsd:double .
+
+cl-place:HoanKiem a citylens:District ;
+    rdfs:label "Hoàn Kiếm"@vi ;
+    rdfs:label "Hoan Kiem"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1854656 ;
+    wgs84:lat "21.0285"^^xsd:double ;
+    wgs84:long "105.8542"^^xsd:double .
+
+cl-place:HaiBaTrung a citylens:District ;
+    rdfs:label "Hai Bà Trưng"@vi ;
+    rdfs:label "Hai Ba Trung"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1852804 ;
+    wgs84:lat "21.0069"^^xsd:double ;
+    wgs84:long "105.8523"^^xsd:double .
+
+cl-place:DongDa a citylens:District ;
+    rdfs:label "Đống Đa"@vi ;
+    rdfs:label "Dong Da"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1852795 ;
+    wgs84:lat "21.0169"^^xsd:double ;
+    wgs84:long "105.8341"^^xsd:double .
+
+cl-place:ThanhXuan a citylens:District ;
+    rdfs:label "Thanh Xuân"@vi ;
+    rdfs:label "Thanh Xuan"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q2302883 ;
+    wgs84:lat "20.9947"^^xsd:double ;
+    wgs84:long "105.8045"^^xsd:double .
+
+cl-place:CauGiay a citylens:District ;
+    rdfs:label "Cầu Giấy"@vi ;
+    rdfs:label "Cau Giay"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1852785 ;
+    wgs84:lat "21.0333"^^xsd:double ;
+    wgs84:long "105.7944"^^xsd:double .
+
+cl-place:TayHo a citylens:District ;
+    rdfs:label "Tây Hồ"@vi ;
+    rdfs:label "Tay Ho"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q2302878 ;
+    wgs84:lat "21.0658"^^xsd:double ;
+    wgs84:long "105.8194"^^xsd:double .
+
+cl-place:HoangMai a citylens:District ;
+    rdfs:label "Hoàng Mai"@vi ;
+    rdfs:label "Hoang Mai"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1854655 ;
+    wgs84:lat "20.9745"^^xsd:double ;
+    wgs84:long "105.8516"^^xsd:double .
+
+cl-place:LongBien a citylens:District ;
+    rdfs:label "Long Biên"@vi ;
+    rdfs:label "Long Bien"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1870735 ;
+    wgs84:lat "21.0505"^^xsd:double ;
+    wgs84:long "105.8970"^^xsd:double .
+
+cl-place:HaDong a citylens:District ;
+    rdfs:label "Hà Đông"@vi ;
+    rdfs:label "Ha Dong"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1852803 ;
+    wgs84:lat "20.9719"^^xsd:double ;
+    wgs84:long "105.7795"^^xsd:double .
+
+# =============================================================================
+# Data Source Metadata
+# =============================================================================
+
+cl-data:OpenWeatherMapSource a prov:Agent, dcat:DataService ;
+    rdfs:label "OpenWeatherMap API"@en ;
+    dct:description "Real-time weather data from OpenWeatherMap"@en ;
+    dcat:endpointURL <https://api.openweathermap.org/data/2.5/> .
+
+cl-data:AQICNSource a prov:Agent, dcat:DataService ;
+    rdfs:label "AQICN API"@en ;
+    dct:description "World Air Quality Index project data"@en ;
+    dcat:endpointURL <https://aqicn.org/api/> .
+
+cl-data:TomTomSource a prov:Agent, dcat:DataService ;
+    rdfs:label "TomTom Traffic API"@en ;
+    dct:description "Real-time traffic flow data from TomTom"@en ;
+    dcat:endpointURL <https://api.tomtom.com/traffic/> .

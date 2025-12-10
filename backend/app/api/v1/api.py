@@ -10,26 +10,32 @@ from app.api.v1.endpoints import (
     reports, media, statistics, engagement, 
     assignments, notifications, geographic, realtime, ngsi_ld,
     auth, admin, admin_dashboard_v2 as admin_dashboard,
-    app_auth, app_reports, ai_chat
+    app_auth, app_reports, app_alerts, ai_chat, user_management
 )
+from app.api.v1 import lod
 
 api_router = APIRouter()
 
 # ============ Mobile App APIs (MongoDB Atlas) ============
 api_router.include_router(app_auth.router, prefix="/app/auth", tags=["Mobile App - Authentication"])
 api_router.include_router(app_reports.router, prefix="/app/reports", tags=["Mobile App - Reports"])
-api_router.include_router(ai_chat.router, prefix="/app/ai", tags=["Mobile App - AI Chat"])
+api_router.include_router(app_alerts.router, prefix="/app/alerts", tags=["Mobile App - Alerts"])
+api_router.include_router(ai_chat.router, prefix="/ai", tags=["AI Assistant"])
 
 # ============ Web Dashboard APIs (MongoDB Docker) ============
 # Authentication & User Management
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(admin.router, prefix="/admin", tags=["Admin - User Management"])
+api_router.include_router(user_management.router, prefix="/users", tags=["User Management - Full CRUD"])
 
 # Admin Advanced Features
 api_router.include_router(admin_dashboard.router, prefix="/admin/dashboard", tags=["Admin - Dashboard & Statistics"])
 
 # NGSI-LD Context Broker (prioritized for compliance)
 api_router.include_router(ngsi_ld.router, tags=["NGSI-LD Context Broker"])
+
+# LOD Community API
+api_router.include_router(lod.router, tags=["LOD Community"])
 
 # Core APIs
 api_router.include_router(reports.router, prefix="/reports", tags=["Báo cáo"])

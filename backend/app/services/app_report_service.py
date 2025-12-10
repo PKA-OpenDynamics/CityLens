@@ -22,6 +22,25 @@ class AppReportService:
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
         self.collection = db.reports
+        # Initialize indexes for performance (runs once per connection)
+        self._ensure_indexes()
+    
+    def _ensure_indexes(self):
+        """Ensure database indexes exist for optimal query performance"""
+        try:
+            # Index for status queries
+            self.collection.create_index([("status", 1), ("createdAt", -1)])
+            # Index for userId queries
+            self.collection.create_index([("userId", 1), ("createdAt", -1)])
+            # Compound index for common queries
+            self.collection.create_index([("status", 1), ("userId", 1), ("createdAt", -1)])
+            # Index for ward-based queries
+            self.collection.create_index([("ward", 1), ("createdAt", -1)])
+            # Index for reportType queries
+            self.collection.create_index([("reportType", 1), ("createdAt", -1)])
+        except Exception as e:
+            # Indexes might already exist
+            pass
     
     async def create_report(self, report_data: AppReportCreate) -> AppReport:
         """Create a new report"""
@@ -51,9 +70,10 @@ class AppReportService:
         status: Optional[str] = None,
         user_id: Optional[str] = None,
         limit: int = 20,
-        skip: int = 0
+        skip: int = 0,
+        include_media: bool = True
     ) -> List[dict]:
-        """Get reports list with filters"""
+        """Get reports list with filters (optimized with smart projection)"""
         query = {}
         
         if status:
@@ -62,15 +82,60 @@ class AppReportService:
         if user_id:
             query["userId"] = user_id
         
-        cursor = self.collection.find(query).sort("createdAt", -1).limit(limit).skip(skip)
+        # Projection: only fetch needed fields to reduce data transfer
+        projection = {
+            "_id": 1,
+            "reportType": 1,
+            "ward": 1,
+            "addressDetail": 1,
+            "location": 1,
+            "title": 1,
+            "content": 1,
+            "status": 1,
+            "createdAt": 1,
+            "updatedAt": 1,
+            "userId": 1,
+            "adminNote": 1
+        }
+        
+        # Include media based on parameter
+        if include_media:
+            # For media, only fetch first image thumbnail for list view
+            projection["media"] = {"$slice": 3}  # Limit to first 3 media items
+        
+        # Use hint to force index usage for better performance
+        cursor = self.collection.find(
+            query,
+            projection
+        ).sort("createdAt", -1).limit(limit).skip(skip)
         
         reports = await cursor.to_list(length=limit)
         
         # Convert ObjectId to string
         for report in reports:
             report["_id"] = str(report["_id"])
+            if not include_media:
+                report["media"] = []  # Empty array if media not fetched
         
         return reports
+    
+    async def get_reports_count(
+        self,
+        status: Optional[str] = None,
+        user_id: Optional[str] = None
+    ) -> int:
+        """Get total count of reports matching filters (optimized)"""
+        query = {}
+        
+        if status:
+            query["status"] = status
+        
+        if user_id:
+            query["userId"] = user_id
+        
+        # Use count_documents for accurate count
+        count = await self.collection.count_documents(query)
+        return count
     
     async def get_report_by_id(self, report_id: str) -> Optional[dict]:
         """Get a specific report by ID"""
@@ -87,6 +152,42 @@ class AppReportService:
         
         report["_id"] = str(report["_id"])
         return report
+    
+    async def get_reports_summary(
+        self,
+        status: Optional[str] = None,
+        limit: int = 100,
+        skip: int = 0
+    ) -> List[dict]:
+        """Get reports summary (optimized for map view - no media)"""
+        query = {}
+        
+        if status:
+            query["status"] = status
+        
+        # Minimal projection for map markers
+        projection = {
+            "_id": 1,
+            "reportType": 1,
+            "ward": 1,
+            "location": 1,
+            "title": 1,
+            "status": 1,
+            "createdAt": 1
+        }
+        
+        cursor = self.collection.find(
+            query,
+            projection
+        ).sort("createdAt", -1).limit(limit).skip(skip)
+        
+        reports = await cursor.to_list(length=limit)
+        
+        # Convert ObjectId to string
+        for report in reports:
+            report["_id"] = str(report["_id"])
+        
+        return reports
     
     async def update_report_status(
         self,

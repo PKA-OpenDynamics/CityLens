@@ -1,0 +1,895 @@
+# =============================================================================
+# CityLens Unified RDF Dataset
+# Generated automatically from individual domain files
+# =============================================================================
+
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+
+@prefix sosa: <http://www.w3.org/ns/sosa/> .
+@prefix ssn: <http://www.w3.org/ns/ssn/> .
+@prefix geo: <http://www.opengis.net/ont/geosparql#> .
+@prefix sf: <http://www.opengis.net/ont/sf#> .
+@prefix wgs84: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+@prefix ngsi-ld: <https://uri.etsi.org/ngsi-ld/> .
+@prefix fiware: <https://uri.fiware.org/ns/data-models#> .
+@prefix saref: <https://saref.etsi.org/core/> .
+@prefix schema: <https://schema.org/> .
+
+@prefix citylens: <https://citylens.vn/ontology/> .
+@prefix cl-data: <https://citylens.vn/data/> .
+@prefix cl-place: <https://citylens.vn/place/> .
+
+@prefix dbpedia: <http://dbpedia.org/resource/> .
+@prefix wd: <http://www.wikidata.org/entity/> .
+@prefix gn: <http://www.geonames.org/ontology#> .
+
+
+
+# ==============================================================================
+# Source: citylens-ontology.ttl
+# ==============================================================================
+
+
+
+
+
+
+
+citylens:CityLens a owl:Ontology ;
+    rdfs:label "CityLens Ontology"@en ;
+    rdfs:label "Ontology CityLens"@vi ;
+    dct:title "CityLens Smart City Ontology" ;
+    dct:description "Ontology for CityLens Smart City Platform - Linked Open Data for Vietnamese cities"@en ;
+    dct:creator <https://citylens.vn/> ;
+    dct:created "2025-01-01"^^xsd:date ;
+    owl:versionInfo "1.0.0" ;
+    dct:license <https://www.gnu.org/licenses/gpl-3.0> .
+
+citylens:CivicIssue a owl:Class ;
+    rdfs:subClassOf schema:Report ;
+    rdfs:label "Civic Issue"@en ;
+    rdfs:label "Vấn đề đô thị"@vi ;
+    rdfs:comment "A report of urban infrastructure or service issue"@en .
+
+citylens:Place a owl:Class ;
+    rdfs:subClassOf geo:Feature ;
+    rdfs:label "Place"@en ;
+    rdfs:label "Địa điểm"@vi .
+
+citylens:District a owl:Class ;
+    rdfs:subClassOf citylens:Place ;
+    rdfs:label "District"@en ;
+    rdfs:label "Quận/Huyện"@vi .
+
+citylens:temperature a owl:DatatypeProperty ;
+    rdfs:domain sosa:Observation ;
+    rdfs:range xsd:double ;
+    rdfs:label "Temperature"@en ;
+    rdfs:label "Nhiệt độ"@vi ;
+    schema:unitCode "CEL" .
+
+citylens:airQualityIndex a owl:DatatypeProperty ;
+    rdfs:domain sosa:Observation ;
+    rdfs:range xsd:integer ;
+    rdfs:label "Air Quality Index"@en ;
+    rdfs:label "Chỉ số chất lượng không khí"@vi .
+
+citylens:pm25 a owl:DatatypeProperty ;
+    rdfs:domain sosa:Observation ;
+    rdfs:range xsd:double ;
+    rdfs:label "PM2.5"@en ;
+    schema:unitCode "ugm3" .
+
+citylens:pm10 a owl:DatatypeProperty ;
+    rdfs:domain sosa:Observation ;
+    rdfs:range xsd:double ;
+    rdfs:label "PM10"@en ;
+    schema:unitCode "ugm3" .
+
+citylens:relativeHumidity a owl:DatatypeProperty ;
+    rdfs:domain sosa:Observation ;
+    rdfs:range xsd:double ;
+    rdfs:label "Relative Humidity"@en ;
+    rdfs:label "Độ ẩm tương đối"@vi ;
+    schema:unitCode "percent" .
+
+citylens:congestionLevel a owl:DatatypeProperty ;
+    rdfs:domain sosa:Observation ;
+    rdfs:range xsd:double ;
+    rdfs:label "Congestion Level"@en ;
+    rdfs:label "Mức độ tắc nghẽn"@vi .
+
+citylens:category a owl:DatatypeProperty ;
+    rdfs:domain citylens:CivicIssue ;
+    rdfs:range xsd:string ;
+    rdfs:label "Category"@en .
+
+citylens:status a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "Status"@en .
+
+citylens:priority a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "Priority"@en .
+
+citylens:district a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:label "District"@en ;
+    rdfs:label "Quận"@vi .
+
+citylens:locatedIn a owl:ObjectProperty ;
+    rdfs:domain geo:Feature ;
+    rdfs:range citylens:Place ;
+    rdfs:label "Located in"@en .
+
+cl-place:Hanoi a citylens:Place ;
+    rdfs:label "Hà Nội"@vi ;
+    rdfs:label "Hanoi"@en ;
+    owl:sameAs dbpedia:Hanoi ;
+    owl:sameAs wd:Q1581 ;
+    owl:sameAs gn:1581129 ;
+    wgs84:lat "21.0278"^^xsd:double ;
+    wgs84:long "105.8342"^^xsd:double .
+
+cl-place:BaDinh a citylens:District ;
+    rdfs:label "Ba Đình"@vi ;
+    rdfs:label "Ba Dinh"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1853736 ;
+    wgs84:lat "21.0355"^^xsd:double ;
+    wgs84:long "105.8198"^^xsd:double .
+
+cl-place:HoanKiem a citylens:District ;
+    rdfs:label "Hoàn Kiếm"@vi ;
+    rdfs:label "Hoan Kiem"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1854656 ;
+    wgs84:lat "21.0285"^^xsd:double ;
+    wgs84:long "105.8542"^^xsd:double .
+
+cl-place:HaiBaTrung a citylens:District ;
+    rdfs:label "Hai Bà Trưng"@vi ;
+    rdfs:label "Hai Ba Trung"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1852804 ;
+    wgs84:lat "21.0069"^^xsd:double ;
+    wgs84:long "105.8523"^^xsd:double .
+
+cl-place:DongDa a citylens:District ;
+    rdfs:label "Đống Đa"@vi ;
+    rdfs:label "Dong Da"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1852795 ;
+    wgs84:lat "21.0169"^^xsd:double ;
+    wgs84:long "105.8341"^^xsd:double .
+
+cl-place:ThanhXuan a citylens:District ;
+    rdfs:label "Thanh Xuân"@vi ;
+    rdfs:label "Thanh Xuan"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q2302883 ;
+    wgs84:lat "20.9947"^^xsd:double ;
+    wgs84:long "105.8045"^^xsd:double .
+
+cl-place:CauGiay a citylens:District ;
+    rdfs:label "Cầu Giấy"@vi ;
+    rdfs:label "Cau Giay"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1852785 ;
+    wgs84:lat "21.0333"^^xsd:double ;
+    wgs84:long "105.7944"^^xsd:double .
+
+cl-place:TayHo a citylens:District ;
+    rdfs:label "Tây Hồ"@vi ;
+    rdfs:label "Tay Ho"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q2302878 ;
+    wgs84:lat "21.0658"^^xsd:double ;
+    wgs84:long "105.8194"^^xsd:double .
+
+cl-place:HoangMai a citylens:District ;
+    rdfs:label "Hoàng Mai"@vi ;
+    rdfs:label "Hoang Mai"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1854655 ;
+    wgs84:lat "20.9745"^^xsd:double ;
+    wgs84:long "105.8516"^^xsd:double .
+
+cl-place:LongBien a citylens:District ;
+    rdfs:label "Long Biên"@vi ;
+    rdfs:label "Long Bien"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1870735 ;
+    wgs84:lat "21.0505"^^xsd:double ;
+    wgs84:long "105.8970"^^xsd:double .
+
+cl-place:HaDong a citylens:District ;
+    rdfs:label "Hà Đông"@vi ;
+    rdfs:label "Ha Dong"@en ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs wd:Q1852803 ;
+    wgs84:lat "20.9719"^^xsd:double ;
+    wgs84:long "105.7795"^^xsd:double .
+
+
+cl-data:OpenWeatherMapSource a prov:Agent, dcat:DataService ;
+    rdfs:label "OpenWeatherMap API"@en ;
+    dct:description "Real-time weather data from OpenWeatherMap"@en ;
+    dcat:endpointURL <https://api.openweathermap.org/data/2.5/> .
+
+cl-data:AQICNSource a prov:Agent, dcat:DataService ;
+    rdfs:label "AQICN API"@en ;
+    dct:description "World Air Quality Index project data"@en ;
+    dcat:endpointURL <https://aqicn.org/api/> .
+
+cl-data:TomTomSource a prov:Agent, dcat:DataService ;
+    rdfs:label "TomTom Traffic API"@en ;
+    dct:description "Real-time traffic flow data from TomTom"@en ;
+    dcat:endpointURL <https://api.tomtom.com/traffic/> .
+
+# ==============================================================================
+# Source: citylens-places.ttl
+# ==============================================================================
+
+
+
+
+
+cl-place:Hanoi a citylens:City ;
+    rdfs:label "Hanoi"@en ;
+    rdfs:label "Hà Nội"@vi ;
+    rdfs:comment "Capital city of Vietnam"@en ;
+    owl:sameAs dbpedia:Hanoi ;
+    owl:sameAs wd:Q1581 ;
+    owl:sameAs <http://sws.geonames.org/1581130/> ;
+    gn:countryCode "VN" ;
+    gn:featureClass gn:P ;
+    citylens:population "8330000"^^xsd:integer ;
+    citylens:area "3358.6"^^xsd:double ;
+    wgs84:lat "21.0278"^^xsd:double ;
+    wgs84:long "105.8342"^^xsd:double .
+
+cl-place:BaDinh a citylens:District ;
+    rdfs:label "Ba Dinh District"@en ;
+    rdfs:label "Quận Ba Đình"@vi ;
+    citylens:partOf cl-place:Hanoi ;
+    citylens:population "231000"^^xsd:integer ;
+    citylens:area "9.22"^^xsd:double ;
+    owl:sameAs wd:Q2634362 ;
+    wgs84:lat "21.0355"^^xsd:double ;
+    wgs84:long "105.8198"^^xsd:double .
+
+cl-place:HoanKiem a citylens:District ;
+    rdfs:label "Hoan Kiem District"@en ;
+    rdfs:label "Quận Hoàn Kiếm"@vi ;
+    citylens:partOf cl-place:Hanoi ;
+    citylens:population "152000"^^xsd:integer ;
+    citylens:area "5.29"^^xsd:double ;
+    owl:sameAs wd:Q2632810 ;
+    wgs84:lat "21.0285"^^xsd:double ;
+    wgs84:long "105.8542"^^xsd:double .
+
+cl-place:DongDa a citylens:District ;
+    rdfs:label "Dong Da District"@en ;
+    rdfs:label "Quận Đống Đa"@vi ;
+    citylens:partOf cl-place:Hanoi ;
+    citylens:population "395000"^^xsd:integer ;
+    citylens:area "9.96"^^xsd:double ;
+    owl:sameAs wd:Q2640134 ;
+    wgs84:lat "21.0169"^^xsd:double ;
+    wgs84:long "105.8341"^^xsd:double .
+
+cl-place:CauGiay a citylens:District ;
+    rdfs:label "Cau Giay District"@en ;
+    rdfs:label "Quận Cầu Giấy"@vi ;
+    citylens:partOf cl-place:Hanoi ;
+    citylens:population "288000"^^xsd:integer ;
+    citylens:area "12.04"^^xsd:double ;
+    owl:sameAs wd:Q2632819 ;
+    wgs84:lat "21.0333"^^xsd:double ;
+    wgs84:long "105.7944"^^xsd:double .
+
+cl-place:HaDong a citylens:District ;
+    rdfs:label "Ha Dong District"@en ;
+    rdfs:label "Quận Hà Đông"@vi ;
+    citylens:partOf cl-place:Hanoi ;
+    citylens:population "378000"^^xsd:integer ;
+    citylens:area "48.34"^^xsd:double ;
+    owl:sameAs wd:Q2569891 ;
+    wgs84:lat "20.9719"^^xsd:double ;
+    wgs84:long "105.7795"^^xsd:double .
+
+cl-place:LongBien a citylens:District ;
+    rdfs:label "Long Bien District"@en ;
+    rdfs:label "Quận Long Biên"@vi ;
+    citylens:partOf cl-place:Hanoi ;
+    citylens:population "314000"^^xsd:integer ;
+    citylens:area "60.38"^^xsd:double ;
+    owl:sameAs wd:Q2634361 ;
+    wgs84:lat "21.0512"^^xsd:double ;
+    wgs84:long "105.8988"^^xsd:double .
+
+cl-place:ThanhXuan a citylens:District ;
+    rdfs:label "Thanh Xuan District"@en ;
+    rdfs:label "Quận Thanh Xuân"@vi ;
+    citylens:partOf cl-place:Hanoi ;
+    citylens:population "285000"^^xsd:integer ;
+    citylens:area "9.11"^^xsd:double ;
+    owl:sameAs wd:Q2640131 ;
+    wgs84:lat "20.9972"^^xsd:double ;
+    wgs84:long "105.8131"^^xsd:double .
+
+cl-place:HaiBaTrung a citylens:District ;
+    rdfs:label "Hai Ba Trung District"@en ;
+    rdfs:label "Quận Hai Bà Trưng"@vi ;
+    citylens:partOf cl-place:Hanoi ;
+    citylens:population "315000"^^xsd:integer ;
+    citylens:area "10.09"^^xsd:double ;
+    owl:sameAs wd:Q2634363 ;
+    wgs84:lat "21.0065"^^xsd:double ;
+    wgs84:long "105.8620"^^xsd:double .
+
+cl-place:NamTuLiem a citylens:District ;
+    rdfs:label "Nam Tu Liem District"@en ;
+    rdfs:label "Quận Nam Từ Liêm"@vi ;
+    citylens:partOf cl-place:Hanoi ;
+    citylens:population "248000"^^xsd:integer ;
+    citylens:area "32.27"^^xsd:double ;
+    wgs84:lat "21.0245"^^xsd:double ;
+    wgs84:long "105.7652"^^xsd:double .
+
+cl-place:TayHo a citylens:District ;
+    rdfs:label "Tay Ho District"@en ;
+    rdfs:label "Quận Tây Hồ"@vi ;
+    citylens:partOf cl-place:Hanoi ;
+    citylens:population "168000"^^xsd:integer ;
+    citylens:area "24.0"^^xsd:double ;
+    owl:sameAs wd:Q2640118 ;
+    wgs84:lat "21.0745"^^xsd:double ;
+    wgs84:long "105.8178"^^xsd:double .
+
+cl-place:HoangMai a citylens:District ;
+    rdfs:label "Hoang Mai District"@en ;
+    rdfs:label "Quận Hoàng Mai"@vi ;
+    citylens:partOf cl-place:Hanoi ;
+    citylens:population "410000"^^xsd:integer ;
+    citylens:area "41.04"^^xsd:double ;
+    owl:sameAs wd:Q2640120 ;
+    wgs84:lat "20.9825"^^xsd:double ;
+    wgs84:long "105.8534"^^xsd:double .
+
+# ==============================================================================
+# Source: citylens-weather.ttl
+# ==============================================================================
+
+
+
+
+
+
+cl-data:weather-hanoi-001 a sosa:Observation ;
+    a fiware:WeatherObserved ;
+    rdfs:label "Weather Observation Hanoi"@en ;
+    rdfs:label "Quan trắc thời tiết Hà Nội"@vi ;
+    citylens:temperature "25.3"^^xsd:double ;
+    citylens:relativeHumidity "78.0"^^xsd:double ;
+    citylens:atmosphericPressure "1013.0"^^xsd:double ;
+    citylens:windSpeed "3.5"^^xsd:double ;
+    citylens:weatherType "Clear" ;
+    sosa:observedProperty <http://sweetontology.net/propTemperature/Temperature> ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:Hanoi ;
+    owl:sameAs dbpedia:Weather ;
+    dct:source <https://openweathermap.org/> .
+
+cl-data:weather-hanoi-001_geom a sf:Point ;
+    geo:asWKT "POINT(105.8342 21.0278)"^^geo:wktLiteral .
+
+cl-data:weather-hanoi-001 geo:hasGeometry cl-data:weather-hanoi-001_geom ;
+    wgs84:lat "21.0278"^^xsd:double ;
+    wgs84:long "105.8342"^^xsd:double .
+
+cl-data:weather-hanoi-002 a sosa:Observation ;
+    a fiware:WeatherObserved ;
+    rdfs:label "Weather Observation Ba Dinh"@en ;
+    citylens:temperature "24.8"^^xsd:double ;
+    citylens:relativeHumidity "75.0"^^xsd:double ;
+    citylens:windSpeed "2.8"^^xsd:double ;
+    citylens:weatherType "Clouds" ;
+    sosa:resultTime "2025-01-10T15:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:BaDinh ;
+    wgs84:lat "21.0355"^^xsd:double ;
+    wgs84:long "105.8198"^^xsd:double .
+
+cl-data:weather-hanoi-003 a sosa:Observation ;
+    a fiware:WeatherObserved ;
+    rdfs:label "Weather Observation Hoan Kiem"@en ;
+    citylens:temperature "26.1"^^xsd:double ;
+    citylens:relativeHumidity "72.0"^^xsd:double ;
+    citylens:windSpeed "4.2"^^xsd:double ;
+    citylens:weatherType "Clear" ;
+    sosa:resultTime "2025-01-10T15:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HoanKiem ;
+    wgs84:lat "21.0285"^^xsd:double ;
+    wgs84:long "105.8542"^^xsd:double .
+
+cl-data:weather-hanoi-004 a sosa:Observation ;
+    a fiware:WeatherObserved ;
+    rdfs:label "Weather Observation Dong Da"@en ;
+    citylens:temperature "25.0"^^xsd:double ;
+    citylens:relativeHumidity "80.0"^^xsd:double ;
+    citylens:windSpeed "3.0"^^xsd:double ;
+    citylens:weatherType "Rain" ;
+    sosa:resultTime "2025-01-10T15:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:DongDa ;
+    wgs84:lat "21.0169"^^xsd:double ;
+    wgs84:long "105.8341"^^xsd:double .
+
+cl-data:weather-hanoi-005 a sosa:Observation ;
+    a fiware:WeatherObserved ;
+    rdfs:label "Weather Observation Cau Giay"@en ;
+    citylens:temperature "24.5"^^xsd:double ;
+    citylens:relativeHumidity "82.0"^^xsd:double ;
+    citylens:windSpeed "2.5"^^xsd:double ;
+    citylens:weatherType "Clouds" ;
+    sosa:resultTime "2025-01-10T15:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:CauGiay ;
+    wgs84:lat "21.0333"^^xsd:double ;
+    wgs84:long "105.7944"^^xsd:double .
+
+# ==============================================================================
+# Source: citylens-airquality.ttl
+# ==============================================================================
+
+
+
+
+
+cl-data:aqi-hanoi-001 a sosa:Observation ;
+    a fiware:AirQualityObserved ;
+    rdfs:label "Air Quality Observation Hanoi"@en ;
+    rdfs:label "Quan trắc chất lượng không khí Hà Nội"@vi ;
+    citylens:airQualityIndex "85"^^xsd:integer ;
+    citylens:pm25 "28.5"^^xsd:double ;
+    citylens:pm10 "45.2"^^xsd:double ;
+    citylens:co "0.8"^^xsd:double ;
+    citylens:no2 "32.1"^^xsd:double ;
+    citylens:o3 "48.5"^^xsd:double ;
+    citylens:so2 "8.2"^^xsd:double ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:Hanoi ;
+    dct:source <https://aqicn.org/> ;
+    wgs84:lat "21.0278"^^xsd:double ;
+    wgs84:long "105.8342"^^xsd:double .
+
+cl-data:aqi-hanoi-badinh a sosa:Observation ;
+    a fiware:AirQualityObserved ;
+    rdfs:label "Air Quality Ba Dinh"@en ;
+    citylens:airQualityIndex "92"^^xsd:integer ;
+    citylens:pm25 "31.2"^^xsd:double ;
+    citylens:pm10 "52.8"^^xsd:double ;
+    citylens:co "0.9"^^xsd:double ;
+    citylens:no2 "35.4"^^xsd:double ;
+    sosa:resultTime "2025-01-10T15:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:BaDinh ;
+    wgs84:lat "21.0355"^^xsd:double ;
+    wgs84:long "105.8198"^^xsd:double .
+
+cl-data:aqi-hanoi-hoankien a sosa:Observation ;
+    a fiware:AirQualityObserved ;
+    rdfs:label "Air Quality Hoan Kiem"@en ;
+    citylens:airQualityIndex "78"^^xsd:integer ;
+    citylens:pm25 "24.8"^^xsd:double ;
+    citylens:pm10 "40.1"^^xsd:double ;
+    citylens:co "0.7"^^xsd:double ;
+    citylens:no2 "28.9"^^xsd:double ;
+    sosa:resultTime "2025-01-10T15:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HoanKiem ;
+    wgs84:lat "21.0285"^^xsd:double ;
+    wgs84:long "105.8542"^^xsd:double .
+
+cl-data:aqi-hanoi-dongda a sosa:Observation ;
+    a fiware:AirQualityObserved ;
+    rdfs:label "Air Quality Dong Da"@en ;
+    citylens:airQualityIndex "105"^^xsd:integer ;
+    citylens:pm25 "38.5"^^xsd:double ;
+    citylens:pm10 "65.2"^^xsd:double ;
+    citylens:co "1.1"^^xsd:double ;
+    citylens:no2 "42.3"^^xsd:double ;
+    sosa:resultTime "2025-01-10T15:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:DongDa ;
+    wgs84:lat "21.0169"^^xsd:double ;
+    wgs84:long "105.8341"^^xsd:double .
+
+cl-data:aqi-hanoi-caugiay a sosa:Observation ;
+    a fiware:AirQualityObserved ;
+    rdfs:label "Air Quality Cau Giay"@en ;
+    citylens:airQualityIndex "118"^^xsd:integer ;
+    citylens:pm25 "45.2"^^xsd:double ;
+    citylens:pm10 "72.8"^^xsd:double ;
+    citylens:co "1.3"^^xsd:double ;
+    citylens:no2 "48.1"^^xsd:double ;
+    sosa:resultTime "2025-01-10T15:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:CauGiay ;
+    wgs84:lat "21.0333"^^xsd:double ;
+    wgs84:long "105.7944"^^xsd:double .
+
+cl-data:aqi-hanoi-hadong a sosa:Observation ;
+    a fiware:AirQualityObserved ;
+    rdfs:label "Air Quality Ha Dong"@en ;
+    citylens:airQualityIndex "142"^^xsd:integer ;
+    citylens:pm25 "58.9"^^xsd:double ;
+    citylens:pm10 "95.4"^^xsd:double ;
+    citylens:co "1.8"^^xsd:double ;
+    citylens:no2 "55.2"^^xsd:double ;
+    sosa:resultTime "2025-01-10T15:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HaDong ;
+    wgs84:lat "20.9719"^^xsd:double ;
+    wgs84:long "105.7795"^^xsd:double .
+
+# ==============================================================================
+# Source: citylens-traffic.ttl
+# ==============================================================================
+
+
+
+
+
+cl-data:traffic-kimma-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Kim Ma Street"@en ;
+    rdfs:label "Lưu lượng giao thông đường Kim Mã"@vi ;
+    citylens:roadName "Kim Ma" ;
+    citylens:congestionLevel "moderate" ;
+    citylens:averageSpeed "25.5"^^xsd:double ;
+    citylens:vehicleCount "1250"^^xsd:integer ;
+    citylens:travelTime "480"^^xsd:integer ;
+    citylens:freeFlowSpeed "50"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T08:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:BaDinh ;
+    dct:source <https://developer.tomtom.com/> ;
+    wgs84:lat "21.0312"^^xsd:double ;
+    wgs84:long "105.8123"^^xsd:double .
+
+cl-data:traffic-giangvo-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Giang Vo Street"@en ;
+    citylens:roadName "Giang Vo" ;
+    citylens:congestionLevel "heavy" ;
+    citylens:averageSpeed "12.8"^^xsd:double ;
+    citylens:vehicleCount "2150"^^xsd:integer ;
+    citylens:travelTime "850"^^xsd:integer ;
+    citylens:freeFlowSpeed "50"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T08:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:DongDa ;
+    wgs84:lat "21.0219"^^xsd:double ;
+    wgs84:long "105.8245"^^xsd:double .
+
+cl-data:traffic-nguyen-trai-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Nguyen Trai Street"@en ;
+    citylens:roadName "Nguyen Trai" ;
+    citylens:congestionLevel "severe" ;
+    citylens:averageSpeed "8.2"^^xsd:double ;
+    citylens:vehicleCount "3500"^^xsd:integer ;
+    citylens:travelTime "1200"^^xsd:integer ;
+    citylens:freeFlowSpeed "50"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T08:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:ThanhXuan ;
+    wgs84:lat "20.9985"^^xsd:double ;
+    wgs84:long "105.8121"^^xsd:double .
+
+cl-data:traffic-lang-ha-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Lang Ha Street"@en ;
+    citylens:roadName "Lang Ha" ;
+    citylens:congestionLevel "light" ;
+    citylens:averageSpeed "42.5"^^xsd:double ;
+    citylens:vehicleCount "650"^^xsd:integer ;
+    citylens:travelTime "280"^^xsd:integer ;
+    citylens:freeFlowSpeed "50"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T10:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:DongDa ;
+    wgs84:lat "21.0152"^^xsd:double ;
+    wgs84:long "105.8187"^^xsd:double .
+
+cl-data:traffic-cau-giay-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Cau Giay Street"@en ;
+    citylens:roadName "Cau Giay" ;
+    citylens:congestionLevel "moderate" ;
+    citylens:averageSpeed "28.0"^^xsd:double ;
+    citylens:vehicleCount "1580"^^xsd:integer ;
+    citylens:travelTime "520"^^xsd:integer ;
+    citylens:freeFlowSpeed "50"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T08:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:CauGiay ;
+    wgs84:lat "21.0355"^^xsd:double ;
+    wgs84:long "105.7845"^^xsd:double .
+
+cl-data:traffic-tran-duy-hung-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Tran Duy Hung Street"@en ;
+    citylens:roadName "Tran Duy Hung" ;
+    citylens:congestionLevel "heavy" ;
+    citylens:averageSpeed "15.5"^^xsd:double ;
+    citylens:vehicleCount "2850"^^xsd:integer ;
+    citylens:travelTime "780"^^xsd:integer ;
+    citylens:freeFlowSpeed "50"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T08:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:CauGiay ;
+    wgs84:lat "21.0089"^^xsd:double ;
+    wgs84:long "105.7912"^^xsd:double .
+
+cl-data:traffic-le-van-luong-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Le Van Luong Street"@en ;
+    citylens:roadName "Le Van Luong" ;
+    citylens:congestionLevel "severe" ;
+    citylens:averageSpeed "6.5"^^xsd:double ;
+    citylens:vehicleCount "4200"^^xsd:integer ;
+    citylens:travelTime "1450"^^xsd:integer ;
+    citylens:freeFlowSpeed "50"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T17:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:ThanhXuan ;
+    wgs84:lat "20.9892"^^xsd:double ;
+    wgs84:long "105.7989"^^xsd:double .
+
+cl-data:traffic-pham-hung-001 a sosa:Observation ;
+    a fiware:TrafficFlowObserved ;
+    rdfs:label "Traffic Flow Pham Hung Street"@en ;
+    citylens:roadName "Pham Hung" ;
+    citylens:congestionLevel "moderate" ;
+    citylens:averageSpeed "32.0"^^xsd:double ;
+    citylens:vehicleCount "1850"^^xsd:integer ;
+    citylens:travelTime "420"^^xsd:integer ;
+    citylens:freeFlowSpeed "60"^^xsd:integer ;
+    sosa:resultTime "2025-01-10T14:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:NamTuLiem ;
+    wgs84:lat "21.0245"^^xsd:double ;
+    wgs84:long "105.7652"^^xsd:double .
+
+# ==============================================================================
+# Source: citylens-parking.ttl
+# ==============================================================================
+
+
+
+
+
+cl-data:parking-vincom-batrieu a sosa:Observation ;
+    a fiware:OffStreetParking ;
+    rdfs:label "Vincom Ba Trieu Parking"@en ;
+    rdfs:label "Bãi đỗ xe Vincom Bà Triệu"@vi ;
+    citylens:parkingName "Vincom Center Ba Trieu" ;
+    citylens:totalSpaces "500"^^xsd:integer ;
+    citylens:availableSpaces "125"^^xsd:integer ;
+    citylens:occupancy "75"^^xsd:integer ;
+    citylens:pricePerHour "30000"^^xsd:integer ;
+    citylens:openHours "06:00-22:00" ;
+    citylens:parkingType "underground" ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HoanKiem ;
+    wgs84:lat "21.0122"^^xsd:double ;
+    wgs84:long "105.8492"^^xsd:double .
+
+cl-data:parking-lotte-lieu-giai a sosa:Observation ;
+    a fiware:OffStreetParking ;
+    rdfs:label "Lotte Lieu Giai Parking"@en ;
+    citylens:parkingName "Lotte Center Lieu Giai" ;
+    citylens:totalSpaces "800"^^xsd:integer ;
+    citylens:availableSpaces "320"^^xsd:integer ;
+    citylens:occupancy "60"^^xsd:integer ;
+    citylens:pricePerHour "35000"^^xsd:integer ;
+    citylens:openHours "06:00-23:00" ;
+    citylens:parkingType "underground" ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:BaDinh ;
+    wgs84:lat "21.0312"^^xsd:double ;
+    wgs84:long "105.8112"^^xsd:double .
+
+cl-data:parking-aeon-long-bien a sosa:Observation ;
+    a fiware:OffStreetParking ;
+    rdfs:label "AEON Long Bien Parking"@en ;
+    citylens:parkingName "AEON Mall Long Bien" ;
+    citylens:totalSpaces "2500"^^xsd:integer ;
+    citylens:availableSpaces "850"^^xsd:integer ;
+    citylens:occupancy "66"^^xsd:integer ;
+    citylens:pricePerHour "0"^^xsd:integer ;
+    citylens:openHours "08:00-22:00" ;
+    citylens:parkingType "surface" ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:LongBien ;
+    wgs84:lat "21.0512"^^xsd:double ;
+    wgs84:long "105.8989"^^xsd:double .
+
+cl-data:parking-times-city a sosa:Observation ;
+    a fiware:OffStreetParking ;
+    rdfs:label "Times City Parking"@en ;
+    citylens:parkingName "Vinhomes Times City" ;
+    citylens:totalSpaces "3000"^^xsd:integer ;
+    citylens:availableSpaces "1200"^^xsd:integer ;
+    citylens:occupancy "60"^^xsd:integer ;
+    citylens:pricePerHour "25000"^^xsd:integer ;
+    citylens:openHours "00:00-24:00" ;
+    citylens:parkingType "underground" ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HaiBaTrung ;
+    wgs84:lat "20.9954"^^xsd:double ;
+    wgs84:long "105.8682"^^xsd:double .
+
+cl-data:parking-royal-city a sosa:Observation ;
+    a fiware:OffStreetParking ;
+    rdfs:label "Royal City Parking"@en ;
+    citylens:parkingName "Vinhomes Royal City" ;
+    citylens:totalSpaces "4000"^^xsd:integer ;
+    citylens:availableSpaces "1800"^^xsd:integer ;
+    citylens:occupancy "55"^^xsd:integer ;
+    citylens:pricePerHour "20000"^^xsd:integer ;
+    citylens:openHours "00:00-24:00" ;
+    citylens:parkingType "underground" ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:ThanhXuan ;
+    wgs84:lat "20.9958"^^xsd:double ;
+    wgs84:long "105.8125"^^xsd:double .
+
+cl-data:parking-big-c-thang-long a sosa:Observation ;
+    a fiware:OffStreetParking ;
+    rdfs:label "Big C Thang Long Parking"@en ;
+    citylens:parkingName "Big C Thang Long" ;
+    citylens:totalSpaces "600"^^xsd:integer ;
+    citylens:availableSpaces "180"^^xsd:integer ;
+    citylens:occupancy "70"^^xsd:integer ;
+    citylens:pricePerHour "15000"^^xsd:integer ;
+    citylens:openHours "08:00-22:00" ;
+    citylens:parkingType "surface" ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:CauGiay ;
+    wgs84:lat "21.0089"^^xsd:double ;
+    wgs84:long "105.7758"^^xsd:double .
+
+cl-data:parking-street-tran-hung-dao a sosa:Observation ;
+    a fiware:OnStreetParking ;
+    rdfs:label "Tran Hung Dao Street Parking"@en ;
+    citylens:parkingName "Street Parking Tran Hung Dao" ;
+    citylens:totalSpaces "50"^^xsd:integer ;
+    citylens:availableSpaces "8"^^xsd:integer ;
+    citylens:occupancy "84"^^xsd:integer ;
+    citylens:pricePerHour "10000"^^xsd:integer ;
+    citylens:openHours "07:00-19:00" ;
+    citylens:parkingType "street" ;
+    sosa:resultTime "2025-01-10T14:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HoanKiem ;
+    wgs84:lat "21.0195"^^xsd:double ;
+    wgs84:long "105.8485"^^xsd:double .
+
+# ==============================================================================
+# Source: citylens-civic.ttl
+# ==============================================================================
+
+
+
+
+
+cl-data:civic-hanoi-road-001 a citylens:CivicIssue ;
+    rdfs:label "Road Damage Report - Kim Ma"@en ;
+    rdfs:label "Báo cáo hư hỏng đường - Kim Mã"@vi ;
+    citylens:issueCategory "road_damage" ;
+    citylens:issueSubcategory "pothole" ;
+    citylens:description "Large pothole near bus stop causing traffic hazard"@en ;
+    citylens:severity "high" ;
+    citylens:status "in_progress" ;
+    citylens:reportedBy "citizen_001" ;
+    dct:created "2025-01-08T09:15:00Z"^^xsd:dateTime ;
+    dct:modified "2025-01-10T11:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:BaDinh ;
+    citylens:address "123 Kim Ma Street, Ba Dinh" ;
+    wgs84:lat "21.0298"^^xsd:double ;
+    wgs84:long "105.8145"^^xsd:double .
+
+cl-data:civic-hanoi-streetlight-001 a citylens:CivicIssue ;
+    rdfs:label "Streetlight Malfunction - Hoan Kiem"@en ;
+    citylens:issueCategory "streetlight" ;
+    citylens:issueSubcategory "not_working" ;
+    citylens:description "Multiple streetlights not functioning on Hang Bai street"@en ;
+    citylens:severity "medium" ;
+    citylens:status "reported" ;
+    citylens:reportedBy "citizen_042" ;
+    dct:created "2025-01-09T20:45:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HoanKiem ;
+    citylens:address "Hang Bai Street, Hoan Kiem" ;
+    wgs84:lat "21.0245"^^xsd:double ;
+    wgs84:long "105.8512"^^xsd:double .
+
+cl-data:civic-hanoi-garbage-001 a citylens:CivicIssue ;
+    rdfs:label "Illegal Dumping - Cau Giay"@en ;
+    citylens:issueCategory "waste" ;
+    citylens:issueSubcategory "illegal_dumping" ;
+    citylens:description "Large pile of construction waste illegally dumped near park"@en ;
+    citylens:severity "high" ;
+    citylens:status "resolved" ;
+    citylens:reportedBy "citizen_089" ;
+    dct:created "2025-01-05T14:20:00Z"^^xsd:dateTime ;
+    dct:modified "2025-01-08T16:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:CauGiay ;
+    citylens:address "Near Nghia Tan Park, Cau Giay" ;
+    wgs84:lat "21.0412"^^xsd:double ;
+    wgs84:long "105.7892"^^xsd:double .
+
+cl-data:civic-hanoi-flooding-001 a citylens:CivicIssue ;
+    rdfs:label "Street Flooding - Thanh Xuan"@en ;
+    citylens:issueCategory "flooding" ;
+    citylens:issueSubcategory "street_flooding" ;
+    citylens:description "Severe flooding after rain due to blocked drainage"@en ;
+    citylens:severity "critical" ;
+    citylens:status "in_progress" ;
+    citylens:reportedBy "citizen_156" ;
+    dct:created "2025-01-10T07:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:ThanhXuan ;
+    citylens:address "Nguyen Trai - Le Van Luong intersection" ;
+    wgs84:lat "20.9945"^^xsd:double ;
+    wgs84:long "105.8012"^^xsd:double .
+
+cl-data:civic-hanoi-noise-001 a citylens:CivicIssue ;
+    rdfs:label "Noise Complaint - Dong Da"@en ;
+    citylens:issueCategory "noise" ;
+    citylens:issueSubcategory "construction" ;
+    citylens:description "Excessive construction noise during nighttime hours"@en ;
+    citylens:severity "medium" ;
+    citylens:status "reported" ;
+    citylens:reportedBy "citizen_203" ;
+    dct:created "2025-01-09T23:15:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:DongDa ;
+    citylens:address "Tay Son Street, Dong Da" ;
+    wgs84:lat "21.0089"^^xsd:double ;
+    wgs84:long "105.8256"^^xsd:double .
+
+cl-data:civic-hanoi-tree-001 a citylens:CivicIssue ;
+    rdfs:label "Fallen Tree - Long Bien"@en ;
+    citylens:issueCategory "greenery" ;
+    citylens:issueSubcategory "fallen_tree" ;
+    citylens:description "Large tree fell during storm, blocking sidewalk"@en ;
+    citylens:severity "high" ;
+    citylens:status "resolved" ;
+    citylens:reportedBy "citizen_078" ;
+    dct:created "2025-01-07T16:45:00Z"^^xsd:dateTime ;
+    dct:modified "2025-01-08T10:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:LongBien ;
+    citylens:address "Nguyen Van Cu Street, Long Bien" ;
+    wgs84:lat "21.0478"^^xsd:double ;
+    wgs84:long "105.8825"^^xsd:double .
+
+cl-data:civic-hanoi-graffiti-001 a citylens:CivicIssue ;
+    rdfs:label "Graffiti Vandalism - Hoan Kiem"@en ;
+    citylens:issueCategory "vandalism" ;
+    citylens:issueSubcategory "graffiti" ;
+    citylens:description "Graffiti on historical building wall near Old Quarter"@en ;
+    citylens:severity "low" ;
+    citylens:status "reported" ;
+    citylens:reportedBy "citizen_312" ;
+    dct:created "2025-01-10T11:20:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HoanKiem ;
+    citylens:address "Hang Gai Street, Hoan Kiem" ;
+    wgs84:lat "21.0328"^^xsd:double ;
+    wgs84:long "105.8495"^^xsd:double .
+
+cl-data:civic-hanoi-water-001 a citylens:CivicIssue ;
+    rdfs:label "Water Leak - Ha Dong"@en ;
+    citylens:issueCategory "water" ;
+    citylens:issueSubcategory "leak" ;
+    citylens:description "Major water main leak causing water wastage and road damage"@en ;
+    citylens:severity "critical" ;
+    citylens:status "in_progress" ;
+    citylens:reportedBy "citizen_445" ;
+    dct:created "2025-01-10T06:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HaDong ;
+    citylens:address "Quang Trung Street, Ha Dong" ;
+    wgs84:lat "20.9712"^^xsd:double ;
+    wgs84:long "105.7789"^^xsd:double .

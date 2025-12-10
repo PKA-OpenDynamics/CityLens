@@ -1,0 +1,133 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+
+@prefix schema: <https://schema.org/> .
+@prefix wgs84: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+
+@prefix citylens: <https://citylens.vn/ontology/> .
+@prefix cl-data: <https://citylens.vn/data/> .
+@prefix cl-place: <https://citylens.vn/place/> .
+
+
+# =============================================================================
+# Civic Issues - Hanoi
+# =============================================================================
+
+cl-data:civic-hanoi-road-001 a citylens:CivicIssue ;
+    rdfs:label "Road Damage Report - Kim Ma"@en ;
+    rdfs:label "Báo cáo hư hỏng đường - Kim Mã"@vi ;
+    citylens:issueCategory "road_damage" ;
+    citylens:issueSubcategory "pothole" ;
+    citylens:description "Large pothole near bus stop causing traffic hazard"@en ;
+    citylens:severity "high" ;
+    citylens:status "in_progress" ;
+    citylens:reportedBy "citizen_001" ;
+    dct:created "2025-01-08T09:15:00Z"^^xsd:dateTime ;
+    dct:modified "2025-01-10T11:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:BaDinh ;
+    citylens:address "123 Kim Ma Street, Ba Dinh" ;
+    wgs84:lat "21.0298"^^xsd:double ;
+    wgs84:long "105.8145"^^xsd:double .
+
+cl-data:civic-hanoi-streetlight-001 a citylens:CivicIssue ;
+    rdfs:label "Streetlight Malfunction - Hoan Kiem"@en ;
+    citylens:issueCategory "streetlight" ;
+    citylens:issueSubcategory "not_working" ;
+    citylens:description "Multiple streetlights not functioning on Hang Bai street"@en ;
+    citylens:severity "medium" ;
+    citylens:status "reported" ;
+    citylens:reportedBy "citizen_042" ;
+    dct:created "2025-01-09T20:45:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HoanKiem ;
+    citylens:address "Hang Bai Street, Hoan Kiem" ;
+    wgs84:lat "21.0245"^^xsd:double ;
+    wgs84:long "105.8512"^^xsd:double .
+
+cl-data:civic-hanoi-garbage-001 a citylens:CivicIssue ;
+    rdfs:label "Illegal Dumping - Cau Giay"@en ;
+    citylens:issueCategory "waste" ;
+    citylens:issueSubcategory "illegal_dumping" ;
+    citylens:description "Large pile of construction waste illegally dumped near park"@en ;
+    citylens:severity "high" ;
+    citylens:status "resolved" ;
+    citylens:reportedBy "citizen_089" ;
+    dct:created "2025-01-05T14:20:00Z"^^xsd:dateTime ;
+    dct:modified "2025-01-08T16:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:CauGiay ;
+    citylens:address "Near Nghia Tan Park, Cau Giay" ;
+    wgs84:lat "21.0412"^^xsd:double ;
+    wgs84:long "105.7892"^^xsd:double .
+
+cl-data:civic-hanoi-flooding-001 a citylens:CivicIssue ;
+    rdfs:label "Street Flooding - Thanh Xuan"@en ;
+    citylens:issueCategory "flooding" ;
+    citylens:issueSubcategory "street_flooding" ;
+    citylens:description "Severe flooding after rain due to blocked drainage"@en ;
+    citylens:severity "critical" ;
+    citylens:status "in_progress" ;
+    citylens:reportedBy "citizen_156" ;
+    dct:created "2025-01-10T07:30:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:ThanhXuan ;
+    citylens:address "Nguyen Trai - Le Van Luong intersection" ;
+    wgs84:lat "20.9945"^^xsd:double ;
+    wgs84:long "105.8012"^^xsd:double .
+
+cl-data:civic-hanoi-noise-001 a citylens:CivicIssue ;
+    rdfs:label "Noise Complaint - Dong Da"@en ;
+    citylens:issueCategory "noise" ;
+    citylens:issueSubcategory "construction" ;
+    citylens:description "Excessive construction noise during nighttime hours"@en ;
+    citylens:severity "medium" ;
+    citylens:status "reported" ;
+    citylens:reportedBy "citizen_203" ;
+    dct:created "2025-01-09T23:15:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:DongDa ;
+    citylens:address "Tay Son Street, Dong Da" ;
+    wgs84:lat "21.0089"^^xsd:double ;
+    wgs84:long "105.8256"^^xsd:double .
+
+cl-data:civic-hanoi-tree-001 a citylens:CivicIssue ;
+    rdfs:label "Fallen Tree - Long Bien"@en ;
+    citylens:issueCategory "greenery" ;
+    citylens:issueSubcategory "fallen_tree" ;
+    citylens:description "Large tree fell during storm, blocking sidewalk"@en ;
+    citylens:severity "high" ;
+    citylens:status "resolved" ;
+    citylens:reportedBy "citizen_078" ;
+    dct:created "2025-01-07T16:45:00Z"^^xsd:dateTime ;
+    dct:modified "2025-01-08T10:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:LongBien ;
+    citylens:address "Nguyen Van Cu Street, Long Bien" ;
+    wgs84:lat "21.0478"^^xsd:double ;
+    wgs84:long "105.8825"^^xsd:double .
+
+cl-data:civic-hanoi-graffiti-001 a citylens:CivicIssue ;
+    rdfs:label "Graffiti Vandalism - Hoan Kiem"@en ;
+    citylens:issueCategory "vandalism" ;
+    citylens:issueSubcategory "graffiti" ;
+    citylens:description "Graffiti on historical building wall near Old Quarter"@en ;
+    citylens:severity "low" ;
+    citylens:status "reported" ;
+    citylens:reportedBy "citizen_312" ;
+    dct:created "2025-01-10T11:20:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HoanKiem ;
+    citylens:address "Hang Gai Street, Hoan Kiem" ;
+    wgs84:lat "21.0328"^^xsd:double ;
+    wgs84:long "105.8495"^^xsd:double .
+
+cl-data:civic-hanoi-water-001 a citylens:CivicIssue ;
+    rdfs:label "Water Leak - Ha Dong"@en ;
+    citylens:issueCategory "water" ;
+    citylens:issueSubcategory "leak" ;
+    citylens:description "Major water main leak causing water wastage and road damage"@en ;
+    citylens:severity "critical" ;
+    citylens:status "in_progress" ;
+    citylens:reportedBy "citizen_445" ;
+    dct:created "2025-01-10T06:00:00Z"^^xsd:dateTime ;
+    citylens:locatedIn cl-place:HaDong ;
+    citylens:address "Quang Trung Street, Ha Dong" ;
+    wgs84:lat "20.9712"^^xsd:double ;
+    wgs84:long "105.7789"^^xsd:double .
