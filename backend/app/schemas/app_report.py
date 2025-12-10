@@ -75,3 +75,24 @@ class AppReportUpdate(BaseModel):
     """Update report status (admin only)"""
     status: Optional[str] = None  # pending, processing, resolved, rejected
     adminNote: Optional[str] = None
+
+
+# Comment Schemas
+class AppCommentCreate(BaseModel):
+    """Create a new comment"""
+    content: str  # Nội dung bình luận
+    userId: Optional[str] = None  # ID người dùng
+    userName: Optional[str] = None  # Tên người dùng
+
+
+class AppCommentResponse(BaseModel):
+    """API response for comment"""
+    success: bool = True
+    data: dict
+
+
+class AppCommentListResponse(BaseModel):
+    """API response for comment list"""
+    success: bool = True
+    data: List[dict]
+    count: int

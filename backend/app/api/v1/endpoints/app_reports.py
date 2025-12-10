@@ -18,8 +18,12 @@ from app.schemas.app_report import (
     AppReportCreate,
     AppReportResponse,
     AppReportListResponse,
-    AppReportUpdate
+    AppReportUpdate,
+    AppCommentCreate,
+    AppCommentResponse,
+    AppCommentListResponse
 )
+from app.services.app_comment_service import AppCommentService
 
 router = APIRouter()
 
@@ -274,4 +278,91 @@ async def get_report_stats(
             "resolved": resolved,
             "rejected": rejected
         }
+    }
+
+
+# ============================================
+# COMMENT ENDPOINTS
+# ============================================
+
+@router.post("/{report_id}/comments", response_model=AppCommentResponse, status_code=status.HTTP_201_CREATED)
+async def create_comment(
+    report_id: str,
+    comment_data: AppCommentCreate,
+    db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
+):
+    """
+    Thêm bình luận vào báo cáo (Mobile App)
+    
+    - **report_id**: ID báo cáo
+    - **content**: Nội dung bình luận
+    - **userId**: ID người dùng (optional)
+    - **userName**: Tên người dùng (optional)
+    """
+    comment_service = AppCommentService(db)
+    
+    comment = await comment_service.create_comment(
+        report_id=report_id,
+        content=comment_data.content,
+        user_id=comment_data.userId,
+        user_name=comment_data.userName
+    )
+    
+    return AppCommentResponse(
+        success=True,
+        data=comment
+    )
+
+
+@router.get("/{report_id}/comments", response_model=AppCommentListResponse)
+async def get_comments(
+    report_id: str,
+    limit: int = Query(50, ge=1, le=200, description="Number of comments to return"),
+    skip: int = Query(0, ge=0, description="Number of comments to skip"),
+    db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
+):
+    """
+    Lấy danh sách bình luận của báo cáo (Mobile App)
+    
+    - **report_id**: ID báo cáo
+    - **limit**: Số lượng tối đa
+    - **skip**: Phân trang
+    """
+    comment_service = AppCommentService(db)
+    
+    comments = await comment_service.get_comments(
+        report_id=report_id,
+        limit=limit,
+        skip=skip
+    )
+    
+    return AppCommentListResponse(
+        success=True,
+        data=comments,
+        count=len(comments)
+    )
+
+
+@router.delete("/comments/{comment_id}", response_model=dict)
+async def delete_comment(
+    comment_id: str,
+    userId: Optional[str] = Query(None, description="User ID (required to verify ownership)"),
+    db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
+):
+    """
+    Xóa bình luận (Mobile App)
+    
+    - **comment_id**: ID bình luận
+    - **userId**: ID người dùng (required để xác minh quyền sở hữu)
+    """
+    comment_service = AppCommentService(db)
+    
+    deleted = await comment_service.delete_comment(
+        comment_id=comment_id,
+        user_id=userId
+    )
+    
+    return {
+        "success": True,
+        "message": "Comment deleted successfully"
     }
