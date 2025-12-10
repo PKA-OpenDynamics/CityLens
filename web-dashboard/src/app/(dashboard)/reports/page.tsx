@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { 
   FileText, AlertCircle, CheckCircle, Clock, RefreshCw, 
-  Search, MapPin, MessageCircle, Send, X, 
+  Search, MapPin, MessageCircle, Send, X, Edit2, Trash2 as TrashIcon,
   ChevronDown, Image as ImageIcon, Eye, XCircle,
   Building2, Trees, Shield, Car, Trash2, Lightbulb, Droplets
 } from 'lucide-react';
@@ -66,6 +66,33 @@ export default function ReportsPage() {
   const [newStatus, setNewStatus] = useState('');
   const [adminNote, setAdminNote] = useState('');
   const [updatingStatus, setUpdatingStatus] = useState(false);
+
+  // Edit modal
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editData, setEditData] = useState({
+    title: '',
+    content: '',
+    reportType: '',
+    ward: '',
+    addressDetail: '',
+  });
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  // Delete
+  const [deletingReportId, setDeletingReportId] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<AppReport | null>(null);
+
+  // Create modal
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createData, setCreateData] = useState({
+    title: '',
+    content: '',
+    reportType: 'infrastructure',
+    ward: '',
+    addressDetail: '',
+  });
+  const [creatingReport, setCreatingReport] = useState(false);
 
   // Image viewer
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -210,6 +237,149 @@ export default function ReportsPage() {
     }
   };
 
+  // Open edit modal
+  const openEditModal = (report: AppReport) => {
+    setSelectedReport(report);
+    setEditData({
+      title: report.title || '',
+      content: report.content,
+      reportType: report.reportType,
+      ward: report.ward,
+      addressDetail: report.addressDetail || '',
+    });
+    setShowEditModal(true);
+  };
+
+  // Save edited report
+  const handleSaveEdit = async () => {
+    if (!selectedReport) return;
+    
+    setSavingEdit(true);
+    try {
+      const token = localStorage.getItem('admin_token') || undefined;
+      
+      // Use updateReport API with all editable fields
+      const response = await appReportsApi.updateReport(
+        selectedReport._id,
+        {
+          title: editData.title,
+          content: editData.content,
+          reportType: editData.reportType,
+          ward: editData.ward,
+          addressDetail: editData.addressDetail,
+        },
+        token
+      );
+      
+      if (response.success) {
+        // Update local state with edited data
+        setReports(prev => prev.map(r => 
+          r._id === selectedReport._id 
+            ? { ...r, ...editData } 
+            : r
+        ));
+        setShowEditModal(false);
+        toast.success('Đã cập nhật báo cáo');
+      } else {
+        toast.error('Không thể cập nhật báo cáo');
+      }
+    } catch (error) {
+      toast.error('Không thể cập nhật báo cáo');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  // Open delete confirmation modal
+  const openDeleteModal = (report: AppReport) => {
+    setReportToDelete(report);
+    setShowDeleteModal(true);
+  };
+
+  // Close delete modal
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setReportToDelete(null);
+  };
+
+  // Delete report
+  const handleDeleteReport = async () => {
+    if (!reportToDelete) return;
+    
+    const reportId = reportToDelete._id;
+    setDeletingReportId(reportId);
+    try {
+      const token = localStorage.getItem('admin_token') || undefined;
+      const response = await appReportsApi.deleteReport(reportId, token);
+      
+      if (response.success) {
+        setReports(prev => prev.filter(r => r._id !== reportId));
+        toast.success('Đã xóa báo cáo thành công');
+        closeDeleteModal();
+        
+        // Refresh stats
+        const statsRes = await appReportsApi.getStats();
+        if (statsRes.success) {
+          setStats(statsRes.data);
+        }
+      } else {
+        toast.error('Không thể xóa báo cáo. Vui lòng thử lại.');
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Không thể xóa báo cáo. Vui lòng thử lại.');
+    } finally {
+      setDeletingReportId(null);
+    }
+  };
+
+  // Create report
+  const handleCreateReport = async () => {
+    if (!createData.content.trim() || !createData.ward.trim()) {
+      toast.error('Vui lòng nhập nội dung và phường/xã');
+      return;
+    }
+    
+    setCreatingReport(true);
+    try {
+      const token = localStorage.getItem('admin_token') || undefined;
+      const response = await appReportsApi.createReport({
+        title: createData.title,
+        content: createData.content,
+        reportType: createData.reportType,
+        ward: createData.ward,
+        addressDetail: createData.addressDetail,
+      }, token);
+      
+      if (response.success) {
+        // Add new report to list
+        setReports(prev => [response.data, ...prev]);
+        toast.success('Đã tạo báo cáo thành công');
+        setShowCreateModal(false);
+        setCreateData({
+          title: '',
+          content: '',
+          reportType: 'infrastructure',
+          ward: '',
+          addressDetail: '',
+        });
+        
+        // Refresh stats
+        const statsRes = await appReportsApi.getStats();
+        if (statsRes.success) {
+          setStats(statsRes.data);
+        }
+      } else {
+        toast.error('Không thể tạo báo cáo. Vui lòng thử lại.');
+      }
+    } catch (error) {
+      console.error('Create error:', error);
+      toast.error('Không thể tạo báo cáo. Vui lòng thử lại.');
+    } finally {
+      setCreatingReport(false);
+    }
+  };
+
   // Filter reports
   const filteredReports = reports.filter(report => {
     if (statusFilter !== 'all' && report.status !== statusFilter) return false;
@@ -266,14 +436,23 @@ export default function ReportsPage() {
             Tiếp nhận và xử lý phản ánh từ người dân qua ứng dụng CityLens
           </p>
         </div>
-        <button
-          onClick={() => fetchData(true)}
-          disabled={refreshing}
-          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
-        >
-          <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-          Làm mới
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <FileText className="h-4 w-4" />
+            Tạo phản ánh
+          </button>
+          <button
+            onClick={() => fetchData(true)}
+            disabled={refreshing}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+            Làm mới
+          </button>
+        </div>
       </div>
 
       {/* Stats Overview */}
@@ -477,12 +656,33 @@ export default function ReportsPage() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        openEditModal(report);
+                      }}
+                      className="p-2 rounded-lg hover:bg-muted transition-colors"
+                      title="Chỉnh sửa"
+                    >
+                      <Edit2 className="h-4 w-4 text-blue-600" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
                         openDetailModal(report);
                       }}
                       className="p-2 rounded-lg hover:bg-muted transition-colors"
                       title="Xem chi tiết"
                     >
                       <Eye className="h-4 w-4 text-muted-foreground" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDeleteModal(report);
+                      }}
+                      disabled={deletingReportId === report._id}
+                      className="p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                      title="Xóa báo cáo"
+                    >
+                      <TrashIcon className={`h-4 w-4 text-red-600 ${deletingReportId === report._id ? 'animate-pulse' : ''}`} />
                     </button>
                   </div>
                 </div>
@@ -728,6 +928,298 @@ export default function ReportsPage() {
             className="max-w-full max-h-full object-contain"
             onClick={(e) => e.stopPropagation()}
           />
+        </div>
+      )}
+
+      {/* Edit Report Modal */}
+      {showEditModal && selectedReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-card rounded-xl border border-border w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <div className="flex items-center gap-2">
+                <Edit2 className="h-5 w-5 text-blue-600" />
+                <h2 className="text-lg font-semibold text-foreground">Chỉnh sửa báo cáo</h2>
+              </div>
+              <button 
+                onClick={() => setShowEditModal(false)}
+                className="p-2 hover:bg-muted rounded-lg transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-4 space-y-4 overflow-y-auto">
+              {/* Title */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Tiêu đề
+                </label>
+                <input
+                  type="text"
+                  value={editData.title}
+                  onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                  placeholder="Tiêu đề báo cáo"
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              {/* Report Type */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Loại báo cáo
+                </label>
+                <select
+                  value={editData.reportType}
+                  onChange={(e) => setEditData({ ...editData, reportType: e.target.value })}
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  {REPORT_TYPES.map(type => (
+                    <option key={type.value} value={type.value}>{type.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Ward */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Phường/Xã
+                </label>
+                <input
+                  type="text"
+                  value={editData.ward}
+                  onChange={(e) => setEditData({ ...editData, ward: e.target.value })}
+                  placeholder="Phường/Xã"
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              {/* Address Detail */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Địa chỉ chi tiết
+                </label>
+                <input
+                  type="text"
+                  value={editData.addressDetail}
+                  onChange={(e) => setEditData({ ...editData, addressDetail: e.target.value })}
+                  placeholder="Số nhà, tên đường..."
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              {/* Content */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  Nội dung
+                </label>
+                <textarea
+                  value={editData.content}
+                  onChange={(e) => setEditData({ ...editData, content: e.target.value })}
+                  placeholder="Mô tả chi tiết về vấn đề..."
+                  rows={4}
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-green-500 resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 p-4 border-t border-border">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={savingEdit}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+              >
+                {savingEdit ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Đang lưu...
+                  </>
+                ) : (
+                  'Lưu thay đổi'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && reportToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-card rounded-2xl shadow-2xl w-full max-w-md border border-border overflow-hidden">
+            <div className="p-6">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full">
+                  <TrashIcon className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-foreground">Xác nhận xóa báo cáo</h3>
+                  <p className="text-sm text-muted-foreground">Hành động này không thể hoàn tác</p>
+                </div>
+              </div>
+              
+              <div className="bg-muted/50 rounded-lg p-4 mb-4">
+                <p className="text-sm font-medium text-foreground mb-1">
+                  {reportToDelete.title || 'Báo cáo không có tiêu đề'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {getReportTypeLabel(reportToDelete.reportType)} • {reportToDelete.ward}
+                </p>
+              </div>
+              
+              <p className="text-sm text-muted-foreground">
+                Bạn có chắc chắn muốn xóa báo cáo này? Tất cả dữ liệu liên quan bao gồm hình ảnh và bình luận sẽ bị xóa vĩnh viễn.
+              </p>
+            </div>
+            
+            <div className="flex items-center justify-end gap-2 p-4 border-t border-border bg-muted/30">
+              <button
+                onClick={closeDeleteModal}
+                disabled={deletingReportId !== null}
+                className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                onClick={handleDeleteReport}
+                disabled={deletingReportId !== null}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+              >
+                {deletingReportId ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Đang xóa...
+                  </>
+                ) : (
+                  <>
+                    <TrashIcon className="h-4 w-4" />
+                    Xóa báo cáo
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Report Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl border border-border overflow-hidden max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-border bg-gradient-to-r from-blue-600 to-green-600">
+              <h3 className="text-lg font-semibold text-white">Tạo phản ánh mới</h3>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="p-1 hover:bg-white/20 rounded-full transition-colors"
+              >
+                <X className="h-5 w-5 text-white" />
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Tiêu đề
+                </label>
+                <input
+                  type="text"
+                  value={createData.title}
+                  onChange={(e) => setCreateData({ ...createData, title: e.target.value })}
+                  placeholder="Tiêu đề phản ánh..."
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Loại phản ánh <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={createData.reportType}
+                    onChange={(e) => setCreateData({ ...createData, reportType: e.target.value })}
+                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    {REPORT_TYPES.map(type => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    Phường/Xã <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={createData.ward}
+                    onChange={(e) => setCreateData({ ...createData, ward: e.target.value })}
+                    placeholder="Nhập phường/xã..."
+                    className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Địa chỉ chi tiết
+                </label>
+                <input
+                  type="text"
+                  value={createData.addressDetail}
+                  onChange={(e) => setCreateData({ ...createData, addressDetail: e.target.value })}
+                  placeholder="Số nhà, thôn/xóm, khu vực..."
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Nội dung <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={createData.content}
+                  onChange={(e) => setCreateData({ ...createData, content: e.target.value })}
+                  placeholder="Mô tả chi tiết về vấn đề..."
+                  rows={5}
+                  className="w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2 p-4 border-t border-border bg-muted/30">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={handleCreateReport}
+                disabled={creatingReport || !createData.content.trim() || !createData.ward.trim()}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+              >
+                {creatingReport ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                    Đang tạo...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="h-4 w-4" />
+                    Tạo phản ánh
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
