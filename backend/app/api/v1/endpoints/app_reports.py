@@ -12,8 +12,10 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from typing import Optional
 
 from app.db.mongodb_atlas import get_mongodb_atlas
+from app.db.mongodb import get_mongodb
 from app.services.app_report_service import AppReportService
 from app.services.app_auth_service import AppAuthService
+from app.api.deps import get_current_admin
 from app.schemas.app_report import (
     AppReportCreate,
     AppReportResponse,
@@ -46,6 +48,32 @@ async def create_report(
     - **userId**: ID người dùng (optional, nếu đã đăng nhập)
     """
     report_service = AppReportService(db)
+    
+    report = await report_service.create_report(report_data)
+    
+    return AppReportResponse(
+        success=True,
+        data=report.dict(by_alias=True)
+    )
+
+
+@router.post("/admin", response_model=AppReportResponse, status_code=status.HTTP_201_CREATED)
+async def create_report_admin(
+    report_data: AppReportCreate,
+    current_admin: dict = Depends(get_current_admin),
+    db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
+):
+    """
+    Tạo báo cáo mới từ Admin Dashboard
+    
+    Requires admin authentication via Bearer token (MongoDB Docker)
+    Creates report in MongoDB Atlas
+    """
+    report_service = AppReportService(db)
+    
+    # Set admin user ID if not provided
+    if not report_data.userId:
+        report_data.userId = str(current_admin.get("_id", "admin"))
     
     report = await report_service.create_report(report_data)
     
@@ -212,7 +240,12 @@ async def update_report(
     report = await report_service.update_report_status(
         report_id=report_id,
         new_status=update_data.status,
-        admin_note=update_data.adminNote
+        admin_note=update_data.adminNote,
+        title=update_data.title,
+        content=update_data.content,
+        report_type=update_data.reportType,
+        ward=update_data.ward,
+        address_detail=update_data.addressDetail
     )
     
     return AppReportResponse(
@@ -224,53 +257,16 @@ async def update_report(
 @router.delete("/{report_id}", response_model=dict)
 async def delete_report(
     report_id: str,
-    token: Optional[str] = Query(None, description="Admin token (optional if using Authorization header)"),
-    authorization: Optional[str] = Header(None, description="Bearer token in Authorization header"),
+    current_admin: dict = Depends(get_current_admin),
     db: AsyncIOMotorDatabase = Depends(get_mongodb_atlas)
 ):
     """
     Xóa báo cáo (Admin only)
     
-    Supports:
-    - Bearer token in Authorization header
-    - Token as query parameter
+    Requires admin authentication via Bearer token
     """
-    # Verify admin token
-    auth_service = AppAuthService(db)
-    
-    # Get token from header or query param
-    access_token = token
-    if not access_token and authorization:
-        if authorization.startswith("Bearer "):
-            access_token = authorization[7:]
-        else:
-            access_token = authorization
-    
-    if not access_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token không được cung cấp"
-        )
-    
     try:
-        payload = auth_service.decode_token(access_token)
-        user_id = payload.get("userId")
-        
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token không hợp lệ"
-            )
-        
-        # Check if user is admin
-        user = await auth_service.get_user_by_id(user_id)
-        if not user or not user.is_admin:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Bạn không có quyền thực hiện hành động này"
-            )
-        
-        # Delete report
+        # Delete report from MongoDB Atlas
         report_service = AppReportService(db)
         deleted = await report_service.delete_report(report_id)
         
@@ -289,8 +285,8 @@ async def delete_report(
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token không hợp lệ"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error deleting report: {str(e)}"
         )
 
 
