@@ -16,15 +16,18 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { TOMTOM_API_KEY, isTomTomApiKeyConfigured } from '../config/env';
 
+// Ngã Tư Sở - Quận Thanh Xuân, Hà Nội
+const NGA_TU_SO_COORDS: [number, number] = [21.003204, 105.819673];
+
 // City configurations
 const CITIES = {
   hanoi: {
     name: 'Hà Nội',
-    center: [21.0285, 105.8542] as [number, number],
+    center: NGA_TU_SO_COORDS,
     zoom: 13,
     locations: [
       { name: 'Cầu Chương Dương', coords: [21.0285, 105.8542] },
-      { name: 'Ngã Tư Sở', coords: [21.0117, 105.8269] },
+      { name: 'Ngã Tư Sở', coords: [21.003204, 105.819673] },
       { name: 'Kim Mã - Ba Đình', coords: [21.0323, 105.8193] },
       { name: 'Cầu Nhật Tân', coords: [21.0833, 105.8242] },
       { name: 'Láng Hạ', coords: [21.0170, 105.8103] },
@@ -33,10 +36,11 @@ const CITIES = {
       { name: 'Trần Duy Hưng', coords: [21.0084, 105.8156] },
     ],
     cameras: [
-      { name: 'Khác Duy Tấn', coords: [21.0285, 105.8542] as [number, number] },
-      { name: 'Vòng Xuyến Đào', coords: [21.0117, 105.8269] as [number, number] },
-      { name: 'Ngã Tư Sở', coords: [21.0323, 105.8193] as [number, number] },
-      { name: 'Cầu Nhật Tân', coords: [21.0833, 105.8242] as [number, number] },
+      // 3 camera gần Ngã Tư Sở (21.003204, 105.819673)
+      { name: 'Nguyễn Xiển - Khuất Duy Tiến', coords: [21.003204, 105.819673] as [number, number] },
+      { name: 'Khuất Duy Tiến - Nguyễn Xiển 1', coords: [21.0038, 105.8192] as [number, number] },
+      { name: 'Khuất Duy Tiến - Nguyễn Xiển 2', coords: [21.0025, 105.8200] as [number, number] },
+      { name: 'Phạm Văn Bạch - Viện Huyết Học', coords: [21.0833, 105.8242] as [number, number] },
     ],
   },
   hcm: {
@@ -66,10 +70,10 @@ const CITIES = {
 // Video files đã được copy vào public/videos/ để Expo Web có thể serve
 const CAMERA_VIDEO_MAP: Record<string, string> = {
   // Hà Nội cameras - mapping với tên file video thực tế
-  'Khác Duy Tấn': '/videos/HNI_NT_KDT_Khuất Duy Tiến - Nguyễn Xiển 1.mp4',
-  'Vòng Xuyến Đào': '/videos/HNI_LLGT_Phạm Văn Bạch- Viện Huyết Học.mp4',
-  'Ngã Tư Sở': '/videos/HNI_NT_KDT_Nguyễn Xiển-Khuất Duy Tiến.mp4',
-  'Cầu Nhật Tân': '/videos/HNI_NT_KDT_Khuất Duy Tiến - Nguyễn Xiển 2.mp4',
+  'Nguyễn Xiển - Khuất Duy Tiến': '/videos/HNI_NT_KDT_Nguyễn Xiển-Khuất Duy Tiến.mp4',
+  'Khuất Duy Tiến - Nguyễn Xiển 1': '/videos/HNI_NT_KDT_Khuất Duy Tiến - Nguyễn Xiển 1.mp4',
+  'Khuất Duy Tiến - Nguyễn Xiển 2': '/videos/HNI_NT_KDT_Khuất Duy Tiến - Nguyễn Xiển 2.mp4',
+  'Phạm Văn Bạch - Viện Huyết Học': '/videos/HNI_LLGT_Phạm Văn Bạch- Viện Huyết Học.mp4',
   // TP.HCM cameras (dùng chung video hoặc có thể thay bằng video riêng sau)
   'Cầu Sài Gòn': '/videos/HNI_NT_KDT_Khuất Duy Tiến - Nguyễn Xiển 1.mp4',
   'Ngã Sáu Gò Vấp': '/videos/HNI_LLGT_Phạm Văn Bạch- Viện Huyết Học.mp4',
@@ -160,8 +164,9 @@ const MapScreen: React.FC = () => {
   const [layerDropdownPosition, setLayerDropdownPosition] = useState({ top: 82, left: 150 });
   const [cityDropdownPosition, setCityDropdownPosition] = useState({ top: 82, left: 12 });
   // Set default location ngay từ đầu để icon hiển thị luôn
-  const defaultLocation: [number, number] = [21.0285, 105.8542]; // Hồ Gươm, Hà Nội
-  const [userLocation, setUserLocation] = useState<[number, number] | null>(defaultLocation); // Vị trí thực tế từ geolocation
+  // Ngã Tư Sở - Quận Thanh Xuân, Hà Nội
+  const defaultLocation: [number, number] = NGA_TU_SO_COORDS;
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(defaultLocation);
   const [destination, setDestination] = useState<[number, number] | null>(null); // Điểm đến được chọn
   const [isSelectingDestination, setIsSelectingDestination] = useState(false); // Đang ở chế độ chọn điểm đến
   const [routeCoordinates, setRouteCoordinates] = useState<Array<[number, number]>>([]); // Tọa độ route từ userLocation đến destination
@@ -231,32 +236,8 @@ const MapScreen: React.FC = () => {
     };
   }, []);
 
-  // Get user's real location using geolocation
-  useEffect(() => {
-    console.log('Geolocation useEffect running, current userLocation:', userLocation);
-    
-    if (typeof navigator !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setUserLocation([latitude, longitude]);
-          console.log('User location obtained:', latitude, longitude);
-        },
-        (error) => {
-          console.warn('Error getting user location, using default:', error);
-          // Đã set default ở trên rồi, không cần set lại
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 60000,
-        }
-      );
-    } else {
-      // Đã set default ở trên rồi
-      console.log('Geolocation not supported, using default location');
-    }
-  }, []);
+  // Location is now fixed to default location - no geolocation needed
+  // userLocation is already set to defaultLocation in useState initialization
 
   // Update map when city changes
   useEffect(() => {
