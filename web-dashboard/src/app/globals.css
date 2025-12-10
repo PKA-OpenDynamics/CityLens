@@ -77,3 +77,69 @@ body {
   height: 100%;
   width: 100%;
 }
+
+/* Camera marker styles */
+.camera-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.camera-marker > div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.camera-marker .bg-green-600 {
+  background-color: #16a34a;
+}
+
+.camera-marker .bg-yellow-600 {
+  background-color: #ca8a04;
+}
+
+.camera-marker .bg-red-600 {
+  background-color: #dc2626;
+}
+
+@keyframes camera-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+.camera-marker:hover > div > div:first-child {
+  animation: camera-pulse 1s ease-in-out infinite;
+}
+
+/* Camera popup styles - compact and clean */
+.camera-popup .leaflet-popup-content-wrapper {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  padding: 0;
+  overflow: hidden;
+}
+
+.camera-popup .leaflet-popup-content {
+  margin: 0;
+  width: 320px !important;
+}
+
+.camera-popup .leaflet-popup-tip {
+  background: white;
+}
+
+/* Dark mode popup */
+.dark .camera-popup .leaflet-popup-content-wrapper {
+  background: #1f2937;
+}
+
+.dark .camera-popup .leaflet-popup-tip {
+  background: #1f2937;
+}
