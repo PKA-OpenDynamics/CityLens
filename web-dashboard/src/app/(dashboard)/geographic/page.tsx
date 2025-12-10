@@ -7,8 +7,10 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { 
   RefreshCw, PanelRightOpen, PanelRightClose,
-  Map as MapIcon, Satellite, Camera
+  Map as MapIcon, Satellite, Camera, AlertTriangle, MapPin, Clock
 } from 'lucide-react';
+import { CachedImage } from '@/components/CachedImage';
+import { imageCacheService } from '@/lib/image-cache';
 import { 
   geographicApi, 
   geographicStatsApi,
@@ -16,6 +18,7 @@ import {
   type GeographicStatistics,
   type BoundaryDetails
 } from '@/lib/api';
+import { appReportsApi, type AppReport, getReportTypeLabel } from '@/lib/app-reports-api';
 import { cn } from '@/lib/utils';
 import { BoundarySelector, IntegratedDataPanel } from '@/components/geographic';
 
@@ -99,6 +102,137 @@ const CameraMarkerWithPopup = dynamic(
   { ssr: false }
 );
 
+// Status colors for reports
+const REPORT_STATUS_COLORS: Record<string, { bg: string; border: string }> = {
+  pending: { bg: '#fbbf24', border: '#f59e0b' },
+  processing: { bg: '#3b82f6', border: '#2563eb' },
+  resolved: { bg: '#22c55e', border: '#16a34a' },
+  rejected: { bg: '#ef4444', border: '#dc2626' },
+};
+
+// Report Marker component
+const ReportMarkerWithPopup = dynamic(
+  () => Promise.resolve(({ report }: { report: AppReport }) => {
+    const L = typeof window !== 'undefined' ? require('leaflet') : null;
+    const { Marker: LeafletMarker, Popup: LeafletPopup } = require('react-leaflet');
+    
+    if (!L || !report.location) return null;
+    
+    const statusColor = REPORT_STATUS_COLORS[report.status] || REPORT_STATUS_COLORS.pending;
+    const typeLabel = getReportTypeLabel(report.reportType);
+    
+    const reportIcon = L.divIcon({
+      className: 'report-marker',
+      html: `
+        <div class="relative flex flex-col items-center">
+          <div class="w-10 h-10 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+               style="background-color: ${statusColor.bg}">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+              <path d="M12 9v4"/>
+              <path d="M12 17h.01"/>
+            </svg>
+          </div>
+        </div>
+      `,
+      iconSize: [44, 44],
+      iconAnchor: [22, 44],
+      popupAnchor: [0, -44],
+    });
+    
+    const formatDate = (dateStr: string) => {
+      try {
+        return new Date(dateStr).toLocaleDateString('vi-VN', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } catch {
+        return dateStr;
+      }
+    };
+    
+    const statusLabels: Record<string, string> = {
+      pending: 'Chờ xử lý',
+      processing: 'Đang xử lý',
+      resolved: 'Đã xử lý',
+      rejected: 'Từ chối',
+    };
+    
+    return (
+      <LeafletMarker 
+        position={[report.location.lat, report.location.lng]}
+        icon={reportIcon}
+      >
+        <LeafletPopup
+          closeButton={true}
+          maxWidth={320}
+          minWidth={280}
+          className="report-popup"
+        >
+          <div className="min-w-[250px]">
+            <div className="flex items-center gap-2 mb-2">
+              <span 
+                className="px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                style={{ backgroundColor: statusColor.bg }}
+              >
+                {statusLabels[report.status] || report.status}
+              </span>
+              <span className="text-sm text-gray-600">{typeLabel}</span>
+            </div>
+            <h4 className="font-bold text-base text-gray-900 leading-tight mb-1">
+              {report.title || 'Phản ánh từ người dân'}
+            </h4>
+            <p className="text-sm text-gray-700 mb-2 line-clamp-2">{report.content}</p>
+            <div className="space-y-1 text-sm border-t border-gray-100 pt-2">
+              <div className="flex items-start gap-2">
+                <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <span className="text-gray-700">{report.ward}{report.addressDetail ? `, ${report.addressDetail}` : ''}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-gray-400" />
+                <span className="text-gray-600">{formatDate(report.createdAt)}</span>
+              </div>
+            </div>
+            {report.media && report.media.length > 0 && (
+              <div className="mt-2 pt-2 border-t border-gray-100">
+                <div className="text-xs text-gray-500 mb-1">
+                  Hình ảnh ({report.media.filter(m => m.type === 'image').length})
+                </div>
+                <div className={`grid gap-1 ${
+                  report.media.length === 1 ? 'grid-cols-1' : 
+                  report.media.length === 2 ? 'grid-cols-2' : 
+                  'grid-cols-3'
+                }`}>
+                  {report.media.slice(0, 3).filter(m => m.type === 'image').map((media, idx) => (
+                    <div key={idx} className="relative overflow-hidden rounded">
+                      <CachedImage
+                        src={media.uri}
+                        alt={`Report ${idx + 1}`}
+                        className="w-full h-20 object-cover hover:scale-110 transition-transform cursor-pointer"
+                        fallbackClassName="w-full h-20 rounded"
+                        fallbackIcon={<Camera className="h-6 w-6 text-gray-400" />}
+                      />
+                    </div>
+                  ))}
+                </div>
+                {report.media.filter(m => m.type === 'image').length > 3 && (
+                  <div className="text-xs text-gray-500 mt-1 text-center">
+                    +{report.media.filter(m => m.type === 'image').length - 3} ảnh khác
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </LeafletPopup>
+      </LeafletMarker>
+    );
+  }),
+  { ssr: false }
+);
+
 // MapController component - controls map view programmatically
 const MapController = dynamic(
   () => import('react-leaflet').then(mod => {
@@ -166,6 +300,7 @@ interface LayerVisibility {
   pois: boolean;
   traffic: boolean;
   cameras: boolean;
+  reports: boolean;
 }
 
 // TomTom Traffic Flow layer (requires API key from environment)
@@ -316,6 +451,7 @@ export default function GeographicPage() {
   const [hanoiBoundary, setHanoiBoundary] = useState<any | null>(null);
   const [hanoiInfo, setHanoiInfo] = useState<{ num_wards: number; area_km2: number } | null>(null);
   const [districtsGeoJSON, setDistrictsGeoJSON] = useState<GeoJSONFeatureCollection | null>(null);
+  const [citizenReports, setCitizenReports] = useState<AppReport[]>([]);
   
   // Selection states
   const [selectedBoundaryIds, setSelectedBoundaryIds] = useState<number[]>([]);
@@ -336,6 +472,7 @@ export default function GeographicPage() {
     pois: true,
     traffic: false,
     cameras: true,
+    reports: true,
   });
   
   // Refs
@@ -352,10 +489,12 @@ export default function GeographicPage() {
     else setLoading(true);
 
     try {
-      const [statsResult, boundariesResult, districtsResult] = await Promise.allSettled([
+      const [statsResult, boundariesResult, districtsResult, reportsResult] = await Promise.allSettled([
         geographicStatsApi.getStatistics(),
         geographicApi.getHanoiUnionBoundary({ simplify_tolerance: 0.0005 }),
-        geographicApi.getBoundariesGeoJSON({ admin_level: 6 })
+        geographicApi.getBoundariesGeoJSON({ admin_level: 6 }),
+        // Use regular endpoint with media but limited items for map markers
+        appReportsApi.getReports({ limit: 50, include_media: true })
       ]);
 
       if (statsResult.status === 'fulfilled') {
@@ -374,6 +513,22 @@ export default function GeographicPage() {
       }
       if (districtsResult.status === 'fulfilled') {
         setDistrictsGeoJSON(districtsResult.value);
+      }
+      if (reportsResult.status === 'fulfilled' && reportsResult.value.success) {
+        // Filter reports with valid location data
+        const reportsWithLocation = reportsResult.value.data.filter(
+          (report: AppReport) => report.location && report.location.lat && report.location.lng
+        );
+        setCitizenReports(reportsWithLocation);
+        
+        // Preload report images in background
+        const imageUrls = reportsWithLocation
+          .filter(r => r.media && r.media.length > 0)
+          .flatMap(r => r.media.slice(0, 3).filter(m => m.type === 'image').map(m => m.uri));
+        
+        if (imageUrls.length > 0) {
+          imageCacheService.preloadImages(imageUrls);
+        }
       }
     } catch (error) {
       console.error('Error fetching geographic data:', error);
@@ -576,9 +731,26 @@ export default function GeographicPage() {
   }, [activeDetails, layerVisibility.pois]);
 
   return (
-    <div className="space-y-4 h-full">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+    <>
+      <style jsx global>{`
+        .report-popup .leaflet-popup-content-wrapper {
+          border-radius: 12px;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .report-popup .leaflet-popup-content {
+          margin: 12px;
+          min-width: 250px;
+        }
+        .report-popup img {
+          transition: transform 0.2s ease-in-out;
+        }
+        .report-popup img:hover {
+          transform: scale(1.05);
+        }
+      `}</style>
+      <div className="space-y-4 h-full">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Dữ liệu địa lý</h1>
           <p className="text-muted-foreground mt-1">
@@ -650,8 +822,11 @@ export default function GeographicPage() {
         {/* Left Sidebar - Selector & Controls */}
         <div className="w-72 flex-shrink-0 flex flex-col gap-4 overflow-visible">
           {/* Boundary Selector */}
-          <div className="bg-card rounded-lg border border-border p-4 relative z-50">
-            <h3 className="text-sm font-semibold text-foreground mb-3">Chọn phường/xã</h3>
+          <div className="bg-white dark:bg-slate-900 rounded-lg border-2 border-green-200 dark:border-green-800 p-4 relative z-50 shadow-md">
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <span className="text-green-600">📍</span>
+              Chọn phường/xã
+            </h3>
             <BoundarySelector
               selectedIds={selectedBoundaryIds}
               onSelectionChange={setSelectedBoundaryIds}
@@ -771,6 +946,21 @@ export default function GeographicPage() {
                   <p className="text-xs text-muted-foreground">Xem video thực tế</p>
                 </div>
               </label>
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={layerVisibility.reports}
+                  onChange={() => toggleLayer('reports')}
+                  className="w-4 h-4 rounded border-border text-green-600 focus:ring-green-500"
+                />
+                <div>
+                  <p className="text-sm text-foreground flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 text-amber-500" />
+                    <span className={layerVisibility.reports ? 'text-green-600 font-medium' : ''}>Phản ánh từ dân</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">{citizenReports.length} báo cáo</p>
+                </div>
+              </label>
             </div>
           </div>
 
@@ -883,6 +1073,37 @@ export default function GeographicPage() {
                 </div>
                 <p className="text-[9px] text-muted-foreground mt-2 italic">
                   Click vào marker để xem video
+                </p>
+              </div>
+            )}
+
+            {/* Reports Legend */}
+            {layerVisibility.reports && citizenReports.length > 0 && (
+              <div className="border-t border-border pt-3 mt-3">
+                <p className="text-xs font-medium text-foreground mb-2 flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 text-amber-500" />
+                  <span className="text-amber-600">Phản ánh từ dân ({citizenReports.length})</span>
+                </p>
+                <div className="space-y-1 text-[10px]">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#fbbf24' }}></div>
+                    <span>Chờ xử lý</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#3b82f6' }}></div>
+                    <span>Đang xử lý</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#22c55e' }}></div>
+                    <span>Đã xử lý</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: '#ef4444' }}></div>
+                    <span>Từ chối</span>
+                  </div>
+                </div>
+                <p className="text-[9px] text-muted-foreground mt-2 italic">
+                  Click vào marker để xem chi tiết
                 </p>
               </div>
             )}
@@ -1040,6 +1261,11 @@ export default function GeographicPage() {
               {layerVisibility.cameras && TRAFFIC_CAMERAS.map((camera) => (
                 <CameraMarkerWithPopup key={camera.id} camera={camera} />
               ))}
+
+              {/* Citizen Report Markers */}
+              {layerVisibility.reports && citizenReports.map((report) => (
+                <ReportMarkerWithPopup key={report._id} report={report} />
+              ))}
             </MapContainer>
           ) : (
             <div className="h-full flex items-center justify-center">
@@ -1081,5 +1307,6 @@ export default function GeographicPage() {
         )}
       </div>
     </div>
+    </>
   );
 }
