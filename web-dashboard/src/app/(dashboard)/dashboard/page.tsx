@@ -174,18 +174,20 @@ export default function DashboardPage() {
       setApiStatus('offline');
     }
 
-    // Fetch MongoDB Atlas reports stats
+    // Fetch MongoDB Atlas reports stats using the stats endpoint
     try {
-      const appReportsResponse = await fetch('http://localhost:8000/api/v1/app/reports?limit=1000');
+      const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000/api/v1';
+      const appReportsResponse = await fetch(`${apiBaseUrl}/app/reports/stats/summary`);
       if (appReportsResponse.ok) {
         const appReportsData = await appReportsResponse.json();
-        const reports = appReportsData.reports || [];
-        setAppReports({
-          total: reports.length,
-          pending: reports.filter((r: any) => r.status === 'pending').length,
-          processing: reports.filter((r: any) => r.status === 'processing').length,
-          resolved: reports.filter((r: any) => r.status === 'resolved').length,
-        });
+        if (appReportsData.success && appReportsData.data) {
+          setAppReports({
+            total: appReportsData.data.total || 0,
+            pending: appReportsData.data.pending || 0,
+            processing: appReportsData.data.processing || 0,
+            resolved: appReportsData.data.resolved || 0,
+          });
+        }
       }
     } catch (error) {
       console.error('Failed to fetch app reports:', error);
