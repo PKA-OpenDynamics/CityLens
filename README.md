@@ -104,6 +104,25 @@ Dự án tạo ra một **LOD Cloud** (Linked Open Data Cloud) cho dữ liệu �
 
 ---
 
+## Giao diện ứng dụng
+
+<table>
+  <tr>
+    <td width="75%" align="center">
+      <img src="docs/assets/screenshots/web-dashboard-overview.png" alt="Web Dashboard" width="100%">
+      <br>
+      <strong>Web Dashboard</strong> - Giao diện quản lý dữ liệu địa lý
+    </td>
+    <td width="25%" align="center">
+      <img src="docs/assets/screenshots/mobile-app-overview.png" alt="Mobile App" width="100%">
+      <br>
+      <strong>Mobile App</strong> - Ứng dụng công dân
+    </td>
+  </tr>
+</table>
+
+---
+
 ## Kiến trúc hệ thống
 
 ### Kiến trúc 3 lớp dữ liệu (LOD Architecture)
