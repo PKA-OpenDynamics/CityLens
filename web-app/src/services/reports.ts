@@ -53,8 +53,16 @@ class ReportsService {
   private baseUrl: string;
 
   constructor() {
-    // Sử dụng REPORTS_API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
+    // Sử dụng REPORTS_API_BASE_URL từ env.ts
     this.baseUrl = REPORTS_API_BASE_URL;
+    console.log('[ReportsService] Base URL:', this.baseUrl);
+  }
+
+  /**
+   * Build full URL
+   */
+  private buildUrl(path: string): string {
+    return `${this.baseUrl}${path}`;
   }
 
   /**
@@ -62,7 +70,9 @@ class ReportsService {
    */
   async createReport(data: CreateReportData): Promise<ApiResponse<Report>> {
     try {
-      const response = await fetch(`${this.baseUrl}/reports`, {
+      const url = this.buildUrl('/reports');
+      console.log('[ReportsService] createReport URL:', url);
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -99,7 +109,8 @@ class ReportsService {
       if (options?.userId) params.append('userId', options.userId);
 
       const queryString = params.toString();
-      const url = `${this.baseUrl}/reports${queryString ? `?${queryString}` : ''}`;
+      const url = this.buildUrl(`/reports${queryString ? `?${queryString}` : ''}`);
+      console.log('[ReportsService] getReports URL:', url);
 
       const response = await fetch(url, {
         method: 'GET',
@@ -125,7 +136,9 @@ class ReportsService {
    */
   async getReportById(id: string): Promise<ApiResponse<Report>> {
     try {
-      const response = await fetch(`${this.baseUrl}/reports/${id}`, {
+      const url = this.buildUrl(`/reports/${id}`);
+      console.log('[ReportsService] getReportById URL:', url);
+      const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

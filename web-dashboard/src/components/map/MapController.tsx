@@ -4,7 +4,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useMap } from 'react-leaflet';
+import { useMap } from './LeafletReactWrapper';
 import type { LatLngBoundsExpression } from 'leaflet';
 
 interface MapControllerProps {
@@ -15,7 +15,7 @@ interface MapControllerProps {
 
 /**
  * Component to programmatically control the map view
- * Must be used inside a MapContainer
+ * Must be used inside MapContainer from LeafletReactWrapper
  */
 export default function MapController({ center, zoom, bounds }: MapControllerProps) {
   const map = useMap();

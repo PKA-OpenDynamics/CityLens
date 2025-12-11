@@ -3,8 +3,9 @@
 
 import { API_BASE_URL } from '../config/env';
 
-// Sử dụng API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
+// Sử dụng API_BASE_URL từ env.ts
 const BASE_URL = API_BASE_URL;
+console.log('[TrafficService] BASE_URL:', BASE_URL);
 
 export type TrafficFlowResponse = {
   current_speed: number;

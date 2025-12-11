@@ -22,36 +22,36 @@ import { appReportsApi, type AppReport, getReportTypeLabel } from '@/lib/app-rep
 import { cn } from '@/lib/utils';
 import { BoundarySelector, IntegratedDataPanel } from '@/components/geographic';
 
-// Dynamic imports for Leaflet (no SSR)
+// Dynamic imports for Leaflet (no SSR) - using BSD-2-Clause licensed Leaflet
 const MapContainer = dynamic(
-  () => import('react-leaflet').then(mod => mod.MapContainer),
+  () => import('@/components/map/LeafletReactWrapper').then(mod => mod.MapContainer),
   { ssr: false }
 );
 const TileLayer = dynamic(
-  () => import('react-leaflet').then(mod => mod.TileLayer),
+  () => import('@/components/map/LeafletReactWrapper').then(mod => mod.TileLayer),
   { ssr: false }
 );
 const GeoJSON = dynamic(
-  () => import('react-leaflet').then(mod => mod.GeoJSON),
+  () => import('@/components/map/LeafletReactWrapper').then(mod => mod.GeoJSON),
   { ssr: false }
 );
 const Popup = dynamic(
-  () => import('react-leaflet').then(mod => mod.Popup),
+  () => import('@/components/map/LeafletReactWrapper').then(mod => mod.Popup),
   { ssr: false }
 );
 const CircleMarker = dynamic(
-  () => import('react-leaflet').then(mod => mod.CircleMarker),
+  () => import('@/components/map/LeafletReactWrapper').then(mod => mod.CircleMarker),
   { ssr: false }
 );
 
 // Traffic Camera components
 import { TRAFFIC_CAMERAS, TrafficCameraPopup, type TrafficCamera } from '@/components/map/TrafficCamera';
 
-// Camera Marker component for use with react-leaflet
+// Camera Marker component for use with leaflet compat layer
 const CameraMarkerWithPopup = dynamic(
   () => Promise.resolve(({ camera }: { camera: TrafficCamera }) => {
     const L = typeof window !== 'undefined' ? require('leaflet') : null;
-    const { Marker: LeafletMarker, Popup: LeafletPopup } = require('react-leaflet');
+    const { Marker: LeafletMarker, Popup: LeafletPopup } = require('@/components/map/LeafletReactWrapper');
     
     if (!L) return null;
     
@@ -110,7 +110,7 @@ const REPORT_STATUS_COLORS: Record<string, { bg: string; border: string }> = {
 const ReportMarkerWithPopup = dynamic(
   () => Promise.resolve(({ report }: { report: AppReport }) => {
     const L = typeof window !== 'undefined' ? require('leaflet') : null;
-    const { Marker: LeafletMarker, Popup: LeafletPopup } = require('react-leaflet');
+    const { Marker: LeafletMarker, Popup: LeafletPopup } = require('@/components/map/LeafletReactWrapper');
     
     if (!L || !report.location) return null;
     
@@ -231,7 +231,7 @@ const ReportMarkerWithPopup = dynamic(
 
 // MapController component - controls map view programmatically
 const MapController = dynamic(
-  () => import('react-leaflet').then(mod => {
+  () => import('@/components/map/LeafletReactWrapper').then(mod => {
     const { useMap } = mod;
     const { useEffect } = require('react');
     

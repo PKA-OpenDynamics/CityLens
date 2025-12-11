@@ -7,8 +7,9 @@
 
 import { API_BASE_URL, WEATHER_API_BASE_URL } from '../config/env';
 
-// Sử dụng API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
+// Sử dụng API_BASE_URL từ env.ts
 const WEATHER_API_BASE = API_BASE_URL;
+console.log('[WeatherService] WEATHER_API_BASE:', WEATHER_API_BASE);
 const OPENWEATHER_API_KEY = process.env.EXPO_PUBLIC_OPENWEATHER_API_KEY;
 
 export interface WeatherData {
