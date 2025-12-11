@@ -27,7 +27,24 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    description="CityLens Smart City Platform - REST API for urban data management with FiWARE NGSI-LD",
+    description="""CityLens Smart City Platform - REST API for urban data management with FiWARE NGSI-LD
+
+## Data License
+
+**Public Data License:** All public data returned by this API is licensed under 
+[Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/)
+
+You are free to:
+- **Share** — copy and redistribute the data in any medium or format
+- **Adapt** — remix, transform, and build upon the data for any purpose, including commercially
+
+Under the following terms:
+- **Attribution** — You must give appropriate credit to CityLens
+
+## API License
+
+The API source code is licensed under GNU General Public License v3.0 (GPL-3.0)
+""",
     version=settings.VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
     docs_url="/docs",

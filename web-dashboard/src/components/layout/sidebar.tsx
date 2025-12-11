@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   BarChart3,
   Network,
+  Scale,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/components/providers/auth-provider';
@@ -44,6 +45,7 @@ const navigationGroups = [
     title: 'System',
     items: [
       { name: 'User Management', nameVi: 'Quản lý người dùng', href: '/admin/user-management', icon: Users },
+      { name: 'Data License', nameVi: 'Giấy phép dữ liệu', href: '/data-license', icon: Scale },
       { name: 'Settings', nameVi: 'Cài đặt', href: '/settings', icon: Settings },
     ],
   },
