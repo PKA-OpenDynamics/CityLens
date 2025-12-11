@@ -3,6 +3,8 @@
 
 import { AI_API_BASE_URL } from '../config/env';
 
+
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -51,8 +53,9 @@ class AIChatService {
   private baseUrl: string;
 
   constructor() {
-    // Sử dụng AI_API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
+    // Sử dụng AI_API_BASE_URL từ env.ts
     this.baseUrl = AI_API_BASE_URL;
+    console.log('[AIChatService] baseUrl:', this.baseUrl);
   }
 
   /**

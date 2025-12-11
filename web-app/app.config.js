@@ -2,7 +2,12 @@
 
 // Licensed under the GNU General Public License v3.0 (GPL-3.0)
 
+// Load .env file for local development (Netlify already has env vars in process.env)
 require('dotenv').config();
+
+// Debug: Log environment variables during build
+console.log('[Build] EXPO_PUBLIC_API_BASE_URL:', process.env.EXPO_PUBLIC_API_BASE_URL || 'NOT SET');
+console.log('[Build] TOMTOM_API_KEY:', process.env.TOMTOM_API_KEY ? 'SET (hidden)' : 'NOT SET');
 
 module.exports = {
   expo: {

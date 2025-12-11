@@ -3,6 +3,8 @@
 
 import { REPORTS_API_BASE_URL } from '../config/env';
 
+
+
 export interface Comment {
   _id: string;
   reportId: string;
@@ -25,8 +27,9 @@ class CommentsService {
   private baseUrl: string;
 
   constructor() {
-    // Sử dụng REPORTS_API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
+    // Sử dụng REPORTS_API_BASE_URL từ env.ts
     this.baseUrl = REPORTS_API_BASE_URL;
+    console.log('[CommentsService] baseUrl:', this.baseUrl);
   }
 
   /**

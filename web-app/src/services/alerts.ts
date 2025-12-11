@@ -3,8 +3,9 @@
 
 import { ALERTS_API_BASE_URL } from '../config/env';
 
-// Sử dụng ALERTS_API_BASE_URL từ env.ts (đã normalize và đảm bảo HTTPS)
+// Sử dụng ALERTS_API_BASE_URL từ env.ts
 const API_BASE = ALERTS_API_BASE_URL;
+console.log('[AlertsService] API_BASE:', API_BASE);
 
 export type AlertItem = {
   _id: string;
@@ -31,6 +32,7 @@ class AlertsService {
 
     for (let i = 0; i < urls.length; i++) {
       const url = urls[i];
+      console.log('[AlertsService] Fetching:', url);
       try {
         const res = await fetch(url);
         if (res.status === 404) {

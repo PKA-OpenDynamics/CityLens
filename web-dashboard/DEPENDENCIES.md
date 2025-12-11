@@ -35,8 +35,9 @@ Tài liệu này liệt kê tất cả các thư viện và gói phần mềm đ
 | Thư viện | Phiên bản | Giấy phép | Mô tả |
 |----------|-----------|-----------|-------|
 | [Leaflet](https://leafletjs.com/) | 1.9.4 | BSD-2-Clause | Interactive maps |
-| [React Leaflet](https://react-leaflet.js.org/) | 4.2.1 | Hippocratic-2.1 | React wrapper cho Leaflet |
 | [leaflet.markercluster](https://github.com/Leaflet/Leaflet.markercluster) | 1.5.3 | MIT | Marker clustering |
+
+> **Lưu ý**: Dự án sử dụng Leaflet trực tiếp với custom React wrapper (`src/components/map/LeafletReactWrapper.tsx`) để đảm bảo tuân thủ giấy phép mã nguồn mở (Leaflet: BSD-2-Clause).
 
 ### Data & State Management
 
